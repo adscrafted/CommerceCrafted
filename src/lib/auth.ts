@@ -14,6 +14,7 @@ declare module "next-auth" {
       role: string
       subscriptionTier: string
       subscriptionExpiresAt?: Date
+      emailVerified?: Date
     }
   }
   
@@ -24,6 +25,7 @@ declare module "next-auth" {
     role: string
     subscriptionTier: string
     subscriptionExpiresAt?: Date
+    emailVerified?: Date
   }
 }
 
@@ -33,6 +35,7 @@ declare module "next-auth/jwt" {
     role: string
     subscriptionTier: string
     subscriptionExpiresAt?: Date
+    emailVerified?: Date
   }
 }
 
@@ -76,6 +79,17 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // Check if account is active
+        if (!user.isActive) {
+          return null
+        }
+
+        // Update last login time
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() }
+        })
+
         return {
           id: user.id,
           email: user.email,
@@ -83,6 +97,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           subscriptionTier: user.subscriptionTier,
           subscriptionExpiresAt: user.subscriptionExpiresAt || undefined,
+          emailVerified: user.emailVerified,
         }
       }
     })
@@ -94,7 +109,34 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role
         token.subscriptionTier = user.subscriptionTier
         token.subscriptionExpiresAt = user.subscriptionExpiresAt
+        token.emailVerified = user.emailVerified
       }
+      
+      // Refresh user data on each request to check for updates
+      if (token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id },
+          select: {
+            id: true,
+            role: true,
+            subscriptionTier: true,
+            subscriptionExpiresAt: true,
+            emailVerified: true,
+            isActive: true,
+          }
+        })
+        
+        if (dbUser && dbUser.isActive) {
+          token.role = dbUser.role
+          token.subscriptionTier = dbUser.subscriptionTier
+          token.subscriptionExpiresAt = dbUser.subscriptionExpiresAt
+          token.emailVerified = dbUser.emailVerified
+        } else {
+          // User is no longer active, invalidate token
+          return null
+        }
+      }
+      
       return token
     },
     async session({ session, token }) {
@@ -103,6 +145,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role
         session.user.subscriptionTier = token.subscriptionTier
         session.user.subscriptionExpiresAt = token.subscriptionExpiresAt
+        session.user.emailVerified = token.emailVerified
       }
       return session
     },

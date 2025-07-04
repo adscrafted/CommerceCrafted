@@ -94,22 +94,28 @@ export default function SignUpPage() {
         }),
       })
 
+      const data = await response.json()
+      
       if (!response.ok) {
-        const data = await response.json()
         throw new Error(data.error || 'Failed to create account')
       }
 
-      // Automatically sign in after successful registration
-      const signInResult = await signIn('credentials', {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
-      })
-
-      if (signInResult?.ok) {
-        router.push('/dashboard')
+      if (data.requiresVerification) {
+        // Redirect to verification notice
+        router.push('/auth/signin?message=Account created successfully! Please check your email to verify your account before signing in.')
       } else {
-        router.push('/auth/signin?message=Account created successfully. Please sign in.')
+        // Automatically sign in after successful registration (fallback)
+        const signInResult = await signIn('credentials', {
+          email: formData.email,
+          password: formData.password,
+          redirect: false,
+        })
+
+        if (signInResult?.ok) {
+          router.push('/dashboard')
+        } else {
+          router.push('/auth/signin?message=Account created successfully. Please sign in.')
+        }
       }
     } catch (error: unknown) {
       setError(

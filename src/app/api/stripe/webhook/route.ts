@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { stripe } from '@/lib/stripe'
+import { stripe, getPlanByPriceId } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
 
@@ -72,12 +72,18 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return
   }
 
+  // Get the subscription ID from the session
+  const subscriptionId = session.subscription as string
+  const customerId = session.customer as string
+
   // Update user subscription in database
   await prisma.user.update({
     where: { id: userId },
     data: {
       subscriptionTier: planId,
-      subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: subscriptionId,
+      subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Will be updated when subscription is processed
     }
   })
 
@@ -89,18 +95,22 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer
   
   if (customer.email) {
-    const planName = subscription.items.data[0]?.price.nickname || 'pro'
-    const expiresAt = new Date((subscription as Stripe.Subscription).current_period_end * 1000)
+    const priceId = subscription.items.data[0]?.price.id
+    const planInfo = priceId ? getPlanByPriceId(priceId) : null
+    const planName = planInfo?.planId || 'pro'
+    const expiresAt = new Date(subscription.current_period_end * 1000)
     
     await prisma.user.updateMany({
       where: { email: customer.email },
       data: {
         subscriptionTier: planName,
         subscriptionExpiresAt: expiresAt,
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscription.id,
       }
     })
     
-    console.log(`Subscription created for ${customer.email}`)
+    console.log(`Subscription created for ${customer.email}: ${planName}`)
   }
 }
 
@@ -109,18 +119,31 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer
   
   if (customer.email) {
-    const planName = subscription.items.data[0]?.price.nickname || 'pro'
-    const expiresAt = new Date((subscription as Stripe.Subscription).current_period_end * 1000)
+    const priceId = subscription.items.data[0]?.price.id
+    const planInfo = priceId ? getPlanByPriceId(priceId) : null
+    const planName = planInfo?.planId || 'pro'
+    const expiresAt = new Date(subscription.current_period_end * 1000)
+    
+    // Handle subscription status changes
+    let updateData: any = {
+      subscriptionExpiresAt: expiresAt,
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: subscription.id,
+    }
+
+    if (subscription.status === 'active') {
+      updateData.subscriptionTier = planName
+    } else if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
+      updateData.subscriptionTier = 'free'
+      updateData.subscriptionExpiresAt = null
+    }
     
     await prisma.user.updateMany({
       where: { email: customer.email },
-      data: {
-        subscriptionTier: planName,
-        subscriptionExpiresAt: expiresAt,
-      }
+      data: updateData
     })
     
-    console.log(`Subscription updated for ${customer.email}`)
+    console.log(`Subscription updated for ${customer.email}: ${planName} (${subscription.status})`)
   }
 }
 
@@ -142,15 +165,86 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 }
 
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
-  // Handle successful payment
   console.log(`Payment succeeded for invoice ${invoice.id}`)
   
-  // You could send a receipt email, update usage limits, etc.
+  if (!invoice.customer || !invoice.id) return
+
+  const customerId = invoice.customer as string
+  const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer
+  
+  if (customer.email) {
+    // Find user and create/update invoice record
+    const user = await prisma.user.findFirst({
+      where: { email: customer.email }
+    })
+
+    if (user) {
+      await prisma.invoice.upsert({
+        where: { stripeInvoiceId: invoice.id },
+        create: {
+          userId: user.id,
+          stripeInvoiceId: invoice.id,
+          stripeSubscriptionId: invoice.subscription as string || null,
+          amount: invoice.amount_paid / 100, // Convert from cents
+          currency: invoice.currency,
+          status: invoice.status || 'paid',
+          description: invoice.description || 'Subscription payment',
+          invoiceUrl: invoice.invoice_pdf || null,
+          hostedInvoiceUrl: invoice.hosted_invoice_url || null,
+          periodStart: new Date((invoice.period_start || 0) * 1000),
+          periodEnd: new Date((invoice.period_end || 0) * 1000),
+          dueDate: new Date((invoice.due_date || 0) * 1000),
+          paidAt: new Date(),
+        },
+        update: {
+          status: invoice.status || 'paid',
+          paidAt: new Date(),
+          attemptCount: invoice.attempt_count || 0,
+        }
+      })
+    }
+  }
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
-  // Handle failed payment
   console.log(`Payment failed for invoice ${invoice.id}`)
   
-  // You could send a notification email, temporarily suspend access, etc.
+  if (!invoice.customer || !invoice.id) return
+
+  const customerId = invoice.customer as string
+  const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer
+  
+  if (customer.email) {
+    const user = await prisma.user.findFirst({
+      where: { email: customer.email }
+    })
+
+    if (user) {
+      await prisma.invoice.upsert({
+        where: { stripeInvoiceId: invoice.id },
+        create: {
+          userId: user.id,
+          stripeInvoiceId: invoice.id,
+          stripeSubscriptionId: invoice.subscription as string || null,
+          amount: invoice.amount_due / 100,
+          currency: invoice.currency,
+          status: invoice.status || 'failed',
+          description: invoice.description || 'Subscription payment',
+          periodStart: new Date((invoice.period_start || 0) * 1000),
+          periodEnd: new Date((invoice.period_end || 0) * 1000),
+          dueDate: new Date((invoice.due_date || 0) * 1000),
+          attemptCount: invoice.attempt_count || 0,
+          nextPaymentAttempt: invoice.next_payment_attempt ? new Date(invoice.next_payment_attempt * 1000) : null,
+        },
+        update: {
+          status: invoice.status || 'failed',
+          attemptCount: invoice.attempt_count || 0,
+          nextPaymentAttempt: invoice.next_payment_attempt ? new Date(invoice.next_payment_attempt * 1000) : null,
+        }
+      })
+
+      // Consider temporarily restricting access for failed payments
+      // This depends on your business logic
+    }
+  }
 }

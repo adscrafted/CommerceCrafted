@@ -18,7 +18,8 @@ import {
   Calendar,
   Activity
 } from 'lucide-react'
-import { mockAPI, type MockProduct, type MockDailyFeature } from '@/lib/mockData'
+import { APIService } from '@/lib/api-service'
+import { Product, DailyFeature } from '@/types/api'
 import Link from 'next/link'
 
 // Trends data structure
@@ -83,21 +84,24 @@ const trendingTopics: TrendData[] = [
 ]
 
 export default function HomePage() {
-  const [dailyFeature, setDailyFeature] = useState<MockDailyFeature | null>(null)
-  const [trendingProducts, setTrendingProducts] = useState<MockProduct[]>([])
+  const [dailyFeature, setDailyFeature] = useState<DailyFeature | null>(null)
+  const [trendingProducts, setTrendingProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
       try {
+        setError(null)
         const [daily, trending] = await Promise.all([
-          mockAPI.getDailyFeature(),
-          mockAPI.getTrendingProducts()
+          APIService.getDailyFeature(),
+          APIService.getTrendingProducts()
         ])
         setDailyFeature(daily)
         setTrendingProducts(trending)
       } catch (error) {
         console.error('Failed to load homepage data:', error)
+        setError(error instanceof Error ? error.message : 'Failed to load data')
       } finally {
         setLoading(false)
       }
@@ -141,6 +145,30 @@ export default function HomePage() {
                 <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <div className="text-red-600 text-lg font-semibold mb-2">
+              Failed to Load Data
+            </div>
+            <p className="text-gray-600 mb-4">
+              {error}
+            </p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+              className="w-full"
+            >
+              Try Again
+            </Button>
           </div>
         </div>
       </div>

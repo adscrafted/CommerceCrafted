@@ -24,18 +24,73 @@ import {
   RefreshCw,
   Receipt,
   Star,
-  BarChart3
+  BarChart3,
+  Loader2
 } from 'lucide-react'
+
+interface BillingData {
+  user: {
+    subscriptionTier: string
+    subscriptionExpiresAt: string | null
+    stripeCustomerId: string | null
+    stripeSubscriptionId: string | null
+  }
+  usage: {
+    analyses: {
+      usageCount: number
+      usageLimit: number | null
+      isUnlimited: boolean
+      remainingUsage: number | null
+      percentageUsed: number | null
+      resetDate: string
+    }
+    aiQueries: {
+      usageCount: number
+      usageLimit: number | null
+      isUnlimited: boolean
+      remainingUsage: number | null
+      percentageUsed: number | null
+      resetDate: string
+    }
+    exports: {
+      usageCount: number
+      usageLimit: number | null
+      isUnlimited: boolean
+      remainingUsage: number | null
+      percentageUsed: number | null
+      resetDate: string
+    }
+    keywordResearch: {
+      usageCount: number
+      usageLimit: number | null
+      isUnlimited: boolean
+      remainingUsage: number | null
+      percentageUsed: number | null
+      resetDate: string
+    }
+  }
+  invoices: Array<{
+    id: string
+    amount: string
+    status: string
+    date: string
+    description: string
+    invoiceUrl?: string
+    hostedInvoiceUrl?: string
+  }>
+  upcomingInvoice?: {
+    amount: string
+    date: string
+    description: string
+  }
+}
 
 export default function BillingPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState('')
-  const [usage] = useState({
-    analyses: 47,
-    limit: 500,
-    resetDate: '2024-02-01'
-  })
+  const [billingData, setBillingData] = useState<BillingData | null>(null)
+  const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -55,23 +110,47 @@ export default function BillingPage() {
         timestamp: new Date().toISOString()
       }
     })
+
+    // Fetch billing data
+    fetchBillingData()
   }, [session, status, router])
 
-  if (status === 'loading') {
+  const fetchBillingData = async () => {
+    try {
+      setDataLoading(true)
+      const response = await fetch('/api/billing')
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch billing data')
+      }
+
+      const data = await response.json()
+      setBillingData(data)
+    } catch (error) {
+      console.error('Error fetching billing data:', error)
+      // Use fallback data or show error message
+    } finally {
+      setDataLoading(false)
+    }
+  }
+
+  if (status === 'loading' || dataLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading billing information...</p>
+        </div>
       </div>
     )
   }
 
-  if (!session) {
+  if (!session || !billingData) {
     return null
   }
 
   const user = session.user
-  const isPaid = user.subscriptionTier !== 'free'
-  const usagePercentage = (usage.analyses / usage.limit) * 100
+  const isPaid = billingData.user.subscriptionTier !== 'free'
 
   const handleManageBilling = async () => {
     setLoading('billing')
@@ -137,16 +216,17 @@ export default function BillingPage() {
   const planFeatures = {
     free: [
       '5 product analyses per month',
+      '3 AI queries per month',
+      '1 export per month',
       'Basic keyword research',
-      'Limited AI assistant',
       'Community support'
     ],
     pro: [
       'Unlimited product analyses',
+      'Unlimited AI queries',
+      'Unlimited exports',
       'Advanced keyword research',
-      'Full AI assistant access',
-      'Priority support',
-      'Advanced export options'
+      'Priority support'
     ],
     enterprise: [
       'Everything in Pro',
@@ -157,7 +237,7 @@ export default function BillingPage() {
     ]
   }
 
-  const currentFeatures = planFeatures[user.subscriptionTier as keyof typeof planFeatures] || planFeatures.free
+  const currentFeatures = planFeatures[billingData.user.subscriptionTier as keyof typeof planFeatures] || planFeatures.free
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -193,20 +273,27 @@ export default function BillingPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center space-x-3">
-                    <h3 className="text-2xl font-bold capitalize">{user.subscriptionTier}</h3>
+                    <h3 className="text-2xl font-bold capitalize">{billingData.user.subscriptionTier}</h3>
                     <Badge className={
-                      user.subscriptionTier === 'enterprise' ? 'bg-purple-100 text-purple-800' :
-                      user.subscriptionTier === 'pro' ? 'bg-yellow-100 text-yellow-800' :
+                      billingData.user.subscriptionTier === 'enterprise' ? 'bg-purple-100 text-purple-800' :
+                      billingData.user.subscriptionTier === 'pro' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-gray-100 text-gray-800'
                     }>
-                      {user.subscriptionTier === 'free' ? 'Free' : 'Premium'}
+                      {billingData.user.subscriptionTier === 'free' ? 'Free' : 'Premium'}
                     </Badge>
                   </div>
                   
-                  {user.subscriptionExpiresAt && (
+                  {billingData.user.subscriptionExpiresAt && (
                     <p className="text-sm text-gray-600 mt-2">
                       <Calendar className="h-4 w-4 inline mr-1" />
-                      Renews on {new Date(user.subscriptionExpiresAt).toLocaleDateString()}
+                      Renews on {new Date(billingData.user.subscriptionExpiresAt).toLocaleDateString()}
+                    </p>
+                  )}
+
+                  {billingData.upcomingInvoice && (
+                    <p className="text-sm text-blue-600 mt-1">
+                      <Clock className="h-4 w-4 inline mr-1" />
+                      Next payment: {billingData.upcomingInvoice.amount} on {billingData.upcomingInvoice.date}
                     </p>
                   )}
                   
@@ -267,45 +354,85 @@ export default function BillingPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
+                {/* Product Analyses */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Product Analyses</span>
                     <span className="text-sm text-gray-600">
-                      {usage.analyses} / {user.subscriptionTier === 'free' ? '5' : 'Unlimited'}
+                      {billingData.usage.analyses.usageCount} / {billingData.usage.analyses.isUnlimited ? 'Unlimited' : billingData.usage.analyses.usageLimit}
                     </span>
                   </div>
-                  {user.subscriptionTier === 'free' ? (
-                    <Progress value={usagePercentage} className="h-2" />
-                  ) : (
+                  {billingData.usage.analyses.isUnlimited ? (
                     <div className="flex items-center text-sm text-green-600">
                       <CheckCircle className="h-4 w-4 mr-1" />
                       Unlimited usage
                     </div>
+                  ) : (
+                    <Progress value={billingData.usage.analyses.percentageUsed || 0} className="h-2" />
                   )}
                 </div>
 
-                {user.subscriptionTier === 'free' && usagePercentage > 80 && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <div className="flex items-start">
-                      <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" />
-                      <div>
-                        <h4 className="font-medium text-yellow-800">Usage Limit Warning</h4>
-                        <p className="text-sm text-yellow-700 mt-1">
-                          You&apos;re approaching your monthly limit. Upgrade to Pro for unlimited access.
-                        </p>
-                        <Link href="/pricing" className="mt-2 inline-block">
-                          <Button size="sm" className="bg-yellow-600 hover:bg-yellow-700">
-                            Upgrade Now
-                          </Button>
-                        </Link>
+                {/* AI Queries */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">AI Queries</span>
+                    <span className="text-sm text-gray-600">
+                      {billingData.usage.aiQueries.usageCount} / {billingData.usage.aiQueries.isUnlimited ? 'Unlimited' : billingData.usage.aiQueries.usageLimit}
+                    </span>
+                  </div>
+                  {billingData.usage.aiQueries.isUnlimited ? (
+                    <div className="flex items-center text-sm text-green-600">
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Unlimited usage
+                    </div>
+                  ) : (
+                    <Progress value={billingData.usage.aiQueries.percentageUsed || 0} className="h-2" />
+                  )}
+                </div>
+
+                {/* Exports */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Exports</span>
+                    <span className="text-sm text-gray-600">
+                      {billingData.usage.exports.usageCount} / {billingData.usage.exports.isUnlimited ? 'Unlimited' : billingData.usage.exports.usageLimit}
+                    </span>
+                  </div>
+                  {billingData.usage.exports.isUnlimited ? (
+                    <div className="flex items-center text-sm text-green-600">
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Unlimited usage
+                    </div>
+                  ) : (
+                    <Progress value={billingData.usage.exports.percentageUsed || 0} className="h-2" />
+                  )}
+                </div>
+
+                {/* Usage warning for free tier */}
+                {billingData.user.subscriptionTier === 'free' && (
+                  Object.values(billingData.usage).some(usage => (usage.percentageUsed || 0) > 80) && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" />
+                        <div>
+                          <h4 className="font-medium text-yellow-800">Usage Limit Warning</h4>
+                          <p className="text-sm text-yellow-700 mt-1">
+                            You&apos;re approaching your monthly limits. Upgrade to Pro for unlimited access.
+                          </p>
+                          <Link href="/pricing" className="mt-2 inline-block">
+                            <Button size="sm" className="bg-yellow-600 hover:bg-yellow-700">
+                              Upgrade Now
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )
                 )}
 
                 <div className="text-sm text-gray-600">
                   <Clock className="h-4 w-4 inline mr-1" />
-                  Usage resets on {new Date(usage.resetDate).toLocaleDateString()}
+                  Usage resets on {new Date(billingData.usage.analyses.resetDate).toLocaleDateString()}
                 </div>
               </div>
             </CardContent>
@@ -324,31 +451,50 @@ export default function BillingPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { date: '2024-01-01', amount: '$29.00', status: 'Paid', invoice: 'inv_123' },
-                    { date: '2023-12-01', amount: '$29.00', status: 'Paid', invoice: 'inv_122' },
-                    { date: '2023-11-01', amount: '$29.00', status: 'Paid', invoice: 'inv_121' }
-                  ].map((payment, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <div>
-                          <p className="font-medium">{payment.amount}</p>
-                          <p className="text-sm text-gray-600">{payment.date}</p>
+                {billingData.invoices.length > 0 ? (
+                  <div className="space-y-4">
+                    {billingData.invoices.map((invoice, index) => (
+                      <div key={invoice.id || index} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className={`w-2 h-2 rounded-full ${
+                            invoice.status === 'paid' ? 'bg-green-500' : 
+                            invoice.status === 'pending' ? 'bg-yellow-500' : 
+                            'bg-red-500'
+                          }`}></div>
+                          <div>
+                            <p className="font-medium">{invoice.amount}</p>
+                            <p className="text-sm text-gray-600">{invoice.date}</p>
+                            <p className="text-xs text-gray-500">{invoice.description}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Badge className={
+                            invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
+                            invoice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }>
+                            {invoice.status}
+                          </Badge>
+                          {(invoice.invoiceUrl || invoice.hostedInvoiceUrl) && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => window.open(invoice.invoiceUrl || invoice.hostedInvoiceUrl, '_blank')}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <Badge className="bg-green-100 text-green-800">
-                          {payment.status}
-                        </Badge>
-                        <Button variant="outline" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Receipt className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p>No invoices yet</p>
+                    <p className="text-sm">Your billing history will appear here</p>
+                  </div>
+                )}
                 
                 <Separator className="my-6" />
                 
@@ -358,7 +504,7 @@ export default function BillingPage() {
                   disabled={loading === 'billing'}
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  View All Invoices
+                  Manage Billing & Invoices
                 </Button>
               </CardContent>
             </Card>

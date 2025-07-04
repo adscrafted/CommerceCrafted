@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { createEmailVerificationToken } from '@/lib/tokens'
+import { emailService } from '@/lib/email'
 
 const signupSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12)
 
-    // Create user
+    // Create user (email not verified yet)
     const user = await prisma.user.create({
       data: {
         name,
@@ -39,6 +41,7 @@ export async function POST(request: NextRequest) {
         role: 'USER',
         subscriptionTier: 'free',
         emailSubscribed: subscribeNewsletter,
+        emailVerified: null, // Will be set when email is verified
       },
       select: {
         id: true,
@@ -46,6 +49,7 @@ export async function POST(request: NextRequest) {
         email: true,
         role: true,
         subscriptionTier: true,
+        emailVerified: true,
         createdAt: true,
       }
     })
@@ -68,10 +72,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Send email verification
+    try {
+      const verificationToken = await createEmailVerificationToken(email)
+      await emailService.sendVerificationEmail(email, verificationToken, name)
+    } catch (error) {
+      console.error('Failed to send verification email:', error)
+      // Don't fail the signup if email sending fails
+    }
+
     return NextResponse.json(
       { 
-        message: 'User created successfully',
-        user 
+        message: 'User created successfully. Please check your email to verify your account.',
+        user,
+        requiresVerification: true
       },
       { status: 201 }
     )

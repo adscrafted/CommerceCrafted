@@ -1,5 +1,5 @@
-// Mock data service for CommerceCrafted
-// This provides realistic sample data while backend integration is being completed
+// Enhanced data service for CommerceCrafted
+// Now uses real Amazon SP-API data with advanced analysis capabilities
 
 import { 
   DeepAnalysis, 
@@ -11,7 +11,7 @@ import {
   FinancialModel,
   TrendAnalysis 
 } from '@/types/deep-research'
-import { DeepResearchService } from './deep-research-service'
+import { productDataService, EnhancedProduct } from './product-data-service'
 
 export interface MockProductAnalysis {
   id: string
@@ -447,29 +447,58 @@ const mockProducts: MockProduct[] = [
   }
 ]
 
-// Mock API service
+// Enhanced API service using real Amazon data
 export const mockAPI = {
   // Get daily featured product
   getDailyFeature: async (): Promise<MockDailyFeature> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    return {
-      id: "daily-1",
-      product: mockProducts[2], // Yoga mat - highest opportunity score
-      reason: "This yoga mat represents an excellent opportunity due to growing home fitness trends, low competition barriers, and strong profit margins. The wellness industry continues to expand, making this a strategic entry point.",
-      date: new Date().toISOString().split('T')[0]
+    try {
+      const dailyFeature = await productDataService.getDailyFeature()
+      if (!dailyFeature) {
+        // Fallback to a search if no daily feature available
+        const searchResults = await productDataService.searchProducts('wireless headphones', { limit: 1 })
+        if (searchResults.products.length > 0) {
+          const product = searchResults.products[0]
+          return {
+            id: "daily-fallback",
+            product: this.convertEnhancedToMock(product),
+            reason: "High-opportunity wireless audio product with strong market demand and competitive pricing.",
+            date: new Date().toISOString().split('T')[0]
+          }
+        }
+        throw new Error('No products available')
+      }
+      
+      return {
+        id: dailyFeature.id,
+        product: this.convertEnhancedToMock(dailyFeature.product),
+        reason: dailyFeature.reason,
+        date: dailyFeature.date
+      }
+    } catch (error) {
+      console.error('Error fetching daily feature:', error)
+      // Return fallback mock data if real API fails
+      return {
+        id: "daily-fallback",
+        product: mockProducts[2],
+        reason: "High-opportunity product with strong market potential.",
+        date: new Date().toISOString().split('T')[0]
+      }
     }
   },
 
   // Get trending products (highest opportunity scores)
   getTrendingProducts: async (): Promise<MockProduct[]> => {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    
-    return mockProducts
-      .filter(p => p.analysis && p.analysis.opportunityScore >= 7)
-      .sort((a, b) => (b.analysis?.opportunityScore || 0) - (a.analysis?.opportunityScore || 0))
-      .slice(0, 3)
+    try {
+      const trending = await productDataService.getTrendingProducts(3)
+      return trending.map(product => this.convertEnhancedToMock(product))
+    } catch (error) {
+      console.error('Error fetching trending products:', error)
+      // Fallback to mock data
+      return mockProducts
+        .filter(p => p.analysis && p.analysis.opportunityScore >= 7)
+        .sort((a, b) => (b.analysis?.opportunityScore || 0) - (a.analysis?.opportunityScore || 0))
+        .slice(0, 3)
+    }
   },
 
   // Search products with filters
@@ -482,64 +511,99 @@ export const mockAPI = {
     limit?: number
     offset?: number
   }): Promise<{products: MockProduct[], total: number}> => {
-    await new Promise(resolve => setTimeout(resolve, 200))
-    
-    let filtered = [...mockProducts]
+    try {
+      const searchResults = await productDataService.searchProducts(params.query || '', {
+        category: params.category !== 'all' ? params.category : undefined,
+        priceMax: params.maxPrice,
+        minOpportunityScore: params.minScore,
+        sortBy: params.sortBy,
+        limit: params.limit
+      })
 
-    // Apply filters
-    if (params.query) {
-      const query = params.query.toLowerCase()
-      filtered = filtered.filter(p => 
-        p.title.toLowerCase().includes(query) ||
-        p.brand.toLowerCase().includes(query) ||
-        p.category.toLowerCase().includes(query) ||
-        p.asin.toLowerCase().includes(query)
-      )
-    }
+      const convertedProducts = searchResults.products.map(product => this.convertEnhancedToMock(product))
+      
+      // Apply offset if needed (since API might not support it directly)
+      const offset = params.offset || 0
+      const paginatedProducts = offset > 0 ? convertedProducts.slice(offset) : convertedProducts
 
-    if (params.category && params.category !== 'all') {
-      filtered = filtered.filter(p => p.category === params.category)
-    }
-
-    if (params.minScore !== undefined) {
-      filtered = filtered.filter(p => (p.analysis?.opportunityScore || 0) >= params.minScore!)
-    }
-
-    if (params.maxPrice !== undefined) {
-      filtered = filtered.filter(p => p.price <= params.maxPrice!)
-    }
-
-    // Apply sorting
-    if (params.sortBy) {
-      switch (params.sortBy) {
-        case 'opportunity':
-          filtered.sort((a, b) => (b.analysis?.opportunityScore || 0) - (a.analysis?.opportunityScore || 0))
-          break
-        case 'demand':
-          filtered.sort((a, b) => (b.analysis?.demandScore || 0) - (a.analysis?.demandScore || 0))
-          break
-        case 'recent':
-          filtered.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-          break
-        case 'price':
-          filtered.sort((a, b) => a.price - b.price)
-          break
+      return { 
+        products: paginatedProducts,
+        total: searchResults.total 
       }
+    } catch (error) {
+      console.error('Error searching products:', error)
+      // Fallback to original mock search logic
+      let filtered = [...mockProducts]
+
+      if (params.query) {
+        const query = params.query.toLowerCase()
+        filtered = filtered.filter(p => 
+          p.title.toLowerCase().includes(query) ||
+          p.brand.toLowerCase().includes(query) ||
+          p.category.toLowerCase().includes(query) ||
+          p.asin.toLowerCase().includes(query)
+        )
+      }
+
+      if (params.category && params.category !== 'all') {
+        filtered = filtered.filter(p => p.category === params.category)
+      }
+
+      if (params.minScore !== undefined) {
+        filtered = filtered.filter(p => (p.analysis?.opportunityScore || 0) >= params.minScore!)
+      }
+
+      if (params.maxPrice !== undefined) {
+        filtered = filtered.filter(p => p.price <= params.maxPrice!)
+      }
+
+      // Apply sorting
+      if (params.sortBy) {
+        switch (params.sortBy) {
+          case 'opportunity':
+            filtered.sort((a, b) => (b.analysis?.opportunityScore || 0) - (a.analysis?.opportunityScore || 0))
+            break
+          case 'demand':
+            filtered.sort((a, b) => (b.analysis?.demandScore || 0) - (a.analysis?.demandScore || 0))
+            break
+          case 'recent':
+            filtered.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            break
+          case 'price':
+            filtered.sort((a, b) => a.price - b.price)
+            break
+        }
+      }
+
+      const total = filtered.length
+      const offset = params.offset || 0
+      const limit = params.limit || 10
+      const products = filtered.slice(offset, offset + limit)
+
+      return { products, total }
     }
-
-    const total = filtered.length
-    const offset = params.offset || 0
-    const limit = params.limit || 10
-    const products = filtered.slice(offset, offset + limit)
-
-    return { products, total }
   },
 
-  // Get product by ID
+  // Get product by ID (supports both internal ID and ASIN)
   getProductById: async (id: string): Promise<MockProduct | null> => {
-    await new Promise(resolve => setTimeout(resolve, 150))
-    
-    return mockProducts.find(p => p.id === id) || null
+    try {
+      // First try to find in mock products (for backward compatibility)
+      const mockProduct = mockProducts.find(p => p.id === id || p.asin === id)
+      if (mockProduct) {
+        return mockProduct
+      }
+
+      // Try to fetch from Amazon API using ASIN
+      const enhancedProduct = await productDataService.getProductByASIN(id, true)
+      if (enhancedProduct) {
+        return this.convertEnhancedToMock(enhancedProduct)
+      }
+
+      return null
+    } catch (error) {
+      console.error('Error fetching product by ID:', error)
+      return mockProducts.find(p => p.id === id) || null
+    }
   },
 
   // Get all categories
@@ -568,137 +632,98 @@ export const mockAPI = {
     }
   },
 
-  // Deep Research API Methods
+  // Deep Research API Methods - now using real Amazon data
   
   // Generate comprehensive deep analysis for a product
   getDeepAnalysis: async (productId: string): Promise<DeepAnalysis | null> => {
-    await new Promise(resolve => setTimeout(resolve, 500)) // Simulate AI processing time
-    
-    const product = mockProducts.find(p => p.id === productId)
-    if (!product) return null
+    try {
+      // Extract ASIN from productId (handle both internal IDs and ASINs)
+      const asin = productId.startsWith('B0') ? productId : mockProducts.find(p => p.id === productId)?.asin
+      if (!asin) return null
 
-    // Generate deep analysis using our service
-    const deepAnalysis = await DeepResearchService.generateDeepAnalysis({
-      title: product.title,
-      price: product.price,
-      category: product.category,
-      asin: product.asin,
-      estimatedMonthlySales: 75 // Default estimate
-    })
-
-    // Cache the result on the product
-    product.deepAnalysis = deepAnalysis
-    
-    return deepAnalysis
+      return await productDataService.getDeepAnalysis(asin)
+    } catch (error) {
+      console.error('Error getting deep analysis:', error)
+      return null
+    }
   },
 
   // Get keyword analysis for a product
   getKeywordAnalysis: async (productId: string): Promise<KeywordAnalysis | null> => {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    const product = mockProducts.find(p => p.id === productId)
-    if (!product) return null
+    try {
+      const asin = productId.startsWith('B0') ? productId : mockProducts.find(p => p.id === productId)?.asin
+      if (!asin) return null
 
-    if (!product.keywordAnalysis) {
-      product.keywordAnalysis = await DeepResearchService.analyzeKeywords({
-        title: product.title,
-        category: product.category,
-        asin: product.asin,
-        price: product.price
-      })
+      return await productDataService.getKeywordAnalysis(asin)
+    } catch (error) {
+      console.error('Error getting keyword analysis:', error)
+      return null
     }
-
-    return product.keywordAnalysis
   },
 
   // Get PPC strategy for a product
   getPPCStrategy: async (productId: string): Promise<PPCStrategy | null> => {
-    await new Promise(resolve => setTimeout(resolve, 400))
-    
-    const product = mockProducts.find(p => p.id === productId)
-    if (!product) return null
+    try {
+      const asin = productId.startsWith('B0') ? productId : mockProducts.find(p => p.id === productId)?.asin
+      if (!asin) return null
 
-    if (!product.ppcStrategy) {
-      product.ppcStrategy = await DeepResearchService.calculatePPCStrategy({
-        title: product.title,
-        price: product.price,
-        category: product.category
-      })
+      return await productDataService.getPPCStrategy(asin)
+    } catch (error) {
+      console.error('Error getting PPC strategy:', error)
+      return null
     }
-
-    return product.ppcStrategy
   },
 
   // Get inventory analysis for a product
   getInventoryAnalysis: async (productId: string): Promise<InventoryAnalysis | null> => {
-    await new Promise(resolve => setTimeout(resolve, 350))
-    
-    const product = mockProducts.find(p => p.id === productId)
-    if (!product) return null
+    try {
+      const asin = productId.startsWith('B0') ? productId : mockProducts.find(p => p.id === productId)?.asin
+      if (!asin) return null
 
-    if (!product.inventoryAnalysis) {
-      product.inventoryAnalysis = await DeepResearchService.analyzeInventory({
-        price: product.price,
-        category: product.category,
-        seasonality: 'medium'
-      })
+      return await productDataService.getInventoryAnalysis(asin)
+    } catch (error) {
+      console.error('Error getting inventory analysis:', error)
+      return null
     }
-
-    return product.inventoryAnalysis
   },
 
   // Get demand analysis for a product
   getDemandAnalysis: async (productId: string): Promise<DemandAnalysis | null> => {
-    await new Promise(resolve => setTimeout(resolve, 450))
-    
-    const product = mockProducts.find(p => p.id === productId)
-    if (!product) return null
+    try {
+      const asin = productId.startsWith('B0') ? productId : mockProducts.find(p => p.id === productId)?.asin
+      if (!asin) return null
 
-    if (!product.demandAnalysis) {
-      product.demandAnalysis = await DeepResearchService.analyzeDemand({
-        category: product.category,
-        price: product.price,
-        title: product.title
-      })
+      return await productDataService.getDemandAnalysis(asin)
+    } catch (error) {
+      console.error('Error getting demand analysis:', error)
+      return null
     }
-
-    return product.demandAnalysis
   },
 
   // Get competitor analysis for a product
   getCompetitorAnalysis: async (productId: string): Promise<CompetitorAnalysis | null> => {
-    await new Promise(resolve => setTimeout(resolve, 600))
-    
-    const product = mockProducts.find(p => p.id === productId)
-    if (!product) return null
+    try {
+      const asin = productId.startsWith('B0') ? productId : mockProducts.find(p => p.id === productId)?.asin
+      if (!asin) return null
 
-    if (!product.competitorAnalysis) {
-      product.competitorAnalysis = await DeepResearchService.analyzeCompetitors({
-        category: product.category,
-        price: product.price,
-        asin: product.asin
-      })
+      return await productDataService.getCompetitorAnalysis(asin)
+    } catch (error) {
+      console.error('Error getting competitor analysis:', error)
+      return null
     }
-
-    return product.competitorAnalysis
   },
 
   // Get financial model for a product
   getFinancialModel: async (productId: string): Promise<FinancialModel | null> => {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    const product = mockProducts.find(p => p.id === productId)
-    if (!product) return null
+    try {
+      const asin = productId.startsWith('B0') ? productId : mockProducts.find(p => p.id === productId)?.asin
+      if (!asin) return null
 
-    if (!product.financialModel) {
-      product.financialModel = await DeepResearchService.createFinancialModel({
-        price: product.price,
-        estimatedMonthlySales: 75,
-        category: product.category
-      })
+      return await productDataService.getFinancialModel(asin)
+    } catch (error) {
+      console.error('Error getting financial model:', error)
+      return null
     }
-
-    return product.financialModel
   },
 
   // Get trend analysis
@@ -805,6 +830,36 @@ export const mockAPI = {
   getTrendsByCategory: async (category: string): Promise<TrendAnalysis[]> => {
     const allTrends = await mockAPI.getTrendAnalysis()
     return allTrends.filter(trend => trend.category === category)
+  },
+
+  // Helper method to convert enhanced products to mock format for backward compatibility
+  convertEnhancedToMock(enhanced: EnhancedProduct): MockProduct {
+    return {
+      id: enhanced.asin, // Use ASIN as ID for real products
+      asin: enhanced.asin,
+      title: enhanced.title,
+      brand: enhanced.brand,
+      category: enhanced.category,
+      price: enhanced.price,
+      rating: enhanced.rating || enhanced.reviewData?.averageRating || 4.0,
+      reviewCount: enhanced.reviewCount || enhanced.reviewData?.totalReviews || 0,
+      imageUrls: enhanced.imageUrls,
+      description: enhanced.description,
+      features: enhanced.features,
+      dimensions: enhanced.dimensions,
+      weight: enhanced.weight,
+      availability: enhanced.availability,
+      createdAt: enhanced.lastUpdated.toISOString(),
+      updatedAt: enhanced.lastUpdated.toISOString(),
+      analysis: enhanced.analysis,
+      deepAnalysis: enhanced.deepAnalysis,
+      keywordAnalysis: enhanced.keywordAnalysis,
+      ppcStrategy: enhanced.ppcStrategy,
+      inventoryAnalysis: enhanced.inventoryAnalysis,
+      demandAnalysis: enhanced.demandAnalysis,
+      competitorAnalysis: enhanced.competitorAnalysis,
+      financialModel: enhanced.financialModel
+    }
   }
 }
 

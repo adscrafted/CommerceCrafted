@@ -20,7 +20,8 @@ import {
   ShoppingCart,
   ExternalLink
 } from 'lucide-react'
-import { mockAPI, type MockProduct } from '@/lib/mockData'
+import { APIService } from '@/lib/api-service'
+import { Product } from '@/types/api'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -29,8 +30,9 @@ interface ProductPageProps {
 }
 
 export default function ProductPage({ params }: ProductPageProps) {
-  const [product, setProduct] = useState<MockProduct | null>(null)
+  const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [id, setId] = useState<string>('')
 
   useEffect(() => {
@@ -39,7 +41,8 @@ export default function ProductPage({ params }: ProductPageProps) {
       setId(resolvedParams.id)
       
       try {
-        const productData = await mockAPI.getProductById(resolvedParams.id)
+        setError(null)
+        const productData = await APIService.getProductById(resolvedParams.id)
         if (!productData) {
           notFound()
           return
@@ -47,7 +50,7 @@ export default function ProductPage({ params }: ProductPageProps) {
         setProduct(productData)
       } catch (error) {
         console.error('Failed to load product:', error)
-        notFound()
+        setError(error instanceof Error ? error.message : 'Failed to load product')
       } finally {
         setLoading(false)
       }
@@ -106,6 +109,30 @@ export default function ProductPage({ params }: ProductPageProps) {
                 <div className="h-32 bg-gray-200 rounded"></div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <div className="text-red-600 text-lg font-semibold mb-2">
+              Failed to Load Product
+            </div>
+            <p className="text-gray-600 mb-4">
+              {error}
+            </p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+              className="w-full"
+            >
+              Try Again
+            </Button>
           </div>
         </div>
       </div>

@@ -47,6 +47,8 @@ export default function PricingPage() {
       badge: '',
       features: [
         '5 product analyses per month',
+        '3 AI queries per month',
+        '1 export per month',
         'Basic keyword research',
         'Limited AI assistant',
         'Community support',
@@ -67,14 +69,14 @@ export default function PricingPage() {
       name: 'Pro',
       description: 'For serious Amazon sellers',
       price: 29,
-      yearlyPrice: 290, // 2 months free
+      yearlyPrice: 278.40, // 20% discount
       badge: 'Most Popular',
       features: [
         'Unlimited product analyses',
+        'Unlimited AI queries',
+        'Unlimited exports',
         'Advanced keyword research',
-        'Full AI assistant access',
         'Priority support',
-        'Advanced export options',
         'Historical data access',
         'Email notifications',
         'Custom filters',
@@ -91,11 +93,11 @@ export default function PricingPage() {
       name: 'Enterprise',
       description: 'For teams and agencies',
       price: 99,
-      yearlyPrice: 990, // 2 months free
+      yearlyPrice: 950.40, // 20% discount
       badge: 'Best Value',
       features: [
         'Everything in Pro',
-        'Team collaboration',
+        'Up to 10 team members',
         'White-label reports',
         'API access',
         'Custom integrations',
