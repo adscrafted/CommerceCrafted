@@ -1,0 +1,461 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Users table for authentication and subscription management
+model User {
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  passwordHash          String?   @map("password_hash")
+  name                  String?
+  role                  UserRole  @default(USER)
+  subscriptionTier      String    @default("free") @map("subscription_tier")
+  subscriptionExpiresAt DateTime? @map("subscription_expires_at")
+  emailSubscribed       Boolean   @default(false) @map("email_subscribed")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  analyses               ProductAnalysis[]
+  savedProducts          SavedProduct[]
+  dailyFeatures          DailyFeature[]
+  accounts               Account[]
+  sessions               Session[]
+  aiResearchSessions     AIResearchSession[]
+  newsletterSubscriptions NewsletterSubscription[]
+  newsletterCampaigns    NewsletterCampaign[]
+  analyticsEvents        AnalyticsEvent[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  ANALYST
+}
+
+// NextAuth Account model
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+// NextAuth Session model
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// NextAuth VerificationToken model
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
+// Products table - Core Amazon product data
+model Product {
+  id           String        @id @default(cuid())
+  asin         String        @unique
+  title        String
+  category     String?
+  subcategory  String?
+  brand        String?
+  price        Float?
+  bsr          Int?          // Best Seller Rank
+  rating       Float?
+  reviewCount  Int?          @map("review_count")
+  imageUrls    String?       @map("image_urls") // JSON string of URLs
+  status       ProductStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  analysis          ProductAnalysis?
+  keywords          ProductKeyword[]
+  savedByUsers      SavedProduct[]
+  dailyFeatures     DailyFeature[]
+  keywordAnalysis   KeywordAnalysis[]
+  ppcStrategy       PPCStrategy?
+  inventoryAnalysis InventoryAnalysis?
+  demandAnalysis    DemandAnalysis?
+  competitorAnalysis CompetitorAnalysis?
+  financialModel    FinancialModel?
+  aiResearchSessions AIResearchSession[]
+
+  @@map("products")
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  PENDING_REVIEW
+  REMOVED
+}
+
+// Product Analysis table - AI + Human analysis data
+model ProductAnalysis {
+  id                   String   @id @default(cuid())
+  productId            String   @unique @map("product_id")
+  opportunityScore     Int      @map("opportunity_score") // 1-10
+  competitionScore     Int      @map("competition_score") // 1-10
+  demandScore          Int      @map("demand_score") // 1-10
+  feasibilityScore     Int      @map("feasibility_score") // 1-10
+  timingScore          Int      @map("timing_score") // 1-10
+  financialAnalysis    Json     @map("financial_analysis")
+  marketAnalysis       Json     @map("market_analysis")
+  competitionAnalysis  Json     @map("competition_analysis")
+  keywordAnalysis      Json     @map("keyword_analysis")
+  reviewAnalysis       Json     @map("review_analysis")
+  supplyChainAnalysis  Json     @map("supply_chain_analysis")
+  aiGeneratedContent   String?  @map("ai_generated_content")
+  humanEditedContent   String?  @map("human_edited_content")
+  focusGraphData       Json?    @map("focus_graph_data")
+  analystId            String?  @map("analyst_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  analyst User?   @relation(fields: [analystId], references: [id])
+
+  @@map("product_analyses")
+}
+
+// Keywords table - SEO and search data
+model Keyword {
+  id              String   @id @default(cuid())
+  keyword         String   @unique
+  searchVolume    Int?     @map("search_volume")
+  competitionScore Float? @map("competition_score")
+  cpc             Float?
+  trendData       Json?    @map("trend_data")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  products ProductKeyword[]
+
+  @@map("keywords")
+}
+
+// Junction table for Product-Keyword relationships
+model ProductKeyword {
+  productId       String  @map("product_id")
+  keywordId       String  @map("keyword_id")
+  relevanceScore  Float @map("relevance_score")
+  position        Int?
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  keyword Keyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@id([productId, keywordId])
+  @@map("product_keywords")
+}
+
+// Daily Featured Products
+model DailyFeature {
+  id           String   @id @default(cuid())
+  productId    String   @map("product_id")
+  featuredDate DateTime @unique @map("featured_date")
+  headline     String?
+  summary      String?
+  createdBy    String   @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  product   Product @relation(fields: [productId], references: [id])
+  creator   User    @relation(fields: [createdBy], references: [id])
+
+  @@map("daily_features")
+}
+
+// User Saved Products
+model SavedProduct {
+  userId    String   @map("user_id")
+  productId String   @map("product_id")
+  savedAt   DateTime @default(now()) @map("saved_at")
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([userId, productId])
+  @@map("saved_products")
+}
+
+// Enhanced Keyword Analysis for Deep Research
+model KeywordAnalysis {
+  id                String   @id @default(cuid())
+  productId         String   @map("product_id")
+  primaryKeywords   Json     @map("primary_keywords")    // Array of primary keywords with volumes
+  longTailKeywords  Json     @map("long_tail_keywords")  // Long-tail opportunities
+  keywordDifficulty Json     @map("keyword_difficulty")  // Difficulty scores for each keyword
+  seasonalTrends    Json     @map("seasonal_trends")     // Seasonal trend data
+  ppcMetrics        Json     @map("ppc_metrics")         // PPC-specific metrics
+  searchIntent      Json     @map("search_intent")       // Intent analysis for keywords
+  competitorKeywords Json    @map("competitor_keywords") // Competitor keyword analysis
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("keyword_analyses")
+}
+
+// PPC Launch Strategy and Cost Analysis
+model PPCStrategy {
+  id                    String   @id @default(cuid())
+  productId             String   @unique @map("product_id")
+  estimatedLaunchCost   Float    @map("estimated_launch_cost")
+  suggestedBidRanges    Json     @map("suggested_bid_ranges")    // Bid recommendations by keyword type
+  competitorAdAnalysis  Json     @map("competitor_ad_analysis")  // Competitor ad intelligence
+  campaignStructure     Json     @map("campaign_structure")      // Recommended campaign setup
+  expectedACoS          Float    @map("expected_acos")           // Expected Advertising Cost of Sales
+  breakEvenACoS         Float    @map("break_even_acos")         // Break-even ACoS
+  launchPhases          Json     @map("launch_phases")           // Phased launch strategy
+  budgetAllocation      Json     @map("budget_allocation")       // Budget distribution
+  targetingStrategy     Json     @map("targeting_strategy")      // Targeting recommendations
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("ppc_strategies")
+}
+
+// Inventory & Supply Chain Analysis
+model InventoryAnalysis {
+  id                    String   @id @default(cuid())
+  productId             String   @unique @map("product_id")
+  optimalOrderQuantity  Int      @map("optimal_order_quantity")
+  seasonalDemand        Json     @map("seasonal_demand")         // Seasonal demand patterns
+  supplierAnalysis      Json     @map("supplier_analysis")       // Supplier evaluation and data
+  cashFlowProjections  Json     @map("cash_flow_projections")   // Cash flow modeling
+  riskAssessment        Json     @map("risk_assessment")         // Supply chain risks
+  leadTimes             Json     @map("lead_times")              // Manufacturing and shipping times
+  qualityRequirements   Json     @map("quality_requirements")    // Quality control standards
+  costBreakdown         Json     @map("cost_breakdown")          // Detailed cost analysis
+  moqAnalysis           Json     @map("moq_analysis")            // Minimum Order Quantity analysis
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("inventory_analyses")
+}
+
+// Market Demand Analysis and Forecasting
+model DemandAnalysis {
+  id                    String   @id @default(cuid())
+  productId             String   @unique @map("product_id")
+  marketSize            Json     @map("market_size")             // TAM/SAM/SOM analysis
+  growthTrends          Json     @map("growth_trends")           // Historical and projected growth
+  geographicDemand      Json     @map("geographic_demand")       // Regional demand patterns
+  customerBehavior      Json     @map("customer_behavior")       // Customer insights and behavior
+  seasonalPatterns      Json     @map("seasonal_patterns")       // Seasonal demand analysis
+  demandDrivers         Json     @map("demand_drivers")          // Key demand influencers
+  marketSegmentation    Json     @map("market_segmentation")     // Target market segments
+  priceElasticity       Json     @map("price_elasticity")        // Price sensitivity analysis
+  forecasting           Json     @map("forecasting")             // Demand forecasting models
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("demand_analyses")
+}
+
+// Deep Competition Analysis
+model CompetitorAnalysis {
+  id                    String   @id @default(cuid())
+  productId             String   @unique @map("product_id")
+  topCompetitors        Json     @map("top_competitors")         // Top 10+ competitor profiles
+  priceAnalysis         Json     @map("price_analysis")          // Competitive pricing analysis
+  marketShareData       Json     @map("market_share_data")       // Market share distribution
+  competitiveAdvantages Json     @map("competitive_advantages")  // Advantage opportunities
+  threatLevel           String   @map("threat_level")            // Competition threat assessment
+  entryBarriers         Json     @map("entry_barriers")          // Market entry barriers
+  competitorStrategies  Json     @map("competitor_strategies")   // Competitor go-to-market strategies
+  swotAnalysis          Json     @map("swot_analysis")           // SWOT analysis vs competitors
+  benchmarking          Json     @map("benchmarking")            // Performance benchmarking
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("competitor_analyses")
+}
+
+// Financial Modeling and Projections
+model FinancialModel {
+  id                    String   @id @default(cuid())
+  productId             String   @unique @map("product_id")
+  roiCalculations       Json     @map("roi_calculations")        // ROI analysis and projections
+  breakEvenAnalysis     Json     @map("break_even_analysis")     // Break-even calculations
+  cashFlowProjections  Json     @map("cash_flow_projections")   // 12-month cash flow projections
+  riskMetrics           Json     @map("risk_metrics")            // Financial risk assessment
+  scenarioAnalysis      Json     @map("scenario_analysis")       // Best/worst/likely scenarios
+  profitabilityModel    Json     @map("profitability_model")     // Profit margin analysis
+  investmentRequirements Json    @map("investment_requirements") // Capital requirements
+  fbaFeeAnalysis        Json     @map("fba_fee_analysis")        // Amazon FBA fee calculations
+  taxImplications       Json     @map("tax_implications")        // Tax considerations
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("financial_models")
+}
+
+// AI Research Sessions for Interactive Analysis
+model AIResearchSession {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  productId         String?  @map("product_id")
+  sessionType       String   @map("session_type")              // product_validation, market_research, etc.
+  conversation      Json     @map("conversation")              // Conversation history
+  insights          Json     @map("insights")                 // AI-generated insights
+  recommendations   Json     @map("recommendations")          // Strategic recommendations
+  followUpActions   Json     @map("follow_up_actions")        // Suggested next steps
+  sessionStatus     String   @default("active") @map("session_status") // active, completed, archived
+  tokensUsed        Int      @default(0) @map("tokens_used")  // AI token consumption tracking
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@map("ai_research_sessions")
+}
+
+// Market Trend Analysis and Tracking
+model TrendAnalysis {
+  id                String   @id @default(cuid())
+  trendName         String   @map("trend_name")
+  category          String
+  volume            String                               // Search volume or interest metric
+  growthRate        Float    @map("growth_rate")         // Growth percentage
+  description       String
+  opportunities     Json     @map("opportunities")       // Business opportunities within trend
+  relatedProducts   Json     @map("related_products")    // Products riding this trend
+  marketData        Json     @map("market_data")         // Supporting market data
+  riskFactors       Json     @map("risk_factors")        // Trend-related risks
+  timeframe         String   @map("timeframe")           // Trend duration (short/medium/long term)
+  confidence        Float    @map("confidence")          // Confidence score in trend prediction
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("trend_analyses")
+}
+
+// Newsletter Subscriptions and Campaign Management
+model NewsletterSubscription {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  userId            String?  @map("user_id")
+  subscriptionType  String   @default("daily_deals") @map("subscription_type") // daily_deals, weekly_digest, etc.
+  isActive          Boolean  @default(true) @map("is_active")
+  preferences       Json?    @map("preferences")      // Email preferences and categories
+  subscribeSource   String?  @map("subscribe_source") // Where they subscribed from
+  unsubscribeToken  String   @unique @map("unsubscribe_token")
+  subscribeDate     DateTime @default(now()) @map("subscribe_date")
+  lastEmailSent     DateTime? @map("last_email_sent")
+  emailsSent        Int      @default(0) @map("emails_sent")
+  clicksCount       Int      @default(0) @map("clicks_count")
+  opensCount        Int      @default(0) @map("opens_count")
+
+  // Relations
+  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("newsletter_subscriptions")
+}
+
+// Newsletter Campaign Management
+model NewsletterCampaign {
+  id                String   @id @default(cuid())
+  name              String
+  subject           String
+  content           String
+  htmlContent       String?  @map("html_content")
+  campaignType      String   @map("campaign_type")    // daily_deal, weekly_digest, announcement
+  featuredProductId String?  @map("featured_product_id") // For deal of the day campaigns
+  scheduledDate     DateTime @map("scheduled_date")
+  sentDate          DateTime? @map("sent_date")
+  status            String   @default("draft")        // draft, scheduled, sent, cancelled
+  recipientCount    Int      @default(0) @map("recipient_count")
+  sentCount         Int      @default(0) @map("sent_count")
+  openRate          Float?   @map("open_rate")
+  clickRate         Float?   @map("click_rate")
+  createdBy         String   @map("created_by")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  creator           User     @relation(fields: [createdBy], references: [id])
+
+  @@map("newsletter_campaigns")
+}
+
+// Analytics Events for Tracking User Behavior and Conversions
+model AnalyticsEvent {
+  id         String    @id @default(cuid())
+  event      String
+  properties String?   // JSON string of event properties
+  userId     String?   @map("user_id")
+  timestamp  DateTime
+  userAgent  String?   @map("user_agent")
+  url        String?
+  referrer   String?
+  ipAddress  String?   @map("ip_address")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("analytics_events")
+}
