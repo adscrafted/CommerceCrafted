@@ -42,6 +42,9 @@ interface User {
   lastLoginAt?: Date
   analysisCount: number
   status: 'active' | 'inactive' | 'suspended'
+  emailVerified: boolean
+  totalSpent: number
+  country?: string
 }
 
 export default function UsersPage() {
@@ -74,7 +77,10 @@ export default function UsersPage() {
           createdAt: new Date('2024-01-15'),
           lastLoginAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
           analysisCount: 234,
-          status: 'active'
+          status: 'active',
+          emailVerified: true,
+          totalSpent: 599.88,
+          country: 'United States'
         },
         {
           id: '2',
@@ -87,7 +93,10 @@ export default function UsersPage() {
           createdAt: new Date('2023-11-20'),
           lastLoginAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
           analysisCount: 1247,
-          status: 'active'
+          status: 'active',
+          emailVerified: true,
+          totalSpent: 2997.00,
+          country: 'Canada'
         },
         {
           id: '3',
@@ -99,7 +108,10 @@ export default function UsersPage() {
           createdAt: new Date('2024-02-10'),
           lastLoginAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
           analysisCount: 3,
-          status: 'active'
+          status: 'active',
+          emailVerified: false,
+          totalSpent: 0,
+          country: 'United Kingdom'
         },
         {
           id: '4',
@@ -111,7 +123,10 @@ export default function UsersPage() {
           createdAt: new Date('2023-01-01'),
           lastLoginAt: new Date(Date.now() - 10 * 60 * 1000),
           analysisCount: 0,
-          status: 'active'
+          status: 'active',
+          emailVerified: true,
+          totalSpent: 0,
+          country: 'United States'
         },
         {
           id: '5',
@@ -123,7 +138,10 @@ export default function UsersPage() {
           createdAt: new Date('2023-12-01'),
           lastLoginAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
           analysisCount: 12,
-          status: 'inactive'
+          status: 'inactive',
+          emailVerified: true,
+          totalSpent: 0,
+          country: 'Australia'
         }
       ]
       setUsers(mockUsers)
@@ -208,74 +226,8 @@ export default function UsersPage() {
           <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
           <p className="text-gray-600">Manage user accounts and subscriptions</p>
         </div>
-        <div className="flex space-x-3">
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add User
-          </Button>
-        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Users className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Users</p>
-                <p className="text-2xl font-bold text-gray-900">{users.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Crown className="h-8 w-8 text-yellow-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Paid Users</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.subscriptionTier !== 'free').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <CheckCircle className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Users</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.status === 'active').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Mail className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Subscribers</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.emailSubscribed).length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Filters */}
       <Card>
@@ -360,62 +312,120 @@ export default function UsersPage() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {paginatedUsers.map((user) => (
-                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-blue-700">
-                        {user.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-medium text-gray-900">{user.name}</h3>
-                        {getRoleBadge(user.role)}
-                        {getPlanBadge(user.subscriptionTier)}
-                        {getStatusBadge(user.status)}
-                      </div>
-                      <p className="text-sm text-gray-600">{user.email}</p>
-                      <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
-                        <span>Joined {formatDate(user.createdAt)}</span>
-                        {user.lastLoginAt && (
-                          <span>Last login {getTimeAgo(user.lastLoginAt)}</span>
-                        )}
-                        <span>{user.analysisCount} analyses</span>
-                        {user.emailSubscribed && (
-                          <span className="flex items-center">
-                            <Mail className="h-3 w-3 mr-1" />
-                            Subscribed
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-y">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email Sub</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Verified</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Spent</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Analyses</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {paginatedUsers.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-medium text-blue-700">
+                                {user.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{user.email}</div>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          {getRoleBadge(user.role)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          {getPlanBadge(user.subscriptionTier)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          {getStatusBadge(user.status)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          {user.emailSubscribed ? (
+                            <Badge className="bg-green-100 text-green-800">
+                              <Mail className="h-3 w-3 mr-1" />
+                              Yes
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-gray-100 text-gray-800">No</Badge>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          {user.emailVerified ? (
+                            <Badge className="bg-green-100 text-green-800">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Verified
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            ${user.totalSpent.toFixed(2)}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{user.analysisCount}</div>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{user.country || 'Unknown'}</div>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{formatDate(user.createdAt)}</div>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {user.lastLoginAt ? getTimeAgo(user.lastLoginAt) : 'Never'}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-center space-x-2 mt-6">
+                <div className="flex items-center justify-center space-x-2 p-4 border-t">
                   <Button
                     variant="outline"
                     size="sm"
@@ -437,7 +447,7 @@ export default function UsersPage() {
                   </Button>
                 </div>
               )}
-            </div>
+            </>
           )}
         </CardContent>
       </Card>

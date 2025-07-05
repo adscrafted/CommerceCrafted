@@ -249,10 +249,10 @@ export default function BillingPage() {
               <h1 className="text-3xl font-bold text-gray-900">Billing & Subscription</h1>
               <p className="text-gray-600">Manage your subscription and billing information</p>
             </div>
-            <Link href="/dashboard">
+            <Link href="/">
               <Button variant="outline">
                 <ArrowRight className="h-4 w-4 mr-2" />
-                Back to Dashboard
+                Back to Home
               </Button>
             </Link>
           </div>

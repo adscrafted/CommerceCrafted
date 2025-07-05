@@ -1,29 +1,66 @@
 import { PrismaClient, UserRole, ProductStatus } from '../src/generated/prisma'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  // Create admin user
+  // Hash passwords for demo accounts
+  const passwordHash = await bcrypt.hash('password', 12)
+
+  // Create admin user with password
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@commercecrafted.com' },
-    update: {},
+    update: {
+      passwordHash: passwordHash,
+      isActive: true,
+      emailVerified: new Date()
+    },
     create: {
       email: 'admin@commercecrafted.com',
       name: 'Admin User',
       role: UserRole.ADMIN,
-      subscriptionTier: 'enterprise'
+      subscriptionTier: 'enterprise',
+      passwordHash: passwordHash,
+      isActive: true,
+      emailVerified: new Date()
+    }
+  })
+
+  // Create regular user for demo
+  const regularUser = await prisma.user.upsert({
+    where: { email: 'user@commercecrafted.com' },
+    update: {
+      passwordHash: passwordHash,
+      isActive: true,
+      emailVerified: new Date()
+    },
+    create: {
+      email: 'user@commercecrafted.com',
+      name: 'Demo User',
+      role: UserRole.USER,
+      subscriptionTier: 'free',
+      passwordHash: passwordHash,
+      isActive: true,
+      emailVerified: new Date()
     }
   })
 
   // Create sample analyst
   const analyst = await prisma.user.upsert({
     where: { email: 'analyst@commercecrafted.com' },
-    update: {},
+    update: {
+      passwordHash: passwordHash,
+      isActive: true,
+      emailVerified: new Date()
+    },
     create: {
       email: 'analyst@commercecrafted.com',
       name: 'Product Analyst',
       role: UserRole.ANALYST,
-      subscriptionTier: 'premium'
+      subscriptionTier: 'premium',
+      passwordHash: passwordHash,
+      isActive: true,
+      emailVerified: new Date()
     }
   })
 

@@ -2288,34 +2288,8 @@ export default function ProductPage({ params }: ProductPageProps) {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Financial Intelligence</h3>
                     <p className="text-gray-700 mb-4">
-                      Strong financial outlook with 35% profit margins achievable at optimal COGS levels. $52K monthly revenue potential 
-                      with 1,735 units suggests healthy market demand. Interactive COGS calculator reveals break-even at 45% cost ratio, 
-                      providing excellent margin buffer for premium positioning and marketing investment.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge className="bg-green-100 text-green-800">High Margins</Badge>
-                      <Badge className="bg-blue-100 text-blue-800">Strong ROI</Badge>
-                      <Badge className="bg-purple-100 text-purple-800">Scalable Model</Badge>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Financial Analysis Section */}
-          <div className="mb-12">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Financial Analysis</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              
-              {/* Primary Keywords */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-emerald-700">Primary Keywords</CardTitle>
-                  <CardDescription>Launch phase targets</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
+                      Strong financial outlook with 35% profit margins achievable at optimal COGS levels. $52K monthly revenue potential
+                      <div className="space-y-3">
                         <div className="p-3 bg-emerald-50 rounded-lg">
                           <div className="flex justify-between items-center mb-1">
                             <span className="font-medium text-sm">bluetooth sleep mask</span>
@@ -2890,6 +2864,999 @@ export default function ProductPage({ params }: ProductPageProps) {
           </section>
         )}
 
+        {/* Financial & Launch Strategy Section */}
+        {activeTab === 'financial' && (
+          <section className="py-16 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Financial & Launch Strategy</h2>
+            <p className="text-lg text-gray-600">Complete financial analysis and strategic launch roadmap</p>
+          </div>
+
+          {/* AI Brief */}
+          <div className="mb-12">
+            <Card className="bg-gradient-to-r from-green-50 to-teal-50 border-green-200">
+              <CardContent className="p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="p-3 bg-green-100 rounded-full">
+                    <Sparkles className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Financial Intelligence</h3>
+                    <p className="text-gray-700 mb-4">
+                      Strong financial outlook with 35% profit margins achievable at optimal COGS levels. $52K monthly revenue potential 
+                      with 1,735 units suggests healthy market demand. Interactive COGS calculator reveals break-even at 45% cost ratio, 
+                      providing excellent margin buffer for premium positioning and marketing investment.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge className="bg-green-100 text-green-800">High Margins</Badge>
+                      <Badge className="bg-blue-100 text-blue-800">Strong ROI</Badge>
+                      <Badge className="bg-purple-100 text-purple-800">Scalable Model</Badge>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mb-12">
+            <Card>
+              <CardHeader>
+                <CardTitle>Interactive COGS Calculator</CardTitle>
+                <CardDescription>Adjust your cost of goods sold to see profit projections</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cost of Goods Sold (COGS): {cogsPercentage}%
+                    </label>
+                    <input
+                      type="range"
+                      min="10"
+                      max="60"
+                      value={cogsPercentage}
+                      onChange={(e) => setCogsPercentage(Number(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-sm text-gray-500 mt-1">
+                      <span>10%</span>
+                      <span>60%</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <p className="text-sm font-medium text-gray-500">Selling Price</p>
+                      <p className="text-2xl font-bold text-gray-900">${dailyProductData.financialData.avgSellingPrice.toFixed(2)}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <p className="text-sm font-medium text-gray-500">COGS</p>
+                      <p className="text-2xl font-bold text-red-600">${financials.cogs}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <p className="text-sm font-medium text-gray-500">Amazon Fees</p>
+                      <p className="text-2xl font-bold text-orange-600">${dailyProductData.financialData.totalFees.toFixed(2)}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <p className="text-sm font-medium text-gray-500">PPC Cost</p>
+                      <p className="text-2xl font-bold text-blue-600">$3.20</p>
+                    </div>
+                    <div className="p-4 bg-green-50 rounded-lg border-2 border-green-200">
+                      <p className="text-sm font-medium text-green-600">Net Profit</p>
+                      <p className="text-2xl font-bold text-green-700">${financials.netProfit}</p>
+                    </div>
+                    <div className="p-4 bg-green-50 rounded-lg border-2 border-green-200">
+                      <p className="text-sm font-medium text-green-600">Profit Margin</p>
+                      <p className="text-2xl font-bold text-green-700">{financials.profitMargin}%</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sales and Profit Forecast */}
+          <div className="mb-12">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">12-Month Sales & Profit Forecast</h3>
+            <Card>
+              <CardContent className="p-6">
+                <div className="h-96 w-full">
+                  <svg viewBox="0 0 800 400" className="w-full h-full">
+                    {/* Grid lines */}
+                    <defs>
+                      <pattern id="forecastGrid" width="66.67" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 66.67 0 L 0 0 0 40" fill="none" stroke="#f3f4f6" strokeWidth="1"/>
+                      </pattern>
+                    </defs>
+                    <rect width="800" height="400" fill="url(#forecastGrid)" />
+                    
+                    {/* Axes */}
+                    <line x1="60" y1="350" x2="740" y2="350" stroke="#6b7280" strokeWidth="2" />
+                    <line x1="60" y1="50" x2="60" y2="350" stroke="#6b7280" strokeWidth="2" />
+                    
+                    {/* Revenue line */}
+                    <path d="M 60 320 L 126.67 310 L 193.33 300 L 260 280 L 326.67 250 L 393.33 220 L 460 190 L 526.67 170 L 593.33 150 L 660 130 L 726.67 110 L 740 100" 
+                          fill="none" stroke="#3b82f6" strokeWidth="3" />
+                    
+                    {/* Profit line */}
+                    <path d="M 60 335 L 126.67 330 L 193.33 325 L 260 315 L 326.67 300 L 393.33 285 L 460 270 L 526.67 260 L 593.33 250 L 660 240 L 726.67 230 L 740 225" 
+                          fill="none" stroke="#10b981" strokeWidth="3" />
+                    
+                    {/* Data points */}
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((month) => {
+                      const x = 60 + (month * 66.67);
+                      const revenueY = 320 - (month * 20);
+                      const profitY = 335 - (month * 10);
+                      return (
+                        <g key={month}>
+                          <circle cx={x} cy={revenueY} r="4" fill="#3b82f6" />
+                          <circle cx={x} cy={profitY} r="4" fill="#10b981" />
+                        </g>
+                      );
+                    })}
+                    
+                    {/* Month labels */}
+                    {['M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8', 'M9', 'M10', 'M11', 'M12'].map((label, i) => (
+                      <text key={i} x={60 + (i * 66.67)} y="370" textAnchor="middle" className="text-xs fill-gray-500">
+                        {label}
+                      </text>
+                    ))}
+                    
+                    {/* Y-axis labels */}
+                    <text x="45" y="355" textAnchor="end" className="text-xs fill-gray-500">$0</text>
+                    <text x="45" y="275" textAnchor="end" className="text-xs fill-gray-500">$50k</text>
+                    <text x="45" y="195" textAnchor="end" className="text-xs fill-gray-500">$100k</text>
+                    <text x="45" y="115" textAnchor="end" className="text-xs fill-gray-500">$150k</text>
+                    <text x="45" y="55" textAnchor="end" className="text-xs fill-gray-500">$200k</text>
+                    
+                    {/* Legend */}
+                    <g transform="translate(600, 60)">
+                      <rect x="0" y="0" width="120" height="60" fill="white" stroke="#e5e7eb" strokeWidth="1" rx="4" />
+                      <line x1="10" y1="20" x2="30" y2="20" stroke="#3b82f6" strokeWidth="3" />
+                      <text x="35" y="24" className="text-xs fill-gray-700">Revenue</text>
+                      <line x1="10" y1="40" x2="30" y2="40" stroke="#10b981" strokeWidth="3" />
+                      <text x="35" y="44" className="text-xs fill-gray-700">Profit</text>
+                    </g>
+                  </svg>
+                </div>
+                
+                {/* Forecast Summary */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <p className="text-sm font-medium text-blue-600">Year 1 Revenue</p>
+                    <p className="text-2xl font-bold text-blue-900">$1.2M</p>
+                    <p className="text-xs text-blue-700">Conservative estimate</p>
+                  </div>
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <p className="text-sm font-medium text-green-600">Year 1 Profit</p>
+                    <p className="text-2xl font-bold text-green-900">$420K</p>
+                    <p className="text-xs text-green-700">35% margin</p>
+                  </div>
+                  <div className="p-4 bg-purple-50 rounded-lg">
+                    <p className="text-sm font-medium text-purple-600">Break Even</p>
+                    <p className="text-2xl font-bold text-purple-900">Month 3</p>
+                    <p className="text-xs text-purple-700">Including launch costs</p>
+                  </div>
+                  <div className="p-4 bg-orange-50 rounded-lg">
+                    <p className="text-sm font-medium text-orange-600">ROI</p>
+                    <p className="text-2xl font-bold text-orange-900">240%</p>
+                    <p className="text-xs text-orange-700">First year return</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Cash Flow Forecast */}
+          <div className="mb-12">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">Cash Flow Forecast</h3>
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  {/* Initial Investment */}
+                  <div className="border-b pb-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">Initial Investment Requirements</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="p-3 bg-gray-50 rounded">
+                        <p className="text-sm text-gray-600">First Inventory Order</p>
+                        <p className="text-lg font-bold text-gray-900">$15,000</p>
+                        <p className="text-xs text-gray-500">500 units @ $30 COGS</p>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded">
+                        <p className="text-sm text-gray-600">Launch Marketing</p>
+                        <p className="text-lg font-bold text-gray-900">$5,000</p>
+                        <p className="text-xs text-gray-500">PPC & promotions</p>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded">
+                        <p className="text-sm text-gray-600">Branding & Setup</p>
+                        <p className="text-lg font-bold text-gray-900">$3,000</p>
+                        <p className="text-xs text-gray-500">Logo, packaging, photos</p>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded">
+                        <p className="text-sm text-gray-600">Buffer Capital</p>
+                        <p className="text-lg font-bold text-gray-900">$7,000</p>
+                        <p className="text-xs text-gray-500">Operating expenses</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-blue-900">Total Initial Investment</span>
+                        <span className="text-2xl font-bold text-blue-900">$30,000</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Monthly Cash Flow */}
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-3">Monthly Cash Flow Projection</h4>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-2 text-sm font-medium text-gray-700">Month</th>
+                            <th className="text-right py-2 text-sm font-medium text-gray-700">Revenue</th>
+                            <th className="text-right py-2 text-sm font-medium text-gray-700">COGS</th>
+                            <th className="text-right py-2 text-sm font-medium text-gray-700">Expenses</th>
+                            <th className="text-right py-2 text-sm font-medium text-gray-700">Net Cash</th>
+                            <th className="text-right py-2 text-sm font-medium text-gray-700">Cumulative</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b">
+                            <td className="py-2 text-sm">Month 1</td>
+                            <td className="text-right py-2 text-sm">$8,500</td>
+                            <td className="text-right py-2 text-sm text-red-600">-$2,300</td>
+                            <td className="text-right py-2 text-sm text-red-600">-$3,500</td>
+                            <td className="text-right py-2 text-sm font-semibold">$2,700</td>
+                            <td className="text-right py-2 text-sm font-semibold text-red-600">-$27,300</td>
+                          </tr>
+                          <tr className="border-b">
+                            <td className="py-2 text-sm">Month 2</td>
+                            <td className="text-right py-2 text-sm">$18,000</td>
+                            <td className="text-right py-2 text-sm text-red-600">-$4,900</td>
+                            <td className="text-right py-2 text-sm text-red-600">-$5,200</td>
+                            <td className="text-right py-2 text-sm font-semibold">$7,900</td>
+                            <td className="text-right py-2 text-sm font-semibold text-red-600">-$19,400</td>
+                          </tr>
+                          <tr className="border-b">
+                            <td className="py-2 text-sm">Month 3</td>
+                            <td className="text-right py-2 text-sm">$32,000</td>
+                            <td className="text-right py-2 text-sm text-red-600">-$8,700</td>
+                            <td className="text-right py-2 text-sm text-red-600">-$7,800</td>
+                            <td className="text-right py-2 text-sm font-semibold">$15,500</td>
+                            <td className="text-right py-2 text-sm font-semibold text-red-600">-$3,900</td>
+                          </tr>
+                          <tr className="border-b bg-green-50">
+                            <td className="py-2 text-sm font-semibold">Month 4</td>
+                            <td className="text-right py-2 text-sm">$48,000</td>
+                            <td className="text-right py-2 text-sm text-red-600">-$13,000</td>
+                            <td className="text-right py-2 text-sm text-red-600">-$10,500</td>
+                            <td className="text-right py-2 text-sm font-semibold">$24,500</td>
+                            <td className="text-right py-2 text-sm font-semibold text-green-600">$20,600</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-3">* Cash flow positive by Month 4</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Launch Estimates */}
+          <div className="mb-12">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">Launch Strategy & Estimates</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>PPC Launch Strategy</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Expected ACoS Timeline</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center p-3 bg-red-50 rounded">
+                          <span className="text-sm">Launch Phase (M1-2)</span>
+                          <span className="font-semibold text-red-700">60-80%</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-orange-50 rounded">
+                          <span className="text-sm">Growth Phase (M3-4)</span>
+                          <span className="font-semibold text-orange-700">40-50%</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-yellow-50 rounded">
+                          <span className="text-sm">Optimization (M5-6)</span>
+                          <span className="font-semibold text-yellow-700">25-35%</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-green-50 rounded">
+                          <span className="text-sm">Mature Phase (M7+)</span>
+                          <span className="font-semibold text-green-700">15-25%</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="border-t pt-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-600">Launch Budget</p>
+                          <p className="text-xl font-bold">$150/day</p>
+                          <p className="text-xs text-gray-500">First 30 days</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600">Target CPC</p>
+                          <p className="text-xl font-bold">$1.20-1.80</p>
+                          <p className="text-xs text-gray-500">Main keywords</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Launch Timeline</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-start">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-700 mr-3 flex-shrink-0">1</div>
+                      <div>
+                        <p className="font-medium text-gray-900">Week 1-2: Pre-Launch</p>
+                        <p className="text-sm text-gray-600">Product photos, listing optimization, review strategy</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-700 mr-3 flex-shrink-0">2</div>
+                      <div>
+                        <p className="font-medium text-gray-900">Week 3-4: Soft Launch</p>
+                        <p className="text-sm text-gray-600">Limited PPC, gather initial reviews, test pricing</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-700 mr-3 flex-shrink-0">3</div>
+                      <div>
+                        <p className="font-medium text-gray-900">Week 5-8: Scale Up</p>
+                        <p className="text-sm text-gray-600">Aggressive PPC, promotions, influencer outreach</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-700 mr-3 flex-shrink-0">4</div>
+                      <div>
+                        <p className="font-medium text-gray-900">Week 9+: Optimize</p>
+                        <p className="text-sm text-gray-600">Refine targeting, improve ACoS, expand variations</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 p-4 bg-purple-50 rounded-lg">
+                    <p className="text-sm font-semibold text-purple-900 mb-1">Launch Success Metrics</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>50+ reviews by Month 3</div>
+                      <div>Page 1 ranking for 3 keywords</div>
+                      <div>4.3+ star rating</div>
+                      <div>15%+ conversion rate</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+              {/* AI Launch Intelligence */}
+              <div className="mb-12">
+                <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+                  <CardContent className="p-6">
+                    <div className="flex items-start space-x-4">
+                      <div className="p-3 bg-emerald-100 rounded-full">
+                        <Sparkles className="h-6 w-6 text-emerald-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Launch Intelligence</h3>
+                        <p className="text-gray-700 mb-4">
+                          Launch success rate of 85% based on competitive analysis. Target "bluetooth sleep mask" cluster with 
+                          medium competition (68/100) for initial ranking. Your product's features align well with top performers. 
+                          Focus on differentiation through ultra-thin speakers and 10-hour battery life. Estimated 45-60 days to page 1 
+                          with aggressive PPC strategy.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge className="bg-emerald-100 text-emerald-800">High Success Rate</Badge>
+                          <Badge className="bg-blue-100 text-blue-800">Medium Competition</Badge>
+                          <Badge className="bg-purple-100 text-purple-800">45-60 Days to Page 1</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Keyword Group Optimization */}
+              <div className="mb-12">
+                <h3 className="text-2xl font-bold text-gray-900 mb-6">Target Keyword Groups</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Primary Keywords */}
+                  <Card className="border-2 border-emerald-200">
+                    <CardHeader>
+                      <CardTitle className="text-emerald-700">Primary Keywords</CardTitle>
+                      <CardDescription>Launch focus keywords</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="p-3 bg-emerald-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-sm">bluetooth sleep mask</span>
+                            <Badge variant="outline" className="text-xs">68/100</Badge>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            45K searches • $1.23 CPC • 12.5% CVR
+                          </div>
+                        </div>
+                        <div className="p-3 bg-emerald-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-sm">wireless sleep headphones</span>
+                            <Badge variant="outline" className="text-xs">62/100</Badge>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            28K searches • $1.05 CPC • 11.8% CVR
+                          </div>
+                        </div>
+                        <div className="p-3 bg-emerald-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-sm">sleep mask with speakers</span>
+                            <Badge variant="outline" className="text-xs">58/100</Badge>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            18K searches • $0.98 CPC • 12.2% CVR
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Secondary Keywords */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-blue-700">Secondary Keywords</CardTitle>
+                      <CardDescription>Expansion phase</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="p-3 bg-blue-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-sm">sleep headphones side sleeper</span>
+                            <Badge variant="outline" className="text-xs">48/100</Badge>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            12K searches • $0.95 CPC • 11.5% CVR
+                          </div>
+                        </div>
+                        <div className="p-3 bg-blue-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-sm">bluetooth headband sleep</span>
+                            <Badge variant="outline" className="text-xs">45/100</Badge>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            8K searches • $0.88 CPC • 10.8% CVR
+                          </div>
+                        </div>
+                        <div className="p-3 bg-blue-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-sm">comfortable sleep mask</span>
+                            <Badge variant="outline" className="text-xs">40/100</Badge>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            6K searches • $0.82 CPC • 10.2% CVR
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Long-tail Keywords */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-purple-700">Long-tail Keywords</CardTitle>
+                      <CardDescription>Quick wins</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="p-3 bg-purple-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-sm">ultra thin sleep mask bluetooth</span>
+                            <Badge variant="outline" className="text-xs">25/100</Badge>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            2K searches • $0.65 CPC • 13.5% CVR
+                          </div>
+                        </div>
+                        <div className="p-3 bg-purple-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-sm">10 hour battery sleep mask</span>
+                            <Badge variant="outline" className="text-xs">20/100</Badge>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            1.5K searches • $0.58 CPC • 14.2% CVR
+                          </div>
+                        </div>
+                        <div className="p-3 bg-purple-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-sm">washable bluetooth sleep mask</span>
+                            <Badge variant="outline" className="text-xs">18/100</Badge>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            1K searches • $0.52 CPC • 13.8% CVR
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Amazon Search Results Simulation */}
+              <div className="mb-12">
+                <h3 className="text-2xl font-bold text-gray-900 mb-6">Amazon Search Results Simulation</h3>
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                  {/* Amazon Header */}
+                  <div className="bg-[#131921] p-3">
+                    <div className="flex items-center gap-4">
+                      <div className="text-white font-bold text-xl">amazon</div>
+                      <div className="flex-1">
+                        <div className="flex">
+                          <select className="px-3 py-2 text-sm bg-gray-100 border-0 rounded-l">
+                            <option>All</option>
+                          </select>
+                          <input 
+                            type="text" 
+                            value="bluetooth sleep mask" 
+                            readOnly
+                            className="flex-1 px-3 py-2 text-sm border-0 bg-white"
+                          />
+                          <button className="bg-[#febd69] px-6 py-2 rounded-r">
+                            <Search className="h-5 w-5 text-gray-800" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="text-white text-sm">Returns & Orders</div>
+                      <div className="text-white flex items-center">
+                        <span className="text-xs">0</span>
+                        <div className="ml-1 text-2xl">🛒</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Category Navigation */}
+                  <div className="bg-gray-100 px-4 py-2 text-xs flex items-center gap-2 border-b">
+                    <span className="hover:text-orange-700 cursor-pointer">All</span>
+                    <span>›</span>
+                    <span className="hover:text-orange-700 cursor-pointer">Health & Personal Care</span>
+                    <span>›</span>
+                    <span className="hover:text-orange-700 cursor-pointer">Sleep & Snoring</span>
+                    <span>›</span>
+                    <span className="font-medium">Sleep Masks</span>
+                  </div>
+
+                  {/* Results count bar */}
+                  <div className="px-4 py-2 text-sm text-gray-700 border-b">
+                    1-48 of over 3,000 results for <span className="text-orange-700 font-medium">"bluetooth sleep mask"</span>
+                  </div>
+
+                  {/* Main content */}
+                  <div className="flex">
+                    {/* Sidebar */}
+                    <div className="w-56 p-4 bg-white">
+                      <div className="space-y-6">
+                        {/* Category */}
+                        <div>
+                          <h3 className="font-bold text-sm mb-3 text-gray-900">Health & Personal Care</h3>
+                          <ul className="space-y-1 text-sm">
+                            <li className="hover:text-orange-700 cursor-pointer pl-3">Sleep & Snoring</li>
+                            <li className="hover:text-orange-700 cursor-pointer pl-6 text-orange-700 font-medium">Sleep Masks</li>
+                            <li className="hover:text-orange-700 cursor-pointer pl-3">Personal Care</li>
+                            <li className="hover:text-orange-700 cursor-pointer pl-3">Medical Supplies</li>
+                          </ul>
+                        </div>
+
+                        <div>
+                          <h4 className="font-bold text-sm mb-2">Customer Reviews</h4>
+                          <div className="space-y-1">
+                            <div className="flex items-center text-sm hover:text-orange-700 cursor-pointer">
+                              <div className="flex text-orange-400">
+                                {'★★★★☆'.split('').map((star, i) => (
+                                  <span key={i}>{star}</span>
+                                ))}
+                              </div>
+                              <span className="ml-1 text-xs">& Up</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-bold text-sm mb-2">Price</h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="hover:text-orange-700 cursor-pointer">Under $25</div>
+                            <div className="hover:text-orange-700 cursor-pointer">$25 to $50</div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="font-bold text-sm mb-2">Brands</h4>
+                          <div className="space-y-1 text-sm">
+                            <label className="flex items-center cursor-pointer hover:text-orange-700">
+                              <input type="checkbox" className="mr-2" />
+                              <span>MUSICOZY</span>
+                            </label>
+                            <label className="flex items-center cursor-pointer hover:text-orange-700">
+                              <input type="checkbox" className="mr-2" />
+                              <span>LC-dolida</span>
+                            </label>
+                            <label className="flex items-center cursor-pointer hover:text-orange-700">
+                              <input type="checkbox" className="mr-2" />
+                              <span>CozyPhones</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Products Grid */}
+                    <div className="flex-1 p-4 bg-gray-50">
+                      <div>
+                        {/* Sort Bar */}
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-sm text-gray-600">Sort by: <select className="border rounded px-2 py-1"><option>Featured</option></select></span>
+                        </div>
+
+                        {/* Products Grid - 5 per row */}
+                        <div className="grid grid-cols-5 gap-4">
+                          {[
+                            { position: 1, name: "MUSICOZY Sleep Headphones Bluetooth Sports Headband, Wireless Music Sleeping Headphones", rating: 4.4, reviews: 28453, price: 25.99, oldPrice: 39.99, prime: true, sponsored: false, coupon: "Save $5.00 with coupon" },
+                            { position: 2, name: "LC-dolida Sleep Mask with Bluetooth Headphones, 3D Eye Mask for Sleeping", rating: 4.3, reviews: 15234, price: 22.99, oldPrice: 32.99, prime: true, sponsored: false },
+                            { position: 3, name: "CozyPhones Sleep Headphones & Travel Bag, Ultra Thin Speakers", rating: 4.0, reviews: 8934, price: 19.95, prime: true, sponsored: false },
+                            { position: 4, name: "Smart Bluetooth Sleep Mask with Built-in Ultra Thin HD Speakers - 10 Hour Battery", rating: 4.5, reviews: 50, price: 29.99, oldPrice: 49.99, prime: true, sponsored: false, isYours: true },
+                            { position: 5, name: "Perytong Sleep Headphones Wireless, Bluetooth Sports Headband", rating: 4.2, reviews: 6234, price: 24.99, prime: true, sponsored: false },
+                            
+                            { position: 6, name: "Lightimetunnel Sleep Mask Bluetooth Headphones for Side Sleepers", rating: 4.1, reviews: 4532, price: 27.99, oldPrice: 35.99, prime: true, sponsored: false },
+                            { position: 7, name: "TOPOINT Bluetooth Sleep Mask, Wireless Music Eye Mask", rating: 4.0, reviews: 3421, price: 21.99, prime: true, sponsored: false },
+                            { position: 8, name: "Joseche Wireless Bluetooth Sleeping Mask Headphones", rating: 3.9, reviews: 2156, price: 18.99, prime: true, sponsored: false },
+                            { position: 9, name: "WINONLY Sleep Headphones Bluetooth Headband", rating: 4.2, reviews: 5678, price: 23.99, prime: true, sponsored: false },
+                            { position: 10, name: "Lavince Sleep Headphones Bluetooth Sports Headband", rating: 4.1, reviews: 4321, price: 26.99, prime: true, sponsored: false }
+                          ].map((product) => (
+                            <div 
+                              key={product.position} 
+                              className={`bg-white p-4 ${
+                                product.isYours 
+                                  ? 'ring-2 ring-emerald-500 relative shadow-lg' 
+                                  : ''
+                              }`}
+                            >
+                              {product.isYours && (
+                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-emerald-600 text-white text-xs px-3 py-1 rounded-full z-10">
+                                  Your Product
+                                </div>
+                              )}
+                              
+                              {/* Product Image */}
+                              <div className="w-full h-48 bg-gray-100 mb-3 flex items-center justify-center">
+                                {product.isYours ? (
+                                  <div className="text-center">
+                                    <Crown className="h-16 w-16 text-emerald-600 mx-auto mb-2" />
+                                    <span className="text-xs text-gray-600">Your Product</span>
+                                  </div>
+                                ) : (
+                                  <div className="w-full h-full bg-gray-200"></div>
+                                )}
+                              </div>
+                              
+                              <h3 className="text-sm text-[#0066c0] hover:text-orange-700 hover:underline cursor-pointer font-normal line-clamp-3 mb-2">
+                                {product.name}
+                              </h3>
+                              
+                              {/* Rating */}
+                              <div className="flex items-center mb-1">
+                                <div className="flex text-orange-400 text-xs">
+                                  {[...Array(5)].map((_, i) => (
+                                    <span key={i}>{i < Math.floor(product.rating) ? '★' : '☆'}</span>
+                                  ))}
+                                </div>
+                                <span className="text-[#0066c0] text-xs ml-1 hover:text-orange-700 hover:underline cursor-pointer">
+                                  {product.reviews.toLocaleString()}
+                                </span>
+                              </div>
+
+                              {/* Price */}
+                              <div className="mb-1">
+                                <span className="text-xl font-normal">${product.price}</span>
+                                {product.oldPrice && (
+                                  <span className="text-xs text-gray-500 line-through ml-1">
+                                    ${product.oldPrice}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Coupon */}
+                              {product.coupon && (
+                                <div className="text-xs text-green-700 mb-1">{product.coupon}</div>
+                              )}
+
+                              {/* Prime */}
+                              {product.prime && (
+                                <div className="mb-2">
+                                  <span className="text-[#0066c0] font-bold text-xs">prime</span>
+                                  <span className="text-xs text-gray-700 ml-1">
+                                    FREE delivery
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Add to Cart Button */}
+                              <button className="w-full bg-[#FFD814] hover:bg-[#F7CA00] border border-[#FCD200] rounded-lg py-1 text-xs mt-2">
+                                Add to Cart
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom Success Metrics */}
+                  <div className="bg-gray-50 p-6 border-t">
+                    <h4 className="font-semibold text-gray-900 mb-4">Launch Positioning Analysis</h4>
+                    
+                    {/* Review Analysis */}
+                    <div className="mb-6">
+                      <h5 className="font-semibold text-gray-800 mb-3">Review Benchmarks</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-center">
+                              <div className="text-3xl font-bold text-blue-600">15,234</div>
+                              <p className="text-sm text-gray-600 mt-1">Median Reviews (Top 5)</p>
+                              <div className="mt-3 p-3 bg-blue-50 rounded">
+                                <p className="text-xs text-blue-800">Time to Match: ~18 months</p>
+                                <p className="text-xs text-blue-700 mt-1">761,700 sales needed (2% review rate)</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-center">
+                              <div className="text-3xl font-bold text-purple-600">4.2</div>
+                              <p className="text-sm text-gray-600 mt-1">Minimum Rating Required</p>
+                              <div className="mt-3 p-3 bg-purple-50 rounded">
+                                <p className="text-xs text-purple-800">Must maintain 4.2+ stars</p>
+                                <p className="text-xs text-purple-700 mt-1">Quality control critical</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-center">
+                              <div className="text-3xl font-bold text-green-600">50-100</div>
+                              <p className="text-sm text-gray-600 mt-1">Initial Review Target</p>
+                              <div className="mt-3 p-3 bg-green-50 rounded">
+                                <p className="text-xs text-green-800">2,500-5,000 sales</p>
+                                <p className="text-xs text-green-700 mt-1">Achievable in 60-90 days</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                    
+                    {/* Pricing Strategy */}
+                    <div className="mb-6">
+                      <h5 className="font-semibold text-gray-800 mb-3">Dynamic Pricing Strategy</h5>
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="space-y-4">
+                            {/* Price Timeline */}
+                            <div className="grid grid-cols-4 gap-4">
+                              <div className="text-center p-3 bg-red-50 rounded-lg">
+                                <p className="text-sm font-semibold text-red-700">Launch Price</p>
+                                <p className="text-2xl font-bold text-red-800">$19.99</p>
+                                <p className="text-xs text-red-600">0-50 reviews</p>
+                                <p className="text-xs text-gray-600 mt-1">35% below competitors</p>
+                              </div>
+                              <div className="text-center p-3 bg-orange-50 rounded-lg">
+                                <p className="text-sm font-semibold text-orange-700">Growth Price</p>
+                                <p className="text-2xl font-bold text-orange-800">$24.99</p>
+                                <p className="text-xs text-orange-600">50-200 reviews</p>
+                                <p className="text-xs text-gray-600 mt-1">15% below competitors</p>
+                              </div>
+                              <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                                <p className="text-sm font-semibold text-yellow-700">Mature Price</p>
+                                <p className="text-2xl font-bold text-yellow-800">$27.99</p>
+                                <p className="text-xs text-yellow-600">200-500 reviews</p>
+                                <p className="text-xs text-gray-600 mt-1">5% below competitors</p>
+                              </div>
+                              <div className="text-center p-3 bg-green-50 rounded-lg">
+                                <p className="text-sm font-semibold text-green-700">Target Price</p>
+                                <p className="text-2xl font-bold text-green-800">$29.99</p>
+                                <p className="text-xs text-green-600">500+ reviews</p>
+                                <p className="text-xs text-gray-600 mt-1">Premium positioning</p>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                              <p className="text-sm text-blue-800">
+                                <strong>Strategy:</strong> Start 35% below competitor average ($30.99) to compensate for low social proof. 
+                                Gradually increase price as reviews accumulate. Each 50 reviews earned allows ~$2-3 price increase while maintaining conversion rates.
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    {/* Sales Forecast with COGS Calculator */}
+                    <div>
+                      <h5 className="font-semibold text-gray-800 mb-3">Launch Sales & Profit Forecast</h5>
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Adjust COGS to see profit projections: {cogsPercentage}%
+                            </label>
+                            <input
+                              type="range"
+                              min="20"
+                              max="50"
+                              value={cogsPercentage}
+                              onChange={(e) => setCogsPercentage(Number(e.target.value))}
+                              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <div className="flex justify-between text-sm text-gray-500 mt-1">
+                              <span>20% (High Margin)</span>
+                              <span>35% (Average)</span>
+                              <span>50% (Low Margin)</span>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-4 gap-4">
+                            <div className="text-center p-3 bg-gray-50 rounded">
+                              <p className="text-xs text-gray-600">Month 1-2</p>
+                              <p className="text-sm font-semibold">Launch Phase</p>
+                              <p className="text-xs text-gray-600 mt-1">Price: $19.99</p>
+                              <p className="text-xs">50 sales/day</p>
+                              <p className="text-sm font-bold text-green-600 mt-1">
+                                ${((19.99 - (19.99 * cogsPercentage / 100) - 8.50) * 50 * 30).toFixed(0)}/mo profit
+                              </p>
+                            </div>
+                            <div className="text-center p-3 bg-gray-50 rounded">
+                              <p className="text-xs text-gray-600">Month 3-4</p>
+                              <p className="text-sm font-semibold">Growth Phase</p>
+                              <p className="text-xs text-gray-600 mt-1">Price: $24.99</p>
+                              <p className="text-xs">75 sales/day</p>
+                              <p className="text-sm font-bold text-green-600 mt-1">
+                                ${((24.99 - (24.99 * cogsPercentage / 100) - 8.50) * 75 * 30).toFixed(0)}/mo profit
+                              </p>
+                            </div>
+                            <div className="text-center p-3 bg-gray-50 rounded">
+                              <p className="text-xs text-gray-600">Month 5-6</p>
+                              <p className="text-sm font-semibold">Scale Phase</p>
+                              <p className="text-xs text-gray-600 mt-1">Price: $27.99</p>
+                              <p className="text-xs">100 sales/day</p>
+                              <p className="text-sm font-bold text-green-600 mt-1">
+                                ${((27.99 - (27.99 * cogsPercentage / 100) - 8.50) * 100 * 30).toFixed(0)}/mo profit
+                              </p>
+                            </div>
+                            <div className="text-center p-3 bg-gray-50 rounded">
+                              <p className="text-xs text-gray-600">Month 7+</p>
+                              <p className="text-sm font-semibold">Mature Phase</p>
+                              <p className="text-xs text-gray-600 mt-1">Price: $29.99</p>
+                              <p className="text-xs">120 sales/day</p>
+                              <p className="text-sm font-bold text-green-600 mt-1">
+                                ${((29.99 - (29.99 * cogsPercentage / 100) - 8.50) * 120 * 30).toFixed(0)}/mo profit
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4 grid grid-cols-3 gap-4">
+                            <div className="p-3 bg-blue-50 rounded text-center">
+                              <p className="text-sm font-semibold text-blue-700">Year 1 Revenue</p>
+                              <p className="text-xl font-bold text-blue-900">$1.8M</p>
+                            </div>
+                            <div className="p-3 bg-green-50 rounded text-center">
+                              <p className="text-sm font-semibold text-green-700">Year 1 Profit</p>
+                              <p className="text-xl font-bold text-green-900">
+                                ${(1800000 * (1 - cogsPercentage / 100 - 0.35)).toFixed(0)}
+                              </p>
+                            </div>
+                            <div className="p-3 bg-purple-50 rounded text-center">
+                              <p className="text-sm font-semibold text-purple-700">ROI</p>
+                              <p className="text-xl font-bold text-purple-900">
+                                {((1800000 * (1 - cogsPercentage / 100 - 0.35) / 30000 * 100)).toFixed(0)}%
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Launch Timeline & Milestones */}
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-6">Launch Roadmap</h3>
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="space-y-6">
+                      {/* Week 1-2 */}
+                      <div className="flex items-start">
+                        <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-bold text-emerald-700">W1-2</span>
+                        </div>
+                        <div className="ml-4 flex-1">
+                          <h4 className="font-semibold text-gray-900">Pre-Launch Preparation</h4>
+                          <p className="text-sm text-gray-600 mt-1">Optimize listing for primary keywords, set up auto campaigns, prepare inventory</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Badge variant="outline" className="text-xs">50 units/day capacity</Badge>
+                            <Badge variant="outline" className="text-xs">$150/day PPC budget</Badge>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Week 3-4 */}
+                      <div className="flex items-start">
+                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-bold text-blue-700">W3-4</span>
+                        </div>
+                        <div className="ml-4 flex-1">
+                          <h4 className="font-semibold text-gray-900">Soft Launch Phase</h4>
+                          <p className="text-sm text-gray-600 mt-1">Target long-tail keywords, gather initial reviews, monitor ACoS</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Badge variant="outline" className="text-xs">Target: 10-15 reviews</Badge>
+                            <Badge variant="outline" className="text-xs">60-80% ACoS expected</Badge>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Week 5-8 */}
+                      <div className="flex items-start">
+                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-bold text-purple-700">W5-8</span>
+                        </div>
+                        <div className="ml-4 flex-1">
+                          <h4 className="font-semibold text-gray-900">Scale & Optimize</h4>
+                          <p className="text-sm text-gray-600 mt-1">Expand to primary keywords, increase daily budget, optimize bids</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Badge variant="outline" className="text-xs">Target: 50+ reviews</Badge>
+                            <Badge variant="outline" className="text-xs">Page 1 for 3 keywords</Badge>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Week 9+ */}
+                      <div className="flex items-start">
+                        <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-bold text-orange-700">W9+</span>
+                        </div>
+                        <div className="ml-4 flex-1">
+                          <h4 className="font-semibold text-gray-900">Growth & Expansion</h4>
+                          <p className="text-sm text-gray-600 mt-1">Launch variations, optimize for profitability, build brand presence</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Badge variant="outline" className="text-xs">25-35% target ACoS</Badge>
+                            <Badge variant="outline" className="text-xs">100+ reviews</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+            </div>
+          </section>
+        )}
       </div>
 
       {/* Scroll to Top Button */}

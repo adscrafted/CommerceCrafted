@@ -1,304 +1,776 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  Users,
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
-  Activity,
-  DollarSign,
-  Mail,
-  Database,
+  Plus,
   RefreshCw,
+  Calendar,
+  Globe,
+  TrendingUp,
+  DollarSign,
+  Package,
   CheckCircle,
-  UserPlus,
-  MessageSquare
+  Clock,
+  AlertCircle,
+  Search,
+  Trash2,
+  Edit,
+  Eye,
+  BarChart3,
+  ExternalLink,
+  MessageSquare,
+  Users,
+  Activity,
+  X,
+  Save,
+  RotateCcw
 } from 'lucide-react'
 
-export default function AdminDashboard() {
-  const [refreshing, setRefreshing] = useState(false)
-  const [currentTime, setCurrentTime] = useState(new Date())
+interface NicheQueueItem {
+  id: string
+  nicheName: string
+  asins: string[]
+  status: 'pending' | 'analyzing' | 'completed' | 'scheduled'
+  addedDate: string
+  scheduledDate: string
+  category: string
+  totalProducts: number
+  avgBsr: number
+  avgPrice: number
+  avgRating: number
+  totalReviews: number
+  totalMonthlyRevenue: number
+  opportunityScore?: number
+  competitionLevel: string
+  processTime?: string
+  analystAssigned?: string
+  nicheKeywords: string[]
+  marketSize: number
+  // Extended data for editing
+  aiAnalysis?: {
+    whyThisProduct?: string
+    keyHighlights?: string[]
+    demandAnalysis?: string
+    competitionAnalysis?: string
+    keywordAnalysis?: string
+    financialAnalysis?: string
+    listingOptimization?: {
+      title?: string
+      bulletPoints?: string[]
+      description?: string
+    }
+  }
+}
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000)
-    return () => clearInterval(timer)
-  }, [])
+export default function AdminNicheQueue() {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [newNicheName, setNewNicheName] = useState('')
+  const [newAsins, setNewAsins] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
+  const [selectedDate, setSelectedDate] = useState('')
+  const [editingNiche, setEditingNiche] = useState<NicheQueueItem | null>(null)
+  const [editFormData, setEditFormData] = useState<Partial<NicheQueueItem>>({})
+  const [showEditModal, setShowEditModal] = useState(false)
+
+  // Mock niche queue data
+  const [nicheQueue, setNicheQueue] = useState<NicheQueueItem[]>([
+    {
+      id: '1',
+      nicheName: 'Bluetooth Sleep Masks',
+      asins: ['B08MVBRNKV', 'B07SHBQY7Z', 'B07KC5DWCC', 'B08GC7ML5B', 'B08R6QZ2XJ'],
+      status: 'completed',
+      addedDate: '2025-07-03',
+      scheduledDate: '2025-07-04',
+      category: 'Health & Personal Care',
+      totalProducts: 5,
+      avgBsr: 2341,
+      avgPrice: 29.99,
+      avgRating: 4.3,
+      totalReviews: 35678,
+      totalMonthlyRevenue: 520000,
+      opportunityScore: 87,
+      competitionLevel: 'Medium',
+      processTime: '2h 15min',
+      analystAssigned: 'AI Agent',
+      nicheKeywords: ['bluetooth sleep mask', 'sleep headphones', 'wireless sleep mask'],
+      marketSize: 15000000,
+      aiAnalysis: {
+        whyThisProduct: 'The Bluetooth Sleep Mask niche represents an exceptional opportunity due to the convergence of three growing trends: the $15B sleep wellness market, the $50B wearable technology sector, and the increasing demand for multi-functional products. This niche addresses a clear pain point for millions of people who struggle with sleep quality while wanting to maintain connectivity to audio content.',
+        keyHighlights: [
+          'Growing sleep wellness market valued at $15B with 8% annual growth',
+          'Convergence of audio technology and sleep aid markets',
+          'High customer satisfaction rates (4.3+ average rating)',
+          'Multiple use cases: travel, meditation, shift work, insomnia',
+          'Premium pricing tolerance in health & wellness category'
+        ],
+        demandAnalysis: 'Strong and growing demand driven by increased awareness of sleep health, remote work trends, and travel recovery. Search volume shows consistent 15% YoY growth with peak seasonality during Q4 (holiday travel) and Q1 (wellness resolutions).',
+        competitionAnalysis: 'Moderate competition with 127 active competitors, but significant differentiation opportunities exist. Top 5 players control only 60% market share, leaving room for innovation in areas like battery life, comfort materials, and smart features.',
+        keywordAnalysis: 'Primary keyword "bluetooth sleep mask" has 45K monthly searches with moderate competition. Long-tail opportunities in "sleep headphones for side sleepers" and "travel sleep mask bluetooth" show strong conversion potential.',
+        financialAnalysis: 'Strong unit economics with average selling prices of $29.99 and healthy 45-55% gross margins. Customer lifetime value estimated at $85 with repeat purchase rates of 23% within 12 months.',
+        listingOptimization: {
+          title: 'Bluetooth Sleep Mask with Ultra-Thin Speakers - Wireless Sleep Headphones for Side Sleepers, 3D Contoured Eye Mask for Sleeping, Travel, Meditation',
+          bulletPoints: [
+            'ULTRA-THIN SPEAKERS FOR SIDE SLEEPERS: Revolutionary 0.25-inch speakers provide crystal-clear audio without pressure points',
+            '100% BLACKOUT & 3D CONTOURED DESIGN: Advanced ergonomic shape blocks all light while allowing natural eye movement',
+            'PREMIUM BLUETOOTH 5.2 TECHNOLOGY: 10-hour battery life with stable 45-foot range connection',
+            'ADJUSTABLE & WASHABLE: One-size-fits-all design with removable speakers for easy machine washing',
+            'PERFECT FOR: Side sleepers, travelers, meditation, shift workers, and anyone seeking better sleep quality'
+          ],
+          description: 'Transform your sleep experience with our revolutionary Bluetooth Sleep Mask that combines the best of sleep science and audio technology...'
+        }
+      }
+    },
+    {
+      id: '2',
+      nicheName: 'Laptop Cooling Stands',
+      asins: ['B09XYZABC1', 'B08N5WL7ZD', 'B07PJV3JPR', 'B08NWDMTVD'],
+      status: 'analyzing',
+      addedDate: '2025-07-04',
+      scheduledDate: '2025-07-05',
+      category: 'Office Products',
+      totalProducts: 4,
+      avgBsr: 892,
+      avgPrice: 45.99,
+      avgRating: 4.5,
+      totalReviews: 22456,
+      totalMonthlyRevenue: 890000,
+      opportunityScore: 0,
+      competitionLevel: 'High',
+      processTime: '0',
+      analystAssigned: 'AI Agent',
+      nicheKeywords: ['laptop stand', 'laptop cooling', 'ergonomic laptop stand'],
+      marketSize: 28000000
+    },
+    {
+      id: '3',
+      nicheName: 'Waterproof Fitness Trackers',
+      asins: ['B07QRST123', 'B08P5T6VJD', 'B09HGZ3YWB', 'B08VDR5TZH', 'B09BVLXFZB'],
+      status: 'scheduled',
+      addedDate: '2025-07-04',
+      scheduledDate: '2025-07-06',
+      category: 'Sports & Outdoors',
+      totalProducts: 5,
+      avgBsr: 5432,
+      avgPrice: 39.99,
+      avgRating: 4.1,
+      totalReviews: 18900,
+      totalMonthlyRevenue: 350000,
+      opportunityScore: 0,
+      competitionLevel: 'Low',
+      processTime: '0',
+      analystAssigned: 'AI Agent',
+      nicheKeywords: ['fitness tracker', 'waterproof watch', 'heart rate monitor'],
+      marketSize: 45000000
+    },
+    {
+      id: '4',
+      nicheName: 'Smart Security Cameras',
+      asins: ['B08DEFG456', 'B086DKVGCW', 'B08R59YH7W', 'B07X6C9RMF'],
+      status: 'pending',
+      addedDate: '2025-07-02',
+      scheduledDate: '2025-07-07',
+      category: 'Electronics',
+      totalProducts: 4,
+      avgBsr: 1567,
+      avgPrice: 129.99,
+      avgRating: 4.4,
+      totalReviews: 42000,
+      totalMonthlyRevenue: 2800000,
+      opportunityScore: 0,
+      competitionLevel: 'Very High',
+      processTime: '0',
+      analystAssigned: 'AI Agent',
+      nicheKeywords: ['security camera', 'smart home security', 'wireless camera'],
+      marketSize: 120000000
+    }
+  ])
+
+  const handleAddNiche = () => {
+    if (!newNicheName || !newAsins || !selectedDate) return
+
+    const asinList = newAsins.split(',').map(asin => asin.trim()).filter(asin => asin.length > 0)
+    if (asinList.length === 0) return
+
+    const newNiche: NicheQueueItem = {
+      id: Date.now().toString(),
+      nicheName: newNicheName,
+      asins: asinList,
+      status: 'pending',
+      addedDate: new Date().toISOString().split('T')[0],
+      scheduledDate: selectedDate,
+      category: 'Pending',
+      totalProducts: asinList.length,
+      avgBsr: 0,
+      avgPrice: 0,
+      avgRating: 0,
+      totalReviews: 0,
+      totalMonthlyRevenue: 0,
+      competitionLevel: 'Unknown',
+      analystAssigned: 'AI Agent',
+      nicheKeywords: [],
+      marketSize: 0
+    }
+
+    setNicheQueue([...nicheQueue, newNiche])
+    setNewNicheName('')
+    setNewAsins('')
+    setSelectedDate('')
+  }
 
   const handleRefresh = async () => {
     setRefreshing(true)
-    // Simulate refresh
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Simulate API refresh
+    await new Promise(resolve => setTimeout(resolve, 2000))
     setRefreshing(false)
   }
 
-  const stats = [
-    {
-      title: 'Total Users',
-      value: '1,247',
-      change: '+12%',
-      trend: 'up',
-      icon: Users,
-      color: 'text-blue-600'
-    },
-    {
-      title: 'Monthly Revenue',
-      value: '$23,459',
-      change: '+8.2%',
-      trend: 'up',
-      icon: DollarSign,
-      color: 'text-green-600'
-    },
-    {
-      title: 'Product Analyses',
-      value: '8,394',
-      change: '+15.3%',
-      trend: 'up',
-      icon: BarChart3,
-      color: 'text-purple-600'
-    },
-    {
-      title: 'Active Sessions',
-      value: '156',
-      change: '-2.1%',
-      trend: 'down',
-      icon: Activity,
-      color: 'text-orange-600'
+  const handleDelete = (id: string) => {
+    setNicheQueue(nicheQueue.filter(item => item.id !== id))
+  }
+
+  const handleAnalyzeNow = (id: string) => {
+    setNicheQueue(nicheQueue.map(item => 
+      item.id === id ? { ...item, status: 'analyzing' } : item
+    ))
+  }
+
+  const handleEditNiche = (niche: NicheQueueItem) => {
+    setEditingNiche(niche)
+    setEditFormData({ ...niche })
+    setShowEditModal(true)
+  }
+
+  const handleSaveEdit = () => {
+    if (!editingNiche || !editFormData) return
+
+    setNicheQueue(nicheQueue.map(item => 
+      item.id === editingNiche.id ? { ...item, ...editFormData } : item
+    ))
+    setShowEditModal(false)
+    setEditingNiche(null)
+    setEditFormData({})
+  }
+
+  const handleReprocessNiche = (id: string) => {
+    setNicheQueue(nicheQueue.map(item => 
+      item.id === id ? { ...item, status: 'analyzing', processTime: undefined } : item
+    ))
+  }
+
+  const updateEditField = (field: string, value: any) => {
+    setEditFormData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const updateAIAnalysisField = (field: string, value: any) => {
+    setEditFormData(prev => ({
+      ...prev,
+      aiAnalysis: {
+        ...prev.aiAnalysis,
+        [field]: value
+      }
+    }))
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800'
+      case 'analyzing': return 'bg-blue-100 text-blue-800'
+      case 'pending': return 'bg-yellow-100 text-yellow-800'
+      case 'scheduled': return 'bg-purple-100 text-purple-800'
+      default: return 'bg-gray-100 text-gray-800'
     }
-  ]
+  }
 
-  const recentActivity = [
-    { action: 'New user registration', user: 'john.doe@email.com', time: '2 minutes ago', type: 'user' },
-    { action: 'Pro plan upgrade', user: 'sarah.johnson@email.com', time: '15 minutes ago', type: 'payment' },
-    { action: 'Product analysis completed', user: 'mike.wilson@email.com', time: '23 minutes ago', type: 'analysis' },
-    { action: 'Newsletter campaign sent', user: 'System', time: '1 hour ago', type: 'email' },
-    { action: 'Database backup completed', user: 'System', time: '2 hours ago', type: 'system' }
-  ]
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed': return <CheckCircle className="h-4 w-4" />
+      case 'analyzing': return <RefreshCw className="h-4 w-4 animate-spin" />
+      case 'pending': return <Clock className="h-4 w-4" />
+      case 'failed': return <AlertCircle className="h-4 w-4" />
+      default: return null
+    }
+  }
 
-  const systemHealth = [
-    { component: 'API Server', status: 'healthy', uptime: '99.9%', responseTime: '145ms' },
-    { component: 'Database', status: 'healthy', uptime: '99.8%', responseTime: '23ms' },
-    { component: 'External APIs', status: 'warning', uptime: '98.2%', responseTime: '892ms' },
-    { component: 'Email Service', status: 'healthy', uptime: '99.7%', responseTime: '234ms' }
-  ]
+  const filteredQueue = nicheQueue.filter(item =>
+    item.nicheName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.asins.some(asin => asin.toLowerCase().includes(searchTerm.toLowerCase()))
+  )
 
-  const topUsers = [
-    { name: 'Enterprise Corp', plan: 'Enterprise', analyses: 1247, revenue: '$2,499' },
-    { name: 'StartupXYZ', plan: 'Pro', analyses: 892, revenue: '$299' },
-    { name: 'Amazon Seller Pro', plan: 'Pro', analyses: 567, revenue: '$299' },
-    { name: 'FBA Success Co', plan: 'Pro', analyses: 434, revenue: '$299' },
-    { name: 'Product Hunter', plan: 'Free', analyses: 5, revenue: '$0' }
-  ]
+  // Stats
+  const stats = {
+    total: nicheQueue.length,
+    completed: nicheQueue.filter(p => p.status === 'completed').length,
+    analyzing: nicheQueue.filter(p => p.status === 'analyzing').length,
+    pending: nicheQueue.filter(p => p.status === 'pending').length,
+    scheduled: nicheQueue.filter(p => p.status === 'scheduled').length
+  }
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Niche Queue Management</h1>
           <p className="text-gray-600">
-            Last updated: {currentTime.toLocaleTimeString()}
+            Manage and schedule product niches for deep research analysis
           </p>
         </div>
-        <Button onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className={`p-2 rounded-lg bg-gray-100`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                </div>
-                <div className="ml-4 flex-1">
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <div className="flex items-center">
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <div className={`ml-2 flex items-center text-sm ${
-                      stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {stat.trend === 'up' ? (
-                        <TrendingUp className="h-4 w-4 mr-1" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4 mr-1" />
-                      )}
-                      {stat.change}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Activity className="h-5 w-5 mr-2" />
-              Recent Activity
-            </CardTitle>
-            <CardDescription>Latest user and system activities</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <div className={`w-2 h-2 rounded-full ${
-                    activity.type === 'user' ? 'bg-blue-500' :
-                    activity.type === 'payment' ? 'bg-green-500' :
-                    activity.type === 'analysis' ? 'bg-purple-500' :
-                    activity.type === 'email' ? 'bg-orange-500' :
-                    'bg-gray-500'
-                  }`}></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                    <p className="text-xs text-gray-600">{activity.user}</p>
-                  </div>
-                  <div className="text-xs text-gray-500">{activity.time}</div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* System Health */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
-              System Health
-            </CardTitle>
-            <CardDescription>Real-time system component status</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {systemHealth.map((component, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      component.status === 'healthy' ? 'bg-green-500' :
-                      component.status === 'warning' ? 'bg-yellow-500' :
-                      'bg-red-500'
-                    }`}></div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{component.component}</p>
-                      <p className="text-xs text-gray-600">
-                        {component.uptime} uptime • {component.responseTime} avg
-                      </p>
-                    </div>
-                  </div>
-                  <Badge className={
-                    component.status === 'healthy' ? 'bg-green-100 text-green-800' :
-                    component.status === 'warning' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }>
-                    {component.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Top Users */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Users className="h-5 w-5 mr-2" />
-              Top Users by Usage
-            </CardTitle>
-            <CardDescription>Users with highest analysis count this month</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {topUsers.map((user, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-blue-700">
-                        {user.name.charAt(0)}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{user.name}</p>
-                      <Badge variant="secondary" className="text-xs">
-                        {user.plan}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">{user.analyses} analyses</p>
-                    <p className="text-xs text-gray-600">{user.revenue} revenue</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common administrative tasks</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full justify-start" variant="outline">
-              <UserPlus className="h-4 w-4 mr-2" />
-              Create User
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <Mail className="h-4 w-4 mr-2" />
-              Send Newsletter
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <Database className="h-4 w-4 mr-2" />
-              Backup Database
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Generate Report
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              View Support Tickets
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Revenue Chart Placeholder */}
+      {/* Add New Niche */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <DollarSign className="h-5 w-5 mr-2 text-green-600" />
-            Revenue Overview
-          </CardTitle>
-          <CardDescription>Monthly revenue and growth trends</CardDescription>
+          <CardTitle>Add Niche to Queue</CardTitle>
+          <CardDescription>Schedule a collection of related products for deep research analysis</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">Revenue chart would be displayed here</p>
-              <p className="text-sm text-gray-500">Integration with charting library needed</p>
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="nicheName" className="text-sm font-medium text-gray-700">Niche Name</Label>
+                <Input
+                  id="nicheName"
+                  placeholder="e.g., Bluetooth Sleep Masks"
+                  value={newNicheName}
+                  onChange={(e) => setNewNicheName(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="date" className="text-sm font-medium text-gray-700">Scheduled Date</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="mt-1"
+                />
+              </div>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="asins" className="text-sm font-medium text-gray-700">Amazon ASINs (comma-separated)</Label>
+              <Input
+                id="asins"
+                placeholder="e.g., B08MVBRNKV, B07SHBQY7Z, B07KC5DWCC"
+                value={newAsins}
+                onChange={(e) => setNewAsins(e.target.value)}
+                className="font-mono mt-1"
+              />
+              <p className="text-sm text-gray-500 mt-2">Enter 3-10 related ASINs separated by commas</p>
+            </div>
+            <div className="flex justify-end pt-4">
+              <Button onClick={handleAddNiche} disabled={!newNicheName || !newAsins || !selectedDate}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Niche to Queue
+              </Button>
+            </div>
+          </div>
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Deep Research Analysis:</strong> Each niche will undergo comprehensive analysis including market trends, competition mapping, keyword clustering, demand forecasting, and opportunity scoring across all provided ASINs.
+            </p>
           </div>
         </CardContent>
       </Card>
+
+      {/* Niche Queue */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Niche Queue</CardTitle>
+              <CardDescription>Manage scheduled niche analyses</CardDescription>
+            </div>
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search niches..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-y">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Niche Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ASINs</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Products</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg BSR</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Price</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Reviews</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market Size</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Competition</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scheduled</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredQueue.map((niche) => (
+                  <tr key={niche.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{niche.nicheName}</div>
+                      {niche.nicheKeywords.length > 0 && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          {niche.nicheKeywords.slice(0, 2).join(', ')}
+                          {niche.nicheKeywords.length > 2 && '...'}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="text-xs text-gray-600 font-mono">
+                        {niche.asins.slice(0, 2).join(', ')}
+                        {niche.asins.length > 2 && ` +${niche.asins.length - 2} more`}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{niche.category}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{niche.totalProducts}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">#{niche.avgBsr.toLocaleString()}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">${niche.avgPrice}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{niche.totalReviews.toLocaleString()}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">${(niche.marketSize / 1000000).toFixed(1)}M</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Badge variant="outline" className={
+                        niche.competitionLevel === 'Low' ? 'border-green-200 text-green-800' :
+                        niche.competitionLevel === 'Medium' ? 'border-yellow-200 text-yellow-800' :
+                        niche.competitionLevel === 'High' ? 'border-orange-200 text-orange-800' :
+                        'border-red-200 text-red-800'
+                      }>
+                        {niche.competitionLevel}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Badge className={getStatusColor(niche.status)}>
+                        <span className="flex items-center gap-1">
+                          {getStatusIcon(niche.status)}
+                          {niche.status}
+                        </span>
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{new Date(niche.scheduledDate).toLocaleDateString()}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        {niche.status === 'pending' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAnalyzeNow(niche.id)}
+                          >
+                            Process
+                          </Button>
+                        )}
+                        {niche.status === 'completed' && (
+                          <Button size="sm" variant="outline" asChild>
+                            <a href={`/products/${niche.asins[0]}`}>
+                              <Eye className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditNiche(niche)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => handleDelete(niche.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Edit Modal */}
+      {showEditModal && editingNiche && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Edit Niche Analysis</h2>
+                <p className="text-gray-600">{editingNiche.nicheName}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handleReprocessNiche(editingNiche.id)}
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Reprocess
+                </Button>
+                <Button onClick={handleSaveEdit}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowEditModal(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <Tabs defaultValue="basic" className="w-full">
+                <TabsList className="grid w-full grid-cols-6">
+                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                  <TabsTrigger value="products">Products</TabsTrigger>
+                  <TabsTrigger value="analysis">AI Analysis</TabsTrigger>
+                  <TabsTrigger value="demand">Demand</TabsTrigger>
+                  <TabsTrigger value="competition">Competition</TabsTrigger>
+                  <TabsTrigger value="listing">Listing</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="basic" className="space-y-6 mt-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-niche-name">Niche Name</Label>
+                      <Input
+                        id="edit-niche-name"
+                        value={editFormData.nicheName || ''}
+                        onChange={(e) => updateEditField('nicheName', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-category">Category</Label>
+                      <Input
+                        id="edit-category"
+                        value={editFormData.category || ''}
+                        onChange={(e) => updateEditField('category', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-opportunity-score">Opportunity Score</Label>
+                      <Input
+                        id="edit-opportunity-score"
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={editFormData.opportunityScore || ''}
+                        onChange={(e) => updateEditField('opportunityScore', parseInt(e.target.value))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-competition-level">Competition Level</Label>
+                      <select
+                        id="edit-competition-level"
+                        value={editFormData.competitionLevel || ''}
+                        onChange={(e) => updateEditField('competitionLevel', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      >
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                        <option value="Very High">Very High</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-market-size">Market Size ($)</Label>
+                      <Input
+                        id="edit-market-size"
+                        type="number"
+                        value={editFormData.marketSize || ''}
+                        onChange={(e) => updateEditField('marketSize', parseInt(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-keywords">Niche Keywords (comma-separated)</Label>
+                    <Input
+                      id="edit-keywords"
+                      value={editFormData.nicheKeywords?.join(', ') || ''}
+                      onChange={(e) => updateEditField('nicheKeywords', e.target.value.split(',').map(k => k.trim()))}
+                      className="font-mono"
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="products" className="space-y-6 mt-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-asins">Amazon ASINs (comma-separated)</Label>
+                    <Textarea
+                      id="edit-asins"
+                      value={editFormData.asins?.join(', ') || ''}
+                      onChange={(e) => updateEditField('asins', e.target.value.split(',').map(a => a.trim()).filter(a => a.length > 0))}
+                      className="font-mono min-h-[100px]"
+                      placeholder="B08MVBRNKV, B07SHBQY7Z, B07KC5DWCC"
+                    />
+                    <p className="text-sm text-gray-500">
+                      Current: {editFormData.asins?.length || 0} products
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-avg-price">Average Price ($)</Label>
+                      <Input
+                        id="edit-avg-price"
+                        type="number"
+                        step="0.01"
+                        value={editFormData.avgPrice || ''}
+                        onChange={(e) => updateEditField('avgPrice', parseFloat(e.target.value))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-total-revenue">Total Monthly Revenue ($)</Label>
+                      <Input
+                        id="edit-total-revenue"
+                        type="number"
+                        value={editFormData.totalMonthlyRevenue || ''}
+                        onChange={(e) => updateEditField('totalMonthlyRevenue', parseInt(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="analysis" className="space-y-6 mt-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-why-product">Why This Product/Niche?</Label>
+                      <Textarea
+                        id="edit-why-product"
+                        value={editFormData.aiAnalysis?.whyThisProduct || ''}
+                        onChange={(e) => updateAIAnalysisField('whyThisProduct', e.target.value)}
+                        className="min-h-[120px]"
+                        placeholder="Explain why this niche represents a good opportunity..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-key-highlights">Key Highlights (one per line)</Label>
+                      <Textarea
+                        id="edit-key-highlights"
+                        value={editFormData.aiAnalysis?.keyHighlights?.join('\n') || ''}
+                        onChange={(e) => updateAIAnalysisField('keyHighlights', e.target.value.split('\n').filter(h => h.trim().length > 0))}
+                        className="min-h-[120px]"
+                        placeholder="• Growing market trend&#10;• High customer satisfaction&#10;• Multiple use cases"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="demand" className="space-y-6 mt-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-demand-analysis">Demand Analysis</Label>
+                    <Textarea
+                      id="edit-demand-analysis"
+                      value={editFormData.aiAnalysis?.demandAnalysis || ''}
+                      onChange={(e) => updateAIAnalysisField('demandAnalysis', e.target.value)}
+                      className="min-h-[150px]"
+                      placeholder="Analyze the demand trends, search volume, seasonality, and market drivers..."
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="competition" className="space-y-6 mt-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-competition-analysis">Competition Analysis</Label>
+                    <Textarea
+                      id="edit-competition-analysis"
+                      value={editFormData.aiAnalysis?.competitionAnalysis || ''}
+                      onChange={(e) => updateAIAnalysisField('competitionAnalysis', e.target.value)}
+                      className="min-h-[150px]"
+                      placeholder="Analyze the competitive landscape, key players, market share, and differentiation opportunities..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-keyword-analysis">Keyword Analysis</Label>
+                    <Textarea
+                      id="edit-keyword-analysis"
+                      value={editFormData.aiAnalysis?.keywordAnalysis || ''}
+                      onChange={(e) => updateAIAnalysisField('keywordAnalysis', e.target.value)}
+                      className="min-h-[150px]"
+                      placeholder="Analyze primary keywords, search volumes, competition levels, and opportunities..."
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="listing" className="space-y-6 mt-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-listing-title">Optimized Product Title</Label>
+                      <Textarea
+                        id="edit-listing-title"
+                        value={editFormData.aiAnalysis?.listingOptimization?.title || ''}
+                        onChange={(e) => updateAIAnalysisField('listingOptimization', { ...editFormData.aiAnalysis?.listingOptimization, title: e.target.value })}
+                        className="min-h-[80px]"
+                        placeholder="Optimized product title with primary keywords..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-bullet-points">Bullet Points (one per line)</Label>
+                      <Textarea
+                        id="edit-bullet-points"
+                        value={editFormData.aiAnalysis?.listingOptimization?.bulletPoints?.join('\n') || ''}
+                        onChange={(e) => updateAIAnalysisField('listingOptimization', { 
+                          ...editFormData.aiAnalysis?.listingOptimization, 
+                          bulletPoints: e.target.value.split('\n').filter(b => b.trim().length > 0) 
+                        })}
+                        className="min-h-[150px]"
+                        placeholder="• FEATURE 1: Benefit and description&#10;• FEATURE 2: Benefit and description"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-description">Product Description</Label>
+                      <Textarea
+                        id="edit-description"
+                        value={editFormData.aiAnalysis?.listingOptimization?.description || ''}
+                        onChange={(e) => updateAIAnalysisField('listingOptimization', { ...editFormData.aiAnalysis?.listingOptimization, description: e.target.value })}
+                        className="min-h-[120px]"
+                        placeholder="Detailed product description for Amazon listing..."
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

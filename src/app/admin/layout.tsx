@@ -23,12 +23,9 @@ import {
 import { signOut } from 'next-auth/react'
 
 const navigation = [
-  { name: 'Dashboard', href: '/admin', icon: Home },
+  { name: 'Product Queue', href: '/admin', icon: Home },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-  { name: 'Newsletter', href: '/admin/newsletter', icon: Mail },
-  { name: 'Database', href: '/admin/database', icon: Database },
-  { name: 'System', href: '/admin/system', icon: Settings },
 ]
 
 export default function AdminLayout({
@@ -49,7 +46,7 @@ export default function AdminLayout({
     }
 
     if (session.user.role !== 'ADMIN') {
-      router.push('/dashboard')
+      router.push('/')
       return
     }
   }, [session, status, router])
@@ -101,9 +98,6 @@ export default function AdminLayout({
               <div className="text-sm text-gray-600">
                 {session.user.name}
               </div>
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4" />
-              </Button>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
@@ -113,66 +107,31 @@ export default function AdminLayout({
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
-          {/* Sidebar */}
-          <div className="w-64 space-y-2">
-            <nav className="space-y-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                    pathname === item.href
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <item.icon
-                    className={`mr-3 h-5 w-5 ${
-                      pathname === item.href
-                        ? 'text-blue-500'
-                        : 'text-gray-400 group-hover:text-gray-500'
-                    }`}
-                  />
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-
-            {/* Quick Stats */}
-            <div className="mt-8 p-4 bg-white rounded-lg border">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Quick Stats</h3>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Active Users</span>
-                  <span className="font-medium">1,247</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Today&apos;s Signups</span>
-                  <span className="font-medium text-green-600">23</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">System Health</span>
-                  <span className="font-medium text-green-600">Good</span>
-                </div>
-              </div>
-            </div>
-
-            {/* System Status */}
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="flex items-center">
-                <Activity className="h-4 w-4 text-green-600 mr-2" />
-                <span className="text-sm font-medium text-green-900">All Systems Operational</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="flex-1">
-            {children}
-          </div>
+      {/* Horizontal Navigation */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex space-x-8">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`inline-flex items-center px-1 py-4 text-sm font-medium border-b-2 ${
+                  pathname === item.href
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <item.icon className="h-4 w-4 mr-2" />
+                {item.name}
+              </Link>
+            ))}
+          </nav>
         </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {children}
       </div>
     </div>
   )

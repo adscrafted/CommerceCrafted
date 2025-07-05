@@ -256,23 +256,6 @@ export default function SignInPage() {
           </CardContent>
         </Card>
 
-        {/* Features */}
-        <div className="text-center">
-          <div className="grid grid-cols-3 gap-4 text-xs text-gray-600">
-            <div className="flex flex-col items-center">
-              <CheckCircle className="h-4 w-4 text-green-600 mb-1" />
-              <span>Deep Analysis</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <CheckCircle className="h-4 w-4 text-green-600 mb-1" />
-              <span>AI Research</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <CheckCircle className="h-4 w-4 text-green-600 mb-1" />
-              <span>Real-time Data</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )

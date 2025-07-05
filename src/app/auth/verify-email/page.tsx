@@ -101,8 +101,8 @@ export default function VerifyEmailPage() {
                   </Button>
                   
                   <Button asChild variant="outline" className="w-full">
-                    <Link href="/dashboard">
-                      Go to Dashboard
+                    <Link href="/">
+                      Go to Home
                     </Link>
                   </Button>
                 </div>

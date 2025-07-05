@@ -176,10 +176,10 @@ export default function ProtectedRoute({
                 </Alert>
                 
                 <Button 
-                  onClick={() => router.push('/dashboard')}
+                  onClick={() => router.push('/')}
                   className="w-full"
                 >
-                  Go to Dashboard
+                  Go to Home
                 </Button>
               </CardContent>
             </Card>
@@ -255,11 +255,11 @@ export default function ProtectedRoute({
                     {isExpired ? 'Renew Subscription' : 'Upgrade Now'}
                   </Button>
                   <Button 
-                    onClick={() => router.push('/dashboard')}
+                    onClick={() => router.push('/')}
                     variant="outline"
                     className="w-full"
                   >
-                    Go to Dashboard
+                    Go to Home
                   </Button>
                 </div>
               </CardContent>
