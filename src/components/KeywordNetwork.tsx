@@ -40,15 +40,15 @@ interface KeywordNetworkProps {
 export default function KeywordNetwork({ keywordClusters, primaryKeyword, className = '' }: KeywordNetworkProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const simulationRef = useRef<d3.Simulation<NetworkNode, NetworkLink> | null>(null)
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [showSubroots, setShowSubroots] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true)
+  const [showSubroots, setShowSubroots] = useState(true)
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [nodes, setNodes] = useState<NetworkNode[]>([])
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [zoomLevel, setZoomLevel] = useState(1)
   
-  const height = isFullscreen ? window.innerHeight - 100 : (isExpanded ? 600 : 400)
-  const width = isFullscreen ? window.innerWidth - 100 : 800
+  const height = isFullscreen ? window.innerHeight - 40 : 600
+  const width = isFullscreen ? window.innerWidth - 40 : 800
 
   useEffect(() => {
     if (!svgRef.current || !keywordClusters || !primaryKeyword) return
@@ -414,7 +414,7 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
   }
 
   return (
-    <div className={`relative bg-gray-50 rounded-lg border ${className} ${isFullscreen ? 'fixed inset-4 z-50' : ''}`}>
+    <div className={`relative bg-gray-50 rounded-lg border ${className} ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}>
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         <Button
           variant="outline"
@@ -444,23 +444,6 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
           title="Reset positions"
         >
           <RotateCcw className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowSubroots(!showSubroots)}
-          className="bg-white"
-        >
-          {showSubroots ? 'Hide' : 'Show'} Subroots
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="bg-white"
-        >
-          {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
-          {isExpanded ? 'Collapse' : 'Expand'}
         </Button>
         <Button
           variant="outline"

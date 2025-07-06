@@ -13,8 +13,8 @@ export default function Header() {
     return pathname === path
   }
 
-  const navigation = [
-    { name: 'Product Database', href: '/products' },
+  const navigation: Array<{ name: string; href: string; badge?: string }> = [
+    { name: 'Database', href: '/database' },
     { name: 'Trends', href: '/trends' },
     { name: 'Pricing', href: '/pricing' },
   ]

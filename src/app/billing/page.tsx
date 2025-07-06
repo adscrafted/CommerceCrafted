@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -88,9 +88,12 @@ interface BillingData {
 export default function BillingPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState('')
   const [billingData, setBillingData] = useState<BillingData | null>(null)
   const [dataLoading, setDataLoading] = useState(true)
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
+  const [planPrice, setPlanPrice] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -98,6 +101,14 @@ export default function BillingPage() {
     if (!session) {
       router.push('/auth/signin')
       return
+    }
+
+    // Check for plan selection from URL
+    const plan = searchParams.get('plan')
+    const price = searchParams.get('price')
+    if (plan && price) {
+      setSelectedPlan(plan)
+      setPlanPrice(price)
     }
 
     // Track billing page view
@@ -113,7 +124,19 @@ export default function BillingPage() {
 
     // Fetch billing data
     fetchBillingData()
-  }, [session, status, router])
+  }, [session, status, router, searchParams])
+
+  // Auto-trigger checkout when plan is selected from pricing page
+  useEffect(() => {
+    if (selectedPlan && planPrice && billingData && billingData.user.subscriptionTier === 'free') {
+      // Only auto-trigger for free users, not existing paid users
+      const timer = setTimeout(() => {
+        handlePlanPurchase(selectedPlan, planPrice)
+      }, 1000) // Small delay to let the page load
+      
+      return () => clearTimeout(timer)
+    }
+  }, [selectedPlan, planPrice, billingData])
 
   const fetchBillingData = async () => {
     try {
@@ -151,6 +174,61 @@ export default function BillingPage() {
 
   const user = session.user
   const isPaid = billingData.user.subscriptionTier !== 'free'
+
+  const handlePlanPurchase = async (plan: string, price: string) => {
+    if (!session?.user?.id) return
+    
+    setLoading('checkout')
+    
+    // Track checkout initiation
+    trackEvent({
+      name: 'checkout_initiated',
+      userId: session?.user?.id,
+      properties: {
+        plan: plan,
+        price: price,
+        timestamp: new Date().toISOString()
+      }
+    })
+    
+    try {
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          priceId: plan === 'starter' ? 'price_starter_999' : 'price_pro_1499', // These would be your actual Stripe price IDs
+          returnUrl: `${window.location.origin}/billing?success=true`,
+          cancelUrl: `${window.location.origin}/billing?canceled=true`,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session')
+      }
+
+      const { url } = await response.json()
+      
+      // Redirect to Stripe Checkout
+      window.location.href = url
+      
+    } catch (error) {
+      console.error('Error creating checkout session:', error)
+      trackEvent({
+        name: 'checkout_error',
+        userId: session?.user?.id,
+        properties: {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          plan: plan,
+          timestamp: new Date().toISOString()
+        }
+      })
+      alert('Failed to start checkout. Please try again.')
+    } finally {
+      setLoading('')
+    }
+  }
 
   const handleManageBilling = async () => {
     setLoading('billing')
@@ -261,6 +339,43 @@ export default function BillingPage() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
+          {/* Plan Purchase Banner */}
+          {selectedPlan && planPrice && billingData?.user.subscriptionTier === 'free' && (
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full">
+                      <Crown className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-900">
+                        Complete Your {selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)} Plan Purchase
+                      </h3>
+                      <p className="text-blue-700">
+                        ${planPrice}/year - Redirecting you to secure checkout...
+                      </p>
+                    </div>
+                  </div>
+                  {loading === 'checkout' && (
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                  )}
+                </div>
+                {loading !== 'checkout' && (
+                  <div className="mt-4">
+                    <Button 
+                      onClick={() => handlePlanPurchase(selectedPlan, planPrice)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      disabled={loading === 'checkout'}
+                    >
+                      Complete Purchase Now
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Current Plan */}
           <Card>
             <CardHeader>

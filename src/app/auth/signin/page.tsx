@@ -28,13 +28,23 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
+  const [planPrice, setPlanPrice] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
 
   useEffect(() => {
     const urlMessage = searchParams.get('message')
+    const plan = searchParams.get('plan')
+    const price = searchParams.get('price')
+    
     if (urlMessage) {
       setMessage(urlMessage)
+    }
+    
+    if (plan) {
+      setSelectedPlan(plan)
+      setPlanPrice(price)
     }
   }, [searchParams])
 
@@ -53,9 +63,13 @@ export default function SignInPage() {
       if (result?.error) {
         setError('Invalid email or password')
       } else if (result?.ok) {
-        // Get session to check user role
+        // Get session to check user role and handle plan selection
         const session = await getSession()
-        if (session?.user?.role === 'ADMIN') {
+        
+        if (selectedPlan && planPrice) {
+          // Redirect to billing page with selected plan
+          router.push(`/billing?plan=${selectedPlan}&price=${planPrice}`)
+        } else if (session?.user?.role === 'ADMIN') {
           router.push('/admin')
         } else {
           router.push('/dashboard')
@@ -71,7 +85,10 @@ export default function SignInPage() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
     try {
-      await signIn('google', { callbackUrl: '/dashboard' })
+      const callbackUrl = selectedPlan && planPrice 
+        ? `/billing?plan=${selectedPlan}&price=${planPrice}`
+        : '/dashboard'
+      await signIn('google', { callbackUrl })
     } catch {
       setError('Failed to sign in with Google')
       setIsLoading(false)
@@ -83,9 +100,14 @@ export default function SignInPage() {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {selectedPlan ? `Complete Your ${selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)} Plan Purchase` : 'Welcome back'}
+          </h1>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to your CommerceCrafted account
+            {selectedPlan 
+              ? `Sign in to complete your ${selectedPlan} plan subscription ($${planPrice}/year)`
+              : 'Sign in to your CommerceCrafted account'
+            }
           </p>
         </div>
 
@@ -96,10 +118,24 @@ export default function SignInPage() {
               Sign In
             </CardTitle>
             <CardDescription className="text-center">
-              Access your Amazon product research dashboard
+              {selectedPlan 
+                ? `Complete your ${selectedPlan} plan purchase after signing in`
+                : 'Access your Amazon product research dashboard'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Plan Selection Banner */}
+            {selectedPlan && (
+              <Alert className="bg-blue-50 border-blue-200">
+                <CheckCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  <strong>{selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)} Plan Selected</strong> - ${planPrice}/year
+                  <br />After signing in, you'll be redirected to complete your payment.
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {/* Success Message */}
             {message && (
               <Alert>

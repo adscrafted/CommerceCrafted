@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Plus,
   RefreshCw,
@@ -27,10 +26,7 @@ import {
   ExternalLink,
   MessageSquare,
   Users,
-  Activity,
-  X,
-  Save,
-  RotateCcw
+  Activity
 } from 'lucide-react'
 
 interface NicheQueueItem {
@@ -76,8 +72,6 @@ export default function AdminNicheQueue() {
   const [refreshing, setRefreshing] = useState(false)
   const [selectedDate, setSelectedDate] = useState('')
   const [editingNiche, setEditingNiche] = useState<NicheQueueItem | null>(null)
-  const [editFormData, setEditFormData] = useState<Partial<NicheQueueItem>>({})
-  const [showEditModal, setShowEditModal] = useState(false)
 
   // Mock niche queue data
   const [nicheQueue, setNicheQueue] = useState<NicheQueueItem[]>([
@@ -241,45 +235,6 @@ export default function AdminNicheQueue() {
     ))
   }
 
-  const handleEditNiche = (niche: NicheQueueItem) => {
-    setEditingNiche(niche)
-    setEditFormData({ ...niche })
-    setShowEditModal(true)
-  }
-
-  const handleSaveEdit = () => {
-    if (!editingNiche || !editFormData) return
-
-    setNicheQueue(nicheQueue.map(item => 
-      item.id === editingNiche.id ? { ...item, ...editFormData } : item
-    ))
-    setShowEditModal(false)
-    setEditingNiche(null)
-    setEditFormData({})
-  }
-
-  const handleReprocessNiche = (id: string) => {
-    setNicheQueue(nicheQueue.map(item => 
-      item.id === id ? { ...item, status: 'analyzing', processTime: undefined } : item
-    ))
-  }
-
-  const updateEditField = (field: string, value: any) => {
-    setEditFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
-  }
-
-  const updateAIAnalysisField = (field: string, value: any) => {
-    setEditFormData(prev => ({
-      ...prev,
-      aiAnalysis: {
-        ...prev.aiAnalysis,
-        [field]: value
-      }
-    }))
-  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -325,6 +280,12 @@ export default function AdminNicheQueue() {
             Manage and schedule product niches for deep research analysis
           </p>
         </div>
+        <Button asChild>
+          <a href="/admin/niche/new">
+            <Plus className="h-4 w-4 mr-2" />
+            New Analysis
+          </a>
+        </Button>
       </div>
 
 
@@ -501,9 +462,11 @@ export default function AdminNicheQueue() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleEditNiche(niche)}
+                          asChild
                         >
-                          <Edit className="h-4 w-4" />
+                          <a href={`/admin/niche/${niche.id}`}>
+                            <Edit className="h-4 w-4" />
+                          </a>
                         </Button>
                         <Button
                           size="sm"
@@ -523,253 +486,7 @@ export default function AdminNicheQueue() {
         </CardContent>
       </Card>
 
-      {/* Edit Modal */}
-      {showEditModal && editingNiche && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Edit Niche Analysis</h2>
-                <p className="text-gray-600">{editingNiche.nicheName}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => handleReprocessNiche(editingNiche.id)}
-                >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Reprocess
-                </Button>
-                <Button onClick={handleSaveEdit}>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowEditModal(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="p-6">
-              <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-6">
-                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                  <TabsTrigger value="products">Products</TabsTrigger>
-                  <TabsTrigger value="analysis">AI Analysis</TabsTrigger>
-                  <TabsTrigger value="demand">Demand</TabsTrigger>
-                  <TabsTrigger value="competition">Competition</TabsTrigger>
-                  <TabsTrigger value="listing">Listing</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="basic" className="space-y-6 mt-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-niche-name">Niche Name</Label>
-                      <Input
-                        id="edit-niche-name"
-                        value={editFormData.nicheName || ''}
-                        onChange={(e) => updateEditField('nicheName', e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-category">Category</Label>
-                      <Input
-                        id="edit-category"
-                        value={editFormData.category || ''}
-                        onChange={(e) => updateEditField('category', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-opportunity-score">Opportunity Score</Label>
-                      <Input
-                        id="edit-opportunity-score"
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={editFormData.opportunityScore || ''}
-                        onChange={(e) => updateEditField('opportunityScore', parseInt(e.target.value))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-competition-level">Competition Level</Label>
-                      <select
-                        id="edit-competition-level"
-                        value={editFormData.competitionLevel || ''}
-                        onChange={(e) => updateEditField('competitionLevel', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      >
-                        <option value="Low">Low</option>
-                        <option value="Medium">Medium</option>
-                        <option value="High">High</option>
-                        <option value="Very High">Very High</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-market-size">Market Size ($)</Label>
-                      <Input
-                        id="edit-market-size"
-                        type="number"
-                        value={editFormData.marketSize || ''}
-                        onChange={(e) => updateEditField('marketSize', parseInt(e.target.value))}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-keywords">Niche Keywords (comma-separated)</Label>
-                    <Input
-                      id="edit-keywords"
-                      value={editFormData.nicheKeywords?.join(', ') || ''}
-                      onChange={(e) => updateEditField('nicheKeywords', e.target.value.split(',').map(k => k.trim()))}
-                      className="font-mono"
-                    />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="products" className="space-y-6 mt-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-asins">Amazon ASINs (comma-separated)</Label>
-                    <Textarea
-                      id="edit-asins"
-                      value={editFormData.asins?.join(', ') || ''}
-                      onChange={(e) => updateEditField('asins', e.target.value.split(',').map(a => a.trim()).filter(a => a.length > 0))}
-                      className="font-mono min-h-[100px]"
-                      placeholder="B08MVBRNKV, B07SHBQY7Z, B07KC5DWCC"
-                    />
-                    <p className="text-sm text-gray-500">
-                      Current: {editFormData.asins?.length || 0} products
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-avg-price">Average Price ($)</Label>
-                      <Input
-                        id="edit-avg-price"
-                        type="number"
-                        step="0.01"
-                        value={editFormData.avgPrice || ''}
-                        onChange={(e) => updateEditField('avgPrice', parseFloat(e.target.value))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-total-revenue">Total Monthly Revenue ($)</Label>
-                      <Input
-                        id="edit-total-revenue"
-                        type="number"
-                        value={editFormData.totalMonthlyRevenue || ''}
-                        onChange={(e) => updateEditField('totalMonthlyRevenue', parseInt(e.target.value))}
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="analysis" className="space-y-6 mt-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-why-product">Why This Product/Niche?</Label>
-                      <Textarea
-                        id="edit-why-product"
-                        value={editFormData.aiAnalysis?.whyThisProduct || ''}
-                        onChange={(e) => updateAIAnalysisField('whyThisProduct', e.target.value)}
-                        className="min-h-[120px]"
-                        placeholder="Explain why this niche represents a good opportunity..."
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-key-highlights">Key Highlights (one per line)</Label>
-                      <Textarea
-                        id="edit-key-highlights"
-                        value={editFormData.aiAnalysis?.keyHighlights?.join('\n') || ''}
-                        onChange={(e) => updateAIAnalysisField('keyHighlights', e.target.value.split('\n').filter(h => h.trim().length > 0))}
-                        className="min-h-[120px]"
-                        placeholder="• Growing market trend&#10;• High customer satisfaction&#10;• Multiple use cases"
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="demand" className="space-y-6 mt-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-demand-analysis">Demand Analysis</Label>
-                    <Textarea
-                      id="edit-demand-analysis"
-                      value={editFormData.aiAnalysis?.demandAnalysis || ''}
-                      onChange={(e) => updateAIAnalysisField('demandAnalysis', e.target.value)}
-                      className="min-h-[150px]"
-                      placeholder="Analyze the demand trends, search volume, seasonality, and market drivers..."
-                    />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="competition" className="space-y-6 mt-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-competition-analysis">Competition Analysis</Label>
-                    <Textarea
-                      id="edit-competition-analysis"
-                      value={editFormData.aiAnalysis?.competitionAnalysis || ''}
-                      onChange={(e) => updateAIAnalysisField('competitionAnalysis', e.target.value)}
-                      className="min-h-[150px]"
-                      placeholder="Analyze the competitive landscape, key players, market share, and differentiation opportunities..."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-keyword-analysis">Keyword Analysis</Label>
-                    <Textarea
-                      id="edit-keyword-analysis"
-                      value={editFormData.aiAnalysis?.keywordAnalysis || ''}
-                      onChange={(e) => updateAIAnalysisField('keywordAnalysis', e.target.value)}
-                      className="min-h-[150px]"
-                      placeholder="Analyze primary keywords, search volumes, competition levels, and opportunities..."
-                    />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="listing" className="space-y-6 mt-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-listing-title">Optimized Product Title</Label>
-                      <Textarea
-                        id="edit-listing-title"
-                        value={editFormData.aiAnalysis?.listingOptimization?.title || ''}
-                        onChange={(e) => updateAIAnalysisField('listingOptimization', { ...editFormData.aiAnalysis?.listingOptimization, title: e.target.value })}
-                        className="min-h-[80px]"
-                        placeholder="Optimized product title with primary keywords..."
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-bullet-points">Bullet Points (one per line)</Label>
-                      <Textarea
-                        id="edit-bullet-points"
-                        value={editFormData.aiAnalysis?.listingOptimization?.bulletPoints?.join('\n') || ''}
-                        onChange={(e) => updateAIAnalysisField('listingOptimization', { 
-                          ...editFormData.aiAnalysis?.listingOptimization, 
-                          bulletPoints: e.target.value.split('\n').filter(b => b.trim().length > 0) 
-                        })}
-                        className="min-h-[150px]"
-                        placeholder="• FEATURE 1: Benefit and description&#10;• FEATURE 2: Benefit and description"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-description">Product Description</Label>
-                      <Textarea
-                        id="edit-description"
-                        value={editFormData.aiAnalysis?.listingOptimization?.description || ''}
-                        onChange={(e) => updateAIAnalysisField('listingOptimization', { ...editFormData.aiAnalysis?.listingOptimization, description: e.target.value })}
-                        className="min-h-[120px]"
-                        placeholder="Detailed product description for Amazon listing..."
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Removed Edit Modal - Now using full page routes */}
 
     </div>
   )

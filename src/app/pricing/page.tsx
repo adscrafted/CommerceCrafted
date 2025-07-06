@@ -28,42 +28,42 @@ export default function PricingPage() {
     },
     {
       question: "What's included in the free plan?",
-      answer: "The free plan includes access to our daily idea feature and basic browsing of our database. Perfect for getting started and seeing what we offer.",
+      answer: "The free plan includes access to our daily Amazon product opportunity, basic trends page, and limited browsing of our database. Perfect for getting started and seeing our analysis quality.",
       isOpen: false
     },
     {
-      question: "How many ideas are in the database?",
-      answer: "Our database contains over 1,000 thoroughly researched business ideas across multiple industries, with new ideas added regularly.",
+      question: "How many Amazon product opportunities are in your database?",
+      answer: "Our database contains over 1,000 thoroughly researched Amazon product opportunities across multiple categories, with new opportunities added daily based on market trends and data.",
       isOpen: false
     },
     {
-      question: "What makes these ideas different from other idea lists?",
-      answer: "Each idea includes comprehensive market analysis, financial projections, competitor research, and actionable next steps - not just a brief description.",
+      question: "What makes your product analysis different from other tools?",
+      answer: "Each product includes comprehensive Amazon-specific analysis: financial projections with FBA fees, competitor research, keyword analysis, launch strategies, review benchmarks, and pricing recommendations - not just basic metrics.",
       isOpen: false
     },
     {
-      question: "Can I request payment?",
-      answer: "Yes, we accept all major credit cards and PayPal. Enterprise customers can also arrange for invoice billing.",
+      question: "What payment methods do you accept?",
+      answer: "We accept all major credit cards and PayPal for annual subscriptions. All payments are processed securely through our payment partners.",
       isOpen: false
     },
     {
-      question: "What are Research report and AI Chat through?",
-      answer: "Research reports provide deep market analysis and validation data. AI Chat gives you unlimited access to our research assistant for idea exploration and validation.",
+      question: "How accurate are your financial projections?",
+      answer: "Our projections are based on real Amazon data including search volumes, competitor analysis, and historical trends. We provide conservative estimates with multiple scenarios to help you make informed decisions.",
       isOpen: false
     },
     {
       question: "What's the difference between Starter and Pro?",
-      answer: "Starter gives you essential access to browse and bookmark ideas. Pro includes unlimited AI chat, priority support, and advanced filtering capabilities.",
+      answer: "Starter gives you access to browse and bookmark opportunities with email support. Pro includes unlimited AI research agent, launch session calls, dedicated staff support, and unlimited analysis reports.",
       isOpen: false
     },
     {
-      question: "How do I know which ideas work for my situation?",
-      answer: "Each idea includes detailed requirements, skill assessments, and market fit analysis to help you determine if it's right for your situation and goals.",
+      question: "How do I know if a product opportunity is right for me?",
+      answer: "Each opportunity includes detailed startup costs, skill requirements, competition levels, and market saturation analysis. We also provide launch difficulty scores to match opportunities with your experience level and budget.",
       isOpen: false
     },
     {
-      question: "Is any plan suitable when I can sell at Research Agent?",
-      answer: "Our Research Agent is available to Pro and Enterprise customers, providing personalized business idea analysis and market research tailored to your specific needs.",
+      question: "Do you provide ongoing support after I choose a product?",
+      answer: "Pro members get access to launch session calls and dedicated staff support to help with product selection, launch strategy, and ongoing optimization. We're here to support your success.",
       isOpen: false
     }
   ])
@@ -105,9 +105,11 @@ export default function PricingPage() {
                   <span className="text-4xl font-bold">$0</span>
                   <span className="text-gray-600 ml-2">forever</span>
                 </div>
-                <Button variant="outline" className="w-full mb-6">
-                  Sign up Free
-                </Button>
+                <Link href="/auth/signin">
+                  <Button variant="outline" className="w-full mb-6">
+                    Sign up Free
+                  </Button>
+                </Link>
               </div>
               
               <div className="space-y-4 text-sm">
@@ -119,10 +121,6 @@ export default function PricingPage() {
                   <div className="flex items-center">
                     <Check className="h-4 w-4 text-green-600 mr-3" />
                     <span>Access to daily Amazon opportunity</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="h-4 w-4 text-green-600 mr-3" />
-                    <span>Access to ideabrowser.com homepage</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="h-4 w-4 text-green-600 mr-3" />
@@ -151,17 +149,19 @@ export default function PricingPage() {
               <div className="text-center mb-8">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Starter - Opportunity Hunter</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold">$299</span>
+                  <span className="text-4xl font-bold">$999</span>
                   <span className="text-gray-600 ml-2">per year</span>
                 </div>
-                <Button className="w-full mb-6 bg-blue-600 hover:bg-blue-700">
-                  Select
-                </Button>
+                <Link href="/auth/signin?plan=starter&price=999">
+                  <Button className="w-full mb-6 bg-blue-600 hover:bg-blue-700">
+                    Select Starter
+                  </Button>
+                </Link>
               </div>
               
               <div className="space-y-4 text-sm">
                 <p className="text-gray-600 mb-4">
-                  You've ready to review reports and scan for the best opportunities. We're covering every aspect of analysis for you.
+                  You're ready to review detailed product reports and scan for the best Amazon opportunities. Includes email support for guidance.
                 </p>
                 
                 <div className="space-y-3">
@@ -183,10 +183,6 @@ export default function PricingPage() {
                   </div>
                   <div className="flex items-center">
                     <Check className="h-4 w-4 text-green-600 mr-3" />
-                    <span>Access to community</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="h-4 w-4 text-green-600 mr-3" />
                     <span>Email support</span>
                   </div>
                   <div className="flex items-center text-gray-400">
@@ -195,7 +191,7 @@ export default function PricingPage() {
                   </div>
                   <div className="flex items-center text-gray-400">
                     <X className="h-4 w-4 mr-3" />
-                    <span>Priority support</span>
+                    <span>Staff support</span>
                   </div>
                 </div>
               </div>
@@ -211,20 +207,21 @@ export default function PricingPage() {
             </div>
             <CardContent className="p-8">
               <div className="text-center mb-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Pro - Builder's Command Center</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Pro - The Ultimate</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold">$999</span>
+                  <span className="text-4xl font-bold">$1,499</span>
                   <span className="text-gray-600 ml-2">per year</span>
                 </div>
-                <Button className="w-full mb-6 bg-purple-600 hover:bg-purple-700">
-                  Select
-                </Button>
+                <Link href="/auth/signin?plan=pro&price=1499">
+                  <Button className="w-full mb-6 bg-purple-600 hover:bg-purple-700">
+                    Select Pro
+                  </Button>
+                </Link>
               </div>
               
               <div className="space-y-4 text-sm">
                 <p className="text-gray-600 mb-4">
-                  You're building a business and want unlimited access to all our tools and our AI to help analyze every
-                  opportunity with the highest depth.
+                  You're building an Amazon business and want unlimited access to all our tools, AI assistance, and dedicated staff support to help analyze every product opportunity with the highest depth.
                 </p>
                 
                 <div className="space-y-3">
@@ -238,7 +235,7 @@ export default function PricingPage() {
                   </div>
                   <div className="flex items-center">
                     <Check className="h-4 w-4 text-green-600 mr-3" />
-                    <span>Priority support</span>
+                    <span>Dedicated staff support</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="h-4 w-4 text-green-600 mr-3" />
@@ -250,15 +247,15 @@ export default function PricingPage() {
                   </div>
                   <div className="flex items-center">
                     <Check className="h-4 w-4 text-green-600 mr-3" />
-                    <span>Custom research requests</span>
+                    <span>Launch session calls</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="h-4 w-4 text-green-600 mr-3" />
-                    <span>Direct access to new ideas & live streams</span>
+                    <span>Direct access to new opportunities & live sessions</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="h-4 w-4 text-green-600 mr-3" />
-                    <span>Idea agent for live Q&A sessions</span>
+                    <span>Product research agent for live Q&A sessions</span>
                   </div>
                 </div>
               </div>
@@ -295,47 +292,48 @@ export default function PricingPage() {
                   <tbody>
                     {[
                       {
-                        category: "Discover Data",
+                        category: "Product Discovery",
                         items: [
-                          { feature: "Idea of the Day", free: "✓", starter: "✓", pro: "✓" },
-                          { feature: "Daily Outlook Ideas", free: "✓", starter: "✓", pro: "✓" },
-                          { feature: "Idea Database Access", free: "", starter: "✓", pro: "✓" },
-                          { feature: "Bookmark Ideas", free: "", starter: "✓", pro: "✓" }
+                          { feature: "Daily Amazon Product Opportunity", free: "✓", starter: "✓", pro: "✓" },
+                          { feature: "Product Database Access", free: "", starter: "✓", pro: "✓" },
+                          { feature: "Basic Trends Page", free: "✓", starter: "✓", pro: "✓" },
+                          { feature: "Product Bookmarking", free: "", starter: "✓", pro: "✓" }
                         ]
                       },
                       {
-                        category: "Analyze & Dive Deep",
+                        category: "Product Analysis",
                         items: [
-                          { feature: "Research Reports", free: "", starter: "Monthly", pro: "Unlimited" },
-                          { feature: "Community Access", free: "", starter: "✓", pro: "✓" },
-                          { feature: "Idea Search & Analysis", free: "", starter: "Monthly", pro: "Unlimited" },
-                          { feature: "Idea & Market Analysis", free: "", starter: "Monthly", pro: "Unlimited" }
+                          { feature: "Comprehensive Product Analysis", free: "", starter: "✓", pro: "✓" },
+                          { feature: "Financial Projections & ROI", free: "", starter: "✓", pro: "✓" },
+                          { feature: "Competition Analysis", free: "", starter: "✓", pro: "✓" },
+                          { feature: "Market Demand Analysis", free: "", starter: "✓", pro: "✓" },
+                          { feature: "Keyword Research & Analysis", free: "", starter: "✓", pro: "✓" },
+                          { feature: "Launch Strategy & Timeline", free: "", starter: "✓", pro: "✓" }
                         ]
                       },
                       {
-                        category: "Build for You",
+                        category: "AI Research Assistant",
                         items: [
-                          { feature: "Custom Research Reports", free: "", starter: "", pro: "Unlimited" },
-                          { feature: "Executive Reports", free: "", starter: "", pro: "Unlimited" },
-                          { feature: "Implementation Guides", free: "", starter: "", pro: "✓" },
-                          { feature: "In-depth Live Sessions", free: "", starter: "", pro: "✓" }
+                          { feature: "AI Research Agent", free: "", starter: "10 queries/month", pro: "Unlimited" },
+                          { feature: "Product Validation Questions", free: "", starter: "Basic", pro: "Advanced" },
+                          { feature: "Market Research Queries", free: "", starter: "Limited", pro: "Unlimited" }
                         ]
                       },
                       {
-                        category: "Framework Pro",
+                        category: "Support & Guidance",
                         items: [
-                          { feature: "Idea Blueprint", free: "", starter: "Limited", pro: "Unlimited" },
-                          { feature: "API Framework", free: "", starter: "", pro: "✓" },
-                          { feature: "Idea Search", free: "", starter: "Limited", pro: "Unlimited" },
-                          { feature: "Idea Letter Archive", free: "", starter: "Limited", pro: "Unlimited" }
+                          { feature: "Email Support", free: "", starter: "✓", pro: "✓" },
+                          { feature: "Launch Session Calls", free: "", starter: "", pro: "✓" },
+                          { feature: "Dedicated Staff Support", free: "", starter: "", pro: "✓" },
+                          { feature: "Priority Support", free: "", starter: "", pro: "✓" }
                         ]
                       },
                       {
-                        category: "The Deeper",
+                        category: "Export & Reports",
                         items: [
-                          { feature: "AI Agent Chat", free: "", starter: "", pro: "Unlimited" },
-                          { feature: "AI Research Agent", free: "", starter: "", pro: "Unlimited" },
-                          { feature: "GPT Agent", free: "", starter: "", pro: "Unlimited" }
+                          { feature: "Export Product Analysis", free: "", starter: "Limited", pro: "Unlimited" },
+                          { feature: "Research Reports", free: "", starter: "Basic", pro: "Unlimited" },
+                          { feature: "Advanced Search & Filtering", free: "", starter: "", pro: "✓" }
                         ]
                       }
                     ].map((section, sectionIndex) => (
@@ -416,15 +414,17 @@ export default function PricingPage() {
         {/* Bottom CTA */}
         <div className="mt-20 text-center bg-blue-50 rounded-lg p-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Ready to Find Your Next Big Idea?
+            Ready to Find Your Next Amazon Product Winner?
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Join thousands of entrepreneurs who use Ideabrowser to discover, validate, and launch successful business ideas.
+            Join successful Amazon sellers who use CommerceCrafted to discover validated product opportunities with comprehensive market analysis and launch strategies.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-              Back to choose your plan
-            </Button>
+            <Link href="#pricing">
+              <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                Choose Your Plan
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

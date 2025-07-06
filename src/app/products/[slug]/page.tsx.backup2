@@ -1,5 +1,8 @@
 'use client'
 
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+
 import React, { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,9 +37,11 @@ import {
 } from 'lucide-react'
 import KeywordNetwork from '@/components/KeywordNetwork'
 import Link from 'next/link'
+import { useAmazonSearchTerms } from '@/hooks/useAmazonSearchTerms'
+import { MembershipGate } from '@/components/MembershipGate'
 
 interface ProductPageProps {
-  params: Promise<{ id: string }>
+  params: Promise<{ slug: string }>
 }
 
 // Mock data for the daily product
@@ -662,8 +667,10 @@ const KeywordPivotTable = ({ keywordHierarchy }: { keywordHierarchy: any }) => {
 }
 
 export default function ProductPage({ params }: ProductPageProps) {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [id, setId] = useState<string>('')
+  const [slug, setSlug] = useState<string>('')
   const [cogsPercentage, setCogsPercentage] = useState(25)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [userRating, setUserRating] = useState<number | null>(null)
@@ -671,11 +678,23 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [isSaved, setIsSaved] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
   const [activeTab, setActiveTab] = useState('demand')
+  
+  // Get main keywords for Google Trends
+  const mainKeywords = [
+    'bluetooth sleep mask',
+    'sleep headphones',
+    'sleep mask with speakers',
+    'wireless sleep mask',
+    'sleeping headphones'
+  ]
+  
+  // Fetch Amazon Search Terms data
+  const { data: searchTermsData, loading: searchTermsLoading, error: searchTermsError } = useAmazonSearchTerms(mainKeywords, 4, !loading)
 
   useEffect(() => {
     const loadData = async () => {
       const resolvedParams = await params
-      setId(resolvedParams.id)
+      setSlug(resolvedParams.slug)
       // Simulate loading delay
       setTimeout(() => setLoading(false), 500)
     }
@@ -778,12 +797,23 @@ export default function ProductPage({ params }: ProductPageProps) {
     }
   }
 
-  if (loading) {
+  if (loading || status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
+  }
+
+  // Check if user is authenticated
+  if (status === 'unauthenticated' || !session) {
+    return <MembershipGate productTitle={dailyProductData.title} productImage={dailyProductData.imageUrl} />
+  }
+
+  // Check if user has appropriate subscription tier
+  const userTier = session.user?.subscriptionTier || 'free'
+  if (userTier === 'free') {
+    return <MembershipGate productTitle={dailyProductData.title} productImage={dailyProductData.imageUrl} />
   }
 
   const financials = calculateFinancials()
@@ -801,15 +831,35 @@ export default function ProductPage({ params }: ProductPageProps) {
             <h1 className="text-4xl font-bold text-gray-900 mb-4">{dailyProductData.title}</h1>
             <p className="text-xl text-gray-600 mb-6">{dailyProductData.subtitle}</p>
             
-            {/* Overall Opportunity Score */}
-            <div className="max-w-md mx-auto mb-8">
-              <div className={`p-8 rounded-2xl border-2 ${getScoreBgColor(dailyProductData.opportunityScore)}`}>
-                <div className={`text-6xl font-bold ${getScoreColor(dailyProductData.opportunityScore)} mb-2`}>
-                  {dailyProductData.opportunityScore}
+            {/* Product Image and Opportunity Score */}
+            <div className="max-w-4xl mx-auto mb-8">
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                {/* Product Image */}
+                <div className="flex justify-center md:justify-end">
+                  <div className="relative w-full max-w-sm">
+                    <div className="aspect-square bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+                      <img
+                        src={dailyProductData.imageUrl}
+                        alt={dailyProductData.title}
+                        className="w-full h-full object-contain p-4"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xl font-semibold text-gray-900 mb-1">Opportunity Score</div>
-                <div className={`text-lg ${getScoreColor(dailyProductData.opportunityScore)}`}>
-                  {getScoreLabel(dailyProductData.opportunityScore)}
+                
+                {/* Opportunity Score */}
+                <div className="flex justify-center md:justify-start">
+                  <div className="w-full max-w-sm">
+                    <div className={`aspect-square rounded-2xl border-2 ${getScoreBgColor(dailyProductData.opportunityScore)} flex flex-col items-center justify-center p-8`}>
+                      <div className={`text-8xl font-bold ${getScoreColor(dailyProductData.opportunityScore)} mb-4`}>
+                        {dailyProductData.opportunityScore}
+                      </div>
+                      <div className="text-2xl font-semibold text-gray-900 mb-2">Opportunity Score</div>
+                      <div className={`text-xl font-medium ${getScoreColor(dailyProductData.opportunityScore)}`}>
+                        {getScoreLabel(dailyProductData.opportunityScore)}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -916,7 +966,7 @@ export default function ProductPage({ params }: ProductPageProps) {
       <div className="min-h-screen bg-gray-50">
         {/* Demand Analysis Section */}
         {activeTab === 'demand' && (
-          <section className="py-16 bg-white">
+          <section className="py-16 bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Demand Analysis</h2>
@@ -956,7 +1006,7 @@ export default function ProductPage({ params }: ProductPageProps) {
             {/* Monthly Metrics */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
               <Card className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
+                <CardContent className="p-6 text-center">
                   <p className="text-sm font-medium text-gray-500 mb-2">Monthly Revenue</p>
                   <p className="text-2xl font-bold text-gray-900">${dailyProductData.financialData.monthlyProjections.revenue.toLocaleString()}</p>
                   <p className="text-xs text-gray-500 mt-1">Per month</p>
@@ -964,7 +1014,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               </Card>
 
               <Card className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
+                <CardContent className="p-6 text-center">
                   <p className="text-sm font-medium text-gray-500 mb-2">Monthly Profit</p>
                   <p className="text-2xl font-bold text-green-600">${dailyProductData.financialData.monthlyProjections.profit.toLocaleString()}</p>
                   <p className="text-xs text-gray-500 mt-1">Net income</p>
@@ -972,7 +1022,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               </Card>
 
               <Card className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
+                <CardContent className="p-6 text-center">
                   <p className="text-sm font-medium text-gray-500 mb-2">Avg Conversion Rate</p>
                   <p className="text-2xl font-bold text-blue-600">{dailyProductData.financialData.avgConversionRate}%</p>
                   <p className="text-xs text-gray-500 mt-1">Industry avg: 8%</p>
@@ -980,7 +1030,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               </Card>
 
               <Card className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
+                <CardContent className="p-6 text-center">
                   <p className="text-sm font-medium text-gray-500 mb-2">Monthly Orders</p>
                   <p className="text-2xl font-bold text-gray-900">{dailyProductData.financialData.monthlyOrders.toLocaleString()}</p>
                   <p className="text-xs text-gray-500 mt-1">Units sold</p>
@@ -988,7 +1038,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               </Card>
 
               <Card className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
+                <CardContent className="p-6 text-center">
                   <p className="text-sm font-medium text-gray-500 mb-2">Monthly Clicks</p>
                   <p className="text-2xl font-bold text-gray-900">{dailyProductData.financialData.monthlyClicks.toLocaleString()}</p>
                   <p className="text-xs text-gray-500 mt-1">Traffic volume</p>
@@ -996,124 +1046,197 @@ export default function ProductPage({ params }: ProductPageProps) {
               </Card>
 
               <Card className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
+                <CardContent className="p-6 text-center">
                   <p className="text-sm font-medium text-gray-500 mb-2">Keyword Depth</p>
                   <p className="text-2xl font-bold text-purple-600">{dailyProductData.financialData.keywordDepthGrade}</p>
                   <p className="text-xs text-gray-500 mt-1">Ranking quality</p>
                 </CardContent>
               </Card>
             </div>
-
-            {/* Annualized Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-blue-600 mb-1">Annualized Revenue</p>
-                      <p className="text-3xl font-bold text-blue-900">${(dailyProductData.financialData.annualizedRevenue / 1000).toFixed(0)}K</p>
-                    </div>
-                    <div className="p-3 bg-blue-100 rounded-full">
-                      <TrendingUp className="h-8 w-8 text-blue-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-600 mb-1">Annualized Profit</p>
-                      <p className="text-3xl font-bold text-green-900">${(dailyProductData.financialData.annualizedProfit / 1000).toFixed(0)}K</p>
-                    </div>
-                    <div className="p-3 bg-green-100 rounded-full">
-                      <DollarSign className="h-8 w-8 text-green-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </div>
 
-          {/* Google Trends Area Chart - Full Width */}
+          {/* Amazon Brand Analytics Search Terms - Full Width */}
           <div className="mb-12">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Google Trends - Search Interest</CardTitle>
-                <CardDescription>Relative search volume over time</CardDescription>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  <span>Amazon Brand Analytics - Search Terms Report</span>
+                  {searchTermsData?.mock && (
+                    <Badge variant="outline" className="text-xs">Mock Data</Badge>
+                  )}
+                  {searchTermsData?.cached && (
+                    <Badge variant="outline" className="text-xs">Cached</Badge>
+                  )}
+                </CardTitle>
+                <CardDescription>
+                  {searchTermsLoading ? 'Loading Amazon search analytics...' : 'Weekly search frequency ranking and click share data'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-64 w-full">
-                  <svg viewBox="0 0 1200 200" className="w-full h-full" preserveAspectRatio="none">
-                    {/* Grid lines */}
-                    <defs>
-                      <pattern id="grid" width="100" height="25" patternUnits="userSpaceOnUse">
-                        <path d="M 100 0 L 0 0 0 25" fill="none" stroke="#e5e7eb" strokeWidth="1"/>
-                      </pattern>
-                    </defs>
-                    <rect width="1200" height="200" fill="url(#grid)" />
-                    
-                    {/* Area fill */}
-                    <defs>
-                      <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" style={{stopColor: '#3b82f6', stopOpacity: 0.3}} />
-                        <stop offset="100%" style={{stopColor: '#3b82f6', stopOpacity: 0}} />
-                      </linearGradient>
-                    </defs>
-                    
-                    {/* Generate path for area chart */}
-                    {(() => {
-                      const chartWidth = 1200;
-                      const chartHeight = 200;
-                      const padding = 40;
-                      const dataPoints = dailyProductData.demandData.googleTrends.length;
-                      const stepX = (chartWidth - 2 * padding) / (dataPoints - 1);
-                      
-                      const points = dailyProductData.demandData.googleTrends.map((item, index) => ({
-                        x: padding + (index * stepX),
-                        y: chartHeight - padding - (item.value * 1.2)
-                      }));
-                      
-                      const pathData = `M ${points[0].x} ${chartHeight - padding} L ${points.map(p => `${p.x} ${p.y}`).join(' L ')} L ${points[points.length - 1].x} ${chartHeight - padding} Z`;
-                      const lineData = `M ${points.map(p => `${p.x} ${p.y}`).join(' L ')}`;
-                      
-                      return (
-                        <>
-                          <path d={pathData} fill="url(#areaGradient)" />
-                          <path d={lineData} fill="none" stroke="#3b82f6" strokeWidth="3" />
-                          {points.map((point, index) => (
-                            <circle key={index} cx={point.x} cy={point.y} r="4" fill="#3b82f6" stroke="white" strokeWidth="2" />
+                {searchTermsError ? (
+                  <div className="h-auto p-8 flex items-center justify-center">
+                    <div className="text-center">
+                      <p className="text-red-600 mb-2">Failed to load search terms data</p>
+                      <p className="text-sm text-gray-500">{searchTermsError}</p>
+                    </div>
+                  </div>
+                ) : searchTermsLoading ? (
+                  <div className="h-64 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Fetching Amazon search analytics...</p>
+                    </div>
+                  </div>
+                ) : searchTermsData?.trends && searchTermsData.trends.length > 0 ? (
+                  <div className="space-y-6">
+                    {/* Search Terms Ranking Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b bg-gray-50">
+                            <th className="text-left p-4 font-medium text-gray-700">Keyword</th>
+                            <th className="text-center p-4 font-medium text-gray-700">Search Rank</th>
+                            <th className="text-center p-4 font-medium text-gray-700">Weekly Volume</th>
+                            <th className="text-center p-4 font-medium text-gray-700">Growth</th>
+                            <th className="text-center p-4 font-medium text-gray-700">Top 3 Click Share</th>
+                            <th className="text-center p-4 font-medium text-gray-700">Conversion</th>
+                            <th className="text-right p-4 font-medium text-gray-700">Top ASINs</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {searchTermsData.trends.map((term, index) => (
+                            <tr key={index} className="border-b hover:bg-gray-50">
+                              <td className="p-4">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-gray-900">{term.keyword}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    #{term.searchFrequencyRank}
+                                  </Badge>
+                                </div>
+                              </td>
+                              <td className="p-4 text-center">
+                                <div className="inline-flex items-center gap-2">
+                                  <span className="text-lg font-semibold">{term.searchFrequencyRank}</span>
+                                  <ArrowUp className={`h-3 w-3 ${term.searchFrequencyRank < 500 ? 'text-green-600' : 'text-gray-400'}`} />
+                                </div>
+                              </td>
+                              <td className="p-4 text-center">
+                                <div>
+                                  <p className="font-semibold">{term.weeklySearchVolume.toLocaleString()}</p>
+                                  <p className="text-xs text-gray-500">searches/week</p>
+                                </div>
+                              </td>
+                              <td className="p-4 text-center">
+                                <span className={`inline-flex items-center gap-1 font-medium ${
+                                  term.weeklySearchVolumeGrowth > 0 ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {term.weeklySearchVolumeGrowth > 0 ? '+' : ''}{term.weeklySearchVolumeGrowth.toFixed(2)}%
+                                </span>
+                              </td>
+                              <td className="p-4 text-center">
+                                <div className="flex flex-col items-center">
+                                  <span className="font-semibold">{term.top3ClickShare.toFixed(2)}%</span>
+                                  <Progress value={term.top3ClickShare} className="w-20 h-2 mt-1" />
+                                </div>
+                              </td>
+                              <td className="p-4 text-center">
+                                <span className="text-sm">{term.top3ConversionShare.toFixed(2)}%</span>
+                              </td>
+                              <td className="p-4">
+                                <div className="flex justify-end gap-2">
+                                  {term.topASINs.slice(0, 3).map((asin, i) => (
+                                    <div key={i} className="group relative">
+                                      <img
+                                        src={`https://via.placeholder.com/40x40?text=${i+1}`}
+                                        alt={asin.title}
+                                        className="w-10 h-10 rounded border hover:scale-110 transition-transform cursor-pointer"
+                                      />
+                                      <div className="absolute bottom-full mb-2 right-0 hidden group-hover:block z-10 w-64 p-3 bg-white rounded-lg shadow-lg border">
+                                        <p className="text-xs font-medium text-gray-900 mb-1">{asin.title}</p>
+                                        <div className="flex justify-between text-xs text-gray-600">
+                                          <span>Click: {asin.clickShare.toFixed(1)}%</span>
+                                          <span>Conv: {asin.conversionShare.toFixed(1)}%</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
                           ))}
-                        </>
-                      );
-                    })()}
-                    
-                    {/* Month labels */}
-                    {(() => {
-                      const chartWidth = 1200;
-                      const padding = 40;
-                      const dataPoints = dailyProductData.demandData.googleTrends.length;
-                      const stepX = (chartWidth - 2 * padding) / (dataPoints - 1);
-                      
-                      return dailyProductData.demandData.googleTrends.map((item, index) => (
-                        <text
-                          key={index}
-                          x={padding + (index * stepX)}
-                          y="190"
-                          textAnchor="middle"
-                          className="text-sm fill-gray-600"
-                        >
-                          {item.month}
-                        </text>
-                      ));
-                    })()}
-                  </svg>
-                </div>
-                <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
-                  <span>Peak Season: December</span>
-                  <span>Low Season: July</span>
-                </div>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Trend Charts for Primary Keyword */}
+                    {searchTermsData.trends[0] && (
+                      <div className="mt-8 space-y-4">
+                        <h4 className="text-sm font-medium text-gray-900">
+                          Search Volume Trend - {searchTermsData.trends[0].keyword}
+                        </h4>
+                        
+                        {/* Mini chart for search volume trend */}
+                        <div className="h-32 bg-gray-50 rounded-lg p-4">
+                          <svg viewBox="0 0 800 100" className="w-full h-full" preserveAspectRatio="none">
+                            {(() => {
+                              const trendData = searchTermsData.trends[0].trendData
+                              const maxVolume = Math.max(...trendData.map(d => d.searchVolume))
+                              const minVolume = Math.min(...trendData.map(d => d.searchVolume))
+                              const range = maxVolume - minVolume || 1
+                              
+                              const points = trendData.map((data, index) => ({
+                                x: (index / (trendData.length - 1)) * 780 + 10,
+                                y: 90 - ((data.searchVolume - minVolume) / range) * 80
+                              }))
+                              
+                              const pathData = points.map((p, i) => 
+                                `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+                              ).join(' ')
+                              
+                              return (
+                                <>
+                                  <path 
+                                    d={pathData} 
+                                    fill="none" 
+                                    stroke="#3b82f6" 
+                                    strokeWidth="2"
+                                  />
+                                  {points.map((point, index) => (
+                                    <g key={index}>
+                                      <circle 
+                                        cx={point.x} 
+                                        cy={point.y} 
+                                        r="3" 
+                                        fill="#3b82f6"
+                                      />
+                                      <text
+                                        x={point.x}
+                                        y={point.y - 10}
+                                        textAnchor="middle"
+                                        className="text-xs fill-gray-600"
+                                      >
+                                        {(trendData[index].searchVolume / 1000).toFixed(0)}k
+                                      </text>
+                                    </g>
+                                  ))}
+                                </>
+                              )
+                            })()}
+                          </svg>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-xs text-gray-600">
+                          <span>4 weeks ago</span>
+                          <span>Current week</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="h-64 flex items-center justify-center">
+                    <p className="text-gray-500">No search terms data available</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -1124,86 +1247,49 @@ export default function ProductPage({ params }: ProductPageProps) {
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Social Media Signals</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">TikTok</p>
-                      <p className="text-xl font-bold text-gray-900">{dailyProductData.demandData.socialSignals.tiktok.posts}</p>
-                    </div>
-                    <div className="p-3 bg-pink-50 rounded-full">
-                      <Globe className="h-6 w-6 text-pink-600" />
-                    </div>
+                <CardContent className="p-6 text-center">
+                  <div className="p-3 bg-pink-50 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                    <Globe className="h-6 w-6 text-pink-600" />
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Views:</span>
-                      <span className="font-medium">{(dailyProductData.demandData.socialSignals.tiktok.views / 1000000).toFixed(1)}M</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Engagement:</span>
-                      <span className="font-medium">{dailyProductData.demandData.socialSignals.tiktok.engagement}</span>
-                    </div>
+                  <p className="text-sm font-medium text-gray-500 mb-2">TikTok</p>
+                  <p className="text-xl font-bold text-gray-900 mb-3">{dailyProductData.demandData.socialSignals.tiktok.posts}</p>
+                  <div className="space-y-1 text-sm">
+                    <p className="text-gray-500">Views: <span className="font-medium text-gray-900">{(dailyProductData.demandData.socialSignals.tiktok.views / 1000000).toFixed(1)}M</span></p>
+                    <p className="text-gray-500">Engagement: <span className="font-medium text-gray-900">{dailyProductData.demandData.socialSignals.tiktok.engagement}</span></p>
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Instagram</p>
-                      <p className="text-xl font-bold text-gray-900">{dailyProductData.demandData.socialSignals.instagram.posts}</p>
-                    </div>
-                    <div className="p-3 bg-purple-50 rounded-full">
-                      <MessageSquare className="h-6 w-6 text-purple-600" />
-                    </div>
+                <CardContent className="p-6 text-center">
+                  <div className="p-3 bg-purple-50 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                    <MessageSquare className="h-6 w-6 text-purple-600" />
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Engagement:</span>
-                      <span className="font-medium">{dailyProductData.demandData.socialSignals.instagram.engagement}</span>
-                    </div>
-                  </div>
+                  <p className="text-sm font-medium text-gray-500 mb-2">Instagram</p>
+                  <p className="text-xl font-bold text-gray-900 mb-3">{dailyProductData.demandData.socialSignals.instagram.posts}</p>
+                  <p className="text-sm text-gray-500">Engagement: <span className="font-medium text-gray-900">{dailyProductData.demandData.socialSignals.instagram.engagement}</span></p>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">YouTube</p>
-                      <p className="text-xl font-bold text-gray-900">{dailyProductData.demandData.socialSignals.youtube.videos}</p>
-                    </div>
-                    <div className="p-3 bg-red-50 rounded-full">
-                      <Activity className="h-6 w-6 text-red-600" />
-                    </div>
+                <CardContent className="p-6 text-center">
+                  <div className="p-3 bg-red-50 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                    <Activity className="h-6 w-6 text-red-600" />
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Avg Views:</span>
-                      <span className="font-medium">{(dailyProductData.demandData.socialSignals.youtube.avgViews / 1000).toFixed(0)}K</span>
-                    </div>
-                  </div>
+                  <p className="text-sm font-medium text-gray-500 mb-2">YouTube</p>
+                  <p className="text-xl font-bold text-gray-900 mb-3">{dailyProductData.demandData.socialSignals.youtube.videos}</p>
+                  <p className="text-sm text-gray-500">Avg Views: <span className="font-medium text-gray-900">{(dailyProductData.demandData.socialSignals.youtube.avgViews / 1000).toFixed(0)}K</span></p>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Reddit</p>
-                      <p className="text-xl font-bold text-gray-900">{dailyProductData.demandData.socialSignals.reddit.discussions}</p>
-                    </div>
-                    <div className="p-3 bg-orange-50 rounded-full">
-                      <FileText className="h-6 w-6 text-orange-600" />
-                    </div>
+                <CardContent className="p-6 text-center">
+                  <div className="p-3 bg-orange-50 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                    <FileText className="h-6 w-6 text-orange-600" />
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Sentiment:</span>
-                      <span className="font-medium capitalize text-green-600">{dailyProductData.demandData.socialSignals.reddit.sentiment}</span>
-                    </div>
-                  </div>
+                  <p className="text-sm font-medium text-gray-500 mb-2">Reddit</p>
+                  <p className="text-xl font-bold text-gray-900 mb-3">{dailyProductData.demandData.socialSignals.reddit.discussions}</p>
+                  <p className="text-sm text-gray-500">Sentiment: <span className="font-medium capitalize text-green-600">{dailyProductData.demandData.socialSignals.reddit.sentiment}</span></p>
                 </CardContent>
               </Card>
             </div>
@@ -1249,58 +1335,42 @@ export default function ProductPage({ params }: ProductPageProps) {
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-12">
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Total Competitors</p>
-                    <p className="text-2xl font-bold text-gray-900">{dailyProductData.competitionData.totalCompetitors}</p>
-                  </div>
-                  <div className="p-3 bg-blue-50 rounded-full">
-                    <Users className="h-6 w-6 text-blue-600" />
-                  </div>
+              <CardContent className="p-6 text-center">
+                <div className="p-3 bg-blue-50 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                  <Users className="h-6 w-6 text-blue-600" />
                 </div>
+                <p className="text-sm font-medium text-gray-500 mb-2">Total Competitors</p>
+                <p className="text-2xl font-bold text-gray-900">{dailyProductData.competitionData.totalCompetitors}</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Avg Rating</p>
-                    <p className="text-2xl font-bold text-gray-900">{dailyProductData.competitionData.averageRating}</p>
-                  </div>
-                  <div className="p-3 bg-yellow-50 rounded-full">
-                    <Star className="h-6 w-6 text-yellow-600" />
-                  </div>
+              <CardContent className="p-6 text-center">
+                <div className="p-3 bg-yellow-50 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                  <Star className="h-6 w-6 text-yellow-600" />
                 </div>
+                <p className="text-sm font-medium text-gray-500 mb-2">Avg Rating</p>
+                <p className="text-2xl font-bold text-gray-900">{dailyProductData.competitionData.averageRating}</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Avg Reviews</p>
-                    <p className="text-2xl font-bold text-gray-900">{dailyProductData.competitionData.averageReviews.toLocaleString()}</p>
-                  </div>
-                  <div className="p-3 bg-green-50 rounded-full">
-                    <MessageSquare className="h-6 w-6 text-green-600" />
-                  </div>
+              <CardContent className="p-6 text-center">
+                <div className="p-3 bg-green-50 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                  <MessageSquare className="h-6 w-6 text-green-600" />
                 </div>
+                <p className="text-sm font-medium text-gray-500 mb-2">Avg Reviews</p>
+                <p className="text-2xl font-bold text-gray-900">{dailyProductData.competitionData.averageReviews.toLocaleString()}</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Avg Price</p>
-                    <p className="text-2xl font-bold text-gray-900">${dailyProductData.competitionData.averagePrice}</p>
-                  </div>
-                  <div className="p-3 bg-purple-50 rounded-full">
-                    <DollarSign className="h-6 w-6 text-purple-600" />
-                  </div>
+              <CardContent className="p-6 text-center">
+                <div className="p-3 bg-purple-50 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-purple-600" />
                 </div>
+                <p className="text-sm font-medium text-gray-500 mb-2">Avg Price</p>
+                <p className="text-2xl font-bold text-gray-900">${dailyProductData.competitionData.averagePrice}</p>
               </CardContent>
             </Card>
           </div>
@@ -1837,7 +1907,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
         {/* Keyword Analysis Section */}
         {activeTab === 'keywords' && (
-          <section className="py-16 bg-white">
+          <section className="py-16 bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Keyword Analysis</h2>
@@ -2270,7 +2340,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
         {/* Financial & Launch Strategy Section */}
         {activeTab === 'financial' && (
-          <section className="py-16 bg-white">
+          <section className="py-16 bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-12">
                 <h2 className="text-3xl font-bold text-gray-900 mb-4">Financial & Launch Strategy</h2>

@@ -292,7 +292,9 @@ export default function HomePage() {
         {dailyFeature && (
           <section className="mb-16">
             <div className="text-center mb-8">
-              <h2 className="text-4xl font-bold text-blue-600 mb-4">Product of the Day</h2>
+              <Link href="/product-of-the-day">
+                <h2 className="text-4xl font-bold text-blue-600 mb-4 hover:text-blue-700 cursor-pointer">Product of the Day</h2>
+              </Link>
               <div className="flex items-center justify-center space-x-6">
                 <Link href="/previous-ideas" className="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
                   <ChevronLeft className="h-4 w-4 text-gray-500" />
@@ -393,7 +395,7 @@ export default function HomePage() {
                     <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
                       <h4 className="text-lg font-semibold text-gray-900 mb-3">Why This Product?</h4>
                       <p className="text-gray-700 leading-relaxed mb-3">{dailyFeature.reason}</p>
-                      <Link href={`/products/${dailyFeature.product.id}`} className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                      <Link href="/product-of-the-day" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
                         See why this opportunity matters now →
                       </Link>
                     </div>
@@ -410,7 +412,7 @@ export default function HomePage() {
                             </li>
                           ))}
                         </ul>
-                        <Link href={`/products/${dailyFeature.product.id}#highlights`} className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                        <Link href="/product-of-the-day#highlights" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
                           See full feature breakdown →
                         </Link>
                       </div>
@@ -418,7 +420,7 @@ export default function HomePage() {
                       <div className="bg-gray-50 rounded-lg p-4 border">
                         <h5 className="font-semibold text-gray-900 mb-2">Market Context</h5>
                         <p className="text-gray-700 mb-3">{dailyFeature.marketContext}</p>
-                        <Link href={`/products/${dailyFeature.product.id}#market`} className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                        <Link href="/product-of-the-day#market" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
                           Explore market trends →
                         </Link>
                       </div>
@@ -437,7 +439,7 @@ export default function HomePage() {
                             <span className="font-medium">Trend:</span> +127% YoY
                           </div>
                         </div>
-                        <Link href={`/products/${dailyFeature.product.id}#demand`} className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                        <Link href="/product-of-the-day#demand" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
                           See demand analysis →
                         </Link>
                       </div>
@@ -456,7 +458,7 @@ export default function HomePage() {
                             <span className="font-medium">Avg Rating:</span> 4.2/5 stars
                           </div>
                         </div>
-                        <Link href={`/products/${dailyFeature.product.id}#competition`} className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                        <Link href="/product-of-the-day#competition" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
                           View competitor analysis →
                         </Link>
                       </div>
@@ -478,7 +480,7 @@ export default function HomePage() {
                             <span className="font-medium">28K/mo</span>
                           </div>
                         </div>
-                        <Link href={`/products/${dailyFeature.product.id}#keywords`} className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                        <Link href="/product-of-the-day#keywords" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
                           Explore keyword opportunities →
                         </Link>
                       </div>
@@ -497,7 +499,7 @@ export default function HomePage() {
                             <span className="font-medium">Break-even:</span> 75 units
                           </div>
                         </div>
-                        <Link href={`/products/${dailyFeature.product.id}#financial`} className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                        <Link href="/product-of-the-day#financial" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
                           See financial projections →
                         </Link>
                       </div>
@@ -519,7 +521,7 @@ export default function HomePage() {
                             <div className="text-xs text-gray-600">Age 25-50, need noise cancellation</div>
                           </div>
                         </div>
-                        <Link href={`/products/${dailyFeature.product.id}#social`} className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                        <Link href="/product-of-the-day#social" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
                           Learn about target customers →
                         </Link>
                       </div>
@@ -597,7 +599,7 @@ export default function HomePage() {
                           </ul>
                         </div>
 
-                        <Link href={`/products/${dailyFeature.product.id}`}>
+                        <Link href="/product-of-the-day">
                           <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
                             Deep Dive Analysis
                             <ArrowRight className="ml-2 h-4 w-4" />
@@ -611,6 +613,15 @@ export default function HomePage() {
             </Card>
           </section>
         )}
+
+        {/* Debug Link - Remove in production */}
+        <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-sm text-yellow-800">
+            Debug: <Link href="/products/smart-bluetooth-sleep-mask-with-built-in-speakers" className="text-blue-600 hover:text-blue-700 underline">
+              View Main Product Detail Page (Smart Bluetooth Sleep Mask)
+            </Link>
+          </p>
+        </div>
 
         {/* The Product Database Section */}
         <section className="mb-16">
