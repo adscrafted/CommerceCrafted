@@ -553,6 +553,166 @@ export const mockProductData = {
     primaryKeyword: 'bluetooth sleep mask',
     cpc: 1.23,
     competition: 'Medium',
+    totalKeywords: 245,
+    monthlySearchVolume: 185000,
+    averageROI: 235,
+    // Trending keywords data
+    trendingKeywords: [
+      { 
+        keyword: 'sleep mask with bluetooth speakers',
+        trend: '+145%',
+        currentVolume: 8500,
+        previousVolume: 3450,
+        velocity: 'skyrocketing',
+        seasonality: 'winter peak',
+        cpc: 0.98,
+        opportunity: 92
+      },
+      { 
+        keyword: 'wireless sleep headband',
+        trend: '+89%',
+        currentVolume: 6200,
+        previousVolume: 3280,
+        velocity: 'rapid growth',
+        seasonality: 'stable',
+        cpc: 1.15,
+        opportunity: 85
+      },
+      { 
+        keyword: 'bluetooth eye mask for sleeping',
+        trend: '+67%',
+        currentVolume: 4800,
+        previousVolume: 2880,
+        velocity: 'growing',
+        seasonality: 'holiday spike',
+        cpc: 1.32,
+        opportunity: 78
+      },
+      { 
+        keyword: 'sleep headphones side sleepers',
+        trend: '+52%',
+        currentVolume: 5200,
+        previousVolume: 3421,
+        velocity: 'steady growth',
+        seasonality: 'stable',
+        cpc: 0.92,
+        opportunity: 82
+      }
+    ],
+    // Competitor keyword analysis
+    competitorKeywords: [
+      {
+        keyword: 'bluetooth sleep mask',
+        ourRank: null,
+        competitors: [
+          { asin: 'B07SHBQY7Z', brand: 'MUSICOZY', rank: 1, ppcSpend: 4500, organicShare: 42 },
+          { asin: 'B07Q34GWQT', brand: 'Perytong', rank: 2, ppcSpend: 3200, organicShare: 28 },
+          { asin: 'B00MFQJK1G', brand: 'CozyPhones', rank: 4, ppcSpend: 2100, organicShare: 15 }
+        ],
+        keywordGap: true,
+        difficulty: 'high',
+        recommendedBid: 1.45
+      },
+      {
+        keyword: 'wireless sleep mask',
+        ourRank: null,
+        competitors: [
+          { asin: 'B07Q34GWQT', brand: 'Perytong', rank: 1, ppcSpend: 2800, organicShare: 35 },
+          { asin: 'B07SHBQY7Z', brand: 'MUSICOZY', rank: 2, ppcSpend: 2400, organicShare: 28 },
+          { asin: 'B08K4F3G2K', brand: 'LC-dolida', rank: 3, ppcSpend: 1800, organicShare: 18 }
+        ],
+        keywordGap: true,
+        difficulty: 'medium',
+        recommendedBid: 1.25
+      },
+      {
+        keyword: 'sleep headphones bluetooth',
+        ourRank: null,
+        competitors: [
+          { asin: 'B07SHBQY7Z', brand: 'MUSICOZY', rank: 1, ppcSpend: 3800, organicShare: 38 },
+          { asin: 'B07Q34GWQT', brand: 'Perytong', rank: 3, ppcSpend: 2200, organicShare: 22 },
+          { asin: 'B00MFQJK1G', brand: 'CozyPhones', rank: 5, ppcSpend: 1500, organicShare: 12 }
+        ],
+        keywordGap: true,
+        difficulty: 'high',
+        recommendedBid: 1.38
+      }
+    ],
+    // CPC and profitability analysis
+    cpcAnalysis: {
+      matchTypes: [
+        { type: 'Exact', avgCPC: 1.45, conversionRate: 14.2, roi: 285, volume: 45000 },
+        { type: 'Phrase', avgCPC: 1.23, conversionRate: 11.8, roi: 235, volume: 85000 },
+        { type: 'Broad', avgCPC: 0.98, conversionRate: 8.5, roi: 165, volume: 125000 }
+      ],
+      bidRecommendations: [
+        { keyword: 'bluetooth sleep mask', currentCPC: 1.23, recommendedBid: 1.45, reason: 'High conversion rate', expectedROI: 285 },
+        { keyword: 'wireless sleep mask', currentCPC: 1.15, recommendedBid: 1.28, reason: 'Moderate competition', expectedROI: 245 },
+        { keyword: 'sleep mask speakers', currentCPC: 0.98, recommendedBid: 1.15, reason: 'Growing search volume', expectedROI: 265 }
+      ],
+      budgetSimulator: [
+        { budget: 1000, expectedClicks: 813, expectedOrders: 96, expectedRevenue: 2879, profit: 1879 },
+        { budget: 2500, expectedClicks: 2032, expectedOrders: 240, expectedRevenue: 7197, profit: 4697 },
+        { budget: 5000, expectedClicks: 4065, expectedOrders: 480, expectedRevenue: 14394, profit: 9394 },
+        { budget: 10000, expectedClicks: 8130, expectedOrders: 960, expectedRevenue: 28788, profit: 18788 }
+      ]
+    },
+    // Keyword opportunity scoring
+    opportunityMatrix: [
+      {
+        keyword: 'sleep mask bluetooth speakers',
+        searchVolume: 12500,
+        competition: 'low',
+        cpc: 0.85,
+        conversionPotential: 13.5,
+        trendMomentum: 145,
+        opportunityScore: 92,
+        actionPriority: 'immediate'
+      },
+      {
+        keyword: 'wireless sleep headband music',
+        searchVolume: 8900,
+        competition: 'low',
+        cpc: 0.92,
+        conversionPotential: 12.8,
+        trendMomentum: 89,
+        opportunityScore: 87,
+        actionPriority: 'high'
+      },
+      {
+        keyword: 'bluetooth headband for sleeping',
+        searchVolume: 15600,
+        competition: 'medium',
+        cpc: 1.15,
+        conversionPotential: 11.5,
+        trendMomentum: 45,
+        opportunityScore: 72,
+        actionPriority: 'medium'
+      }
+    ],
+    // Long-tail keyword discovery
+    longTailKeywords: [
+      { keyword: 'how to connect bluetooth sleep mask to iphone', volume: 890, cpc: 0.45, intent: 'informational' },
+      { keyword: 'best bluetooth sleep mask for side sleepers 2024', volume: 1200, cpc: 0.78, intent: 'transactional' },
+      { keyword: 'can you wash bluetooth sleep headphones', volume: 650, cpc: 0.32, intent: 'informational' },
+      { keyword: 'bluetooth sleep mask vs regular sleep mask', volume: 780, cpc: 0.52, intent: 'comparison' },
+      { keyword: 'where to buy wireless sleep headphones near me', volume: 420, cpc: 0.98, intent: 'local' }
+    ],
+    // Keyword cannibalization analysis
+    cannibalizationRisks: [
+      {
+        keywordGroup: ['bluetooth sleep mask', 'bluetooth sleeping mask', 'sleep mask bluetooth'],
+        risk: 'high',
+        affectedASINs: 3,
+        recommendation: 'Assign primary keyword to hero ASIN, use variations for different products'
+      },
+      {
+        keywordGroup: ['wireless sleep headphones', 'wireless sleeping headphones', 'sleep headphones wireless'],
+        risk: 'medium',
+        affectedASINs: 2,
+        recommendation: 'Differentiate by use case (travel vs home)'
+      }
+    ],
     keywordHierarchy: {
       'Sleep Technology': {
         totalRevenue: 298000,
@@ -566,9 +726,48 @@ export const mockProductData = {
             avgConversionRate: 12.5,
             avgCPC: 1.23,
             keywords: [
-              { keyword: 'bluetooth sleep mask', monthlyRevenue: 89000, monthlyOrders: 380, conversionRate: 12.5, aov: 29.99, cpc: 1.23, difficulty: 68 },
-              { keyword: 'bluetooth sleep headphones', monthlyRevenue: 34000, monthlyOrders: 140, conversionRate: 11.8, aov: 28.50, cpc: 1.15, difficulty: 65 },
-              { keyword: 'bluetooth headband sleep', monthlyRevenue: 22000, monthlyOrders: 80, conversionRate: 13.2, aov: 27.50, cpc: 1.35, difficulty: 72 }
+              { 
+                keyword: 'bluetooth sleep mask', 
+                monthlyRevenue: 89000, 
+                monthlyOrders: 380, 
+                conversionRate: 12.5, 
+                aov: 29.99, 
+                cpc: 1.23, 
+                difficulty: 68,
+                searchVolume: 18500,
+                trend: '+23%',
+                competitors: ['MUSICOZY', 'Perytong'],
+                rankingDifficulty: 'hard',
+                estimatedPPCBudget: 2200
+              },
+              { 
+                keyword: 'bluetooth sleep headphones', 
+                monthlyRevenue: 34000, 
+                monthlyOrders: 140, 
+                conversionRate: 11.8, 
+                aov: 28.50, 
+                cpc: 1.15, 
+                difficulty: 65,
+                searchVolume: 12400,
+                trend: '+18%',
+                competitors: ['MUSICOZY', 'CozyPhones'],
+                rankingDifficulty: 'medium',
+                estimatedPPCBudget: 1800
+              },
+              { 
+                keyword: 'bluetooth headband sleep', 
+                monthlyRevenue: 22000, 
+                monthlyOrders: 80, 
+                conversionRate: 13.2, 
+                aov: 27.50, 
+                cpc: 1.35, 
+                difficulty: 72,
+                searchVolume: 8900,
+                trend: '+45%',
+                competitors: ['Perytong'],
+                rankingDifficulty: 'medium',
+                estimatedPPCBudget: 1200
+              }
             ]
           },
           'Wireless Keywords': {
@@ -577,9 +776,48 @@ export const mockProductData = {
             avgConversionRate: 11.9,
             avgCPC: 1.08,
             keywords: [
-              { keyword: 'wireless sleep mask', monthlyRevenue: 45000, monthlyOrders: 200, conversionRate: 11.9, aov: 28.50, cpc: 1.15, difficulty: 62 },
-              { keyword: 'wireless sleep headphones', monthlyRevenue: 28000, monthlyOrders: 120, conversionRate: 12.1, aov: 26.99, cpc: 1.05, difficulty: 58 },
-              { keyword: 'wireless headband sleep', monthlyRevenue: 16000, monthlyOrders: 60, conversionRate: 11.5, aov: 25.99, cpc: 1.02, difficulty: 55 }
+              { 
+                keyword: 'wireless sleep mask', 
+                monthlyRevenue: 45000, 
+                monthlyOrders: 200, 
+                conversionRate: 11.9, 
+                aov: 28.50, 
+                cpc: 1.15, 
+                difficulty: 62,
+                searchVolume: 14500,
+                trend: '+38%',
+                competitors: ['Perytong', 'MUSICOZY'],
+                rankingDifficulty: 'medium',
+                estimatedPPCBudget: 1600
+              },
+              { 
+                keyword: 'wireless sleep headphones', 
+                monthlyRevenue: 28000, 
+                monthlyOrders: 120, 
+                conversionRate: 12.1, 
+                aov: 26.99, 
+                cpc: 1.05, 
+                difficulty: 58,
+                searchVolume: 9800,
+                trend: '+25%',
+                competitors: ['CozyPhones'],
+                rankingDifficulty: 'easy',
+                estimatedPPCBudget: 1100
+              },
+              { 
+                keyword: 'wireless headband sleep', 
+                monthlyRevenue: 16000, 
+                monthlyOrders: 60, 
+                conversionRate: 11.5, 
+                aov: 25.99, 
+                cpc: 1.02, 
+                difficulty: 55,
+                searchVolume: 6200,
+                trend: '+89%',
+                competitors: [],
+                rankingDifficulty: 'easy',
+                estimatedPPCBudget: 800
+              }
             ]
           },
           'Smart Keywords': {
@@ -588,9 +826,48 @@ export const mockProductData = {
             avgConversionRate: 11.8,
             avgCPC: 0.98,
             keywords: [
-              { keyword: 'smart sleep mask', monthlyRevenue: 32000, monthlyOrders: 140, conversionRate: 11.8, aov: 24.99, cpc: 0.98, difficulty: 60 },
-              { keyword: 'smart sleep headphones', monthlyRevenue: 19000, monthlyOrders: 85, conversionRate: 12.0, aov: 23.99, cpc: 0.95, difficulty: 58 },
-              { keyword: 'smart headband sleep', monthlyRevenue: 13000, monthlyOrders: 65, conversionRate: 11.5, aov: 22.99, cpc: 1.02, difficulty: 52 }
+              { 
+                keyword: 'smart sleep mask', 
+                monthlyRevenue: 32000, 
+                monthlyOrders: 140, 
+                conversionRate: 11.8, 
+                aov: 24.99, 
+                cpc: 0.98, 
+                difficulty: 60,
+                searchVolume: 8900,
+                trend: '+67%',
+                competitors: ['Tempur', 'Philips'],
+                rankingDifficulty: 'medium',
+                estimatedPPCBudget: 950
+              },
+              { 
+                keyword: 'smart sleep headphones', 
+                monthlyRevenue: 19000, 
+                monthlyOrders: 85, 
+                conversionRate: 12.0, 
+                aov: 23.99, 
+                cpc: 0.95, 
+                difficulty: 58,
+                searchVolume: 6200,
+                trend: '+52%',
+                competitors: [],
+                rankingDifficulty: 'easy',
+                estimatedPPCBudget: 750
+              },
+              { 
+                keyword: 'smart headband sleep', 
+                monthlyRevenue: 13000, 
+                monthlyOrders: 65, 
+                conversionRate: 11.5, 
+                aov: 22.99, 
+                cpc: 1.02, 
+                difficulty: 52,
+                searchVolume: 4100,
+                trend: '+145%',
+                competitors: [],
+                rankingDifficulty: 'easy',
+                estimatedPPCBudget: 500
+              }
             ]
           }
         }
@@ -607,9 +884,48 @@ export const mockProductData = {
             avgConversionRate: 11.2,
             avgCPC: 0.92,
             keywords: [
-              { keyword: 'sleep mask side sleepers', monthlyRevenue: 45000, monthlyOrders: 220, conversionRate: 11.5, aov: 24.99, cpc: 0.95, difficulty: 48 },
-              { keyword: 'headphones side sleepers', monthlyRevenue: 28000, monthlyOrders: 130, conversionRate: 11.0, aov: 23.99, cpc: 0.88, difficulty: 45 },
-              { keyword: 'sleep headband side sleepers', monthlyRevenue: 16000, monthlyOrders: 70, conversionRate: 10.8, aov: 22.99, cpc: 0.92, difficulty: 42 }
+              { 
+                keyword: 'sleep mask side sleepers', 
+                monthlyRevenue: 45000, 
+                monthlyOrders: 220, 
+                conversionRate: 11.5, 
+                aov: 24.99, 
+                cpc: 0.95, 
+                difficulty: 48,
+                searchVolume: 11200,
+                trend: '+32%',
+                competitors: ['CozyPhones', 'MUSICOZY'],
+                rankingDifficulty: 'easy',
+                estimatedPPCBudget: 1100
+              },
+              { 
+                keyword: 'headphones side sleepers', 
+                monthlyRevenue: 28000, 
+                monthlyOrders: 130, 
+                conversionRate: 11.0, 
+                aov: 23.99, 
+                cpc: 0.88, 
+                difficulty: 45,
+                searchVolume: 8900,
+                trend: '+28%',
+                competitors: ['CozyPhones'],
+                rankingDifficulty: 'easy',
+                estimatedPPCBudget: 850
+              },
+              { 
+                keyword: 'sleep headband side sleepers', 
+                monthlyRevenue: 16000, 
+                monthlyOrders: 70, 
+                conversionRate: 10.8, 
+                aov: 22.99, 
+                cpc: 0.92, 
+                difficulty: 42,
+                searchVolume: 5200,
+                trend: '+52%',
+                competitors: [],
+                rankingDifficulty: 'easy',
+                estimatedPPCBudget: 600
+              }
             ]
           },
           'Comfort Keywords': {
@@ -618,9 +934,48 @@ export const mockProductData = {
             avgConversionRate: 10.4,
             avgCPC: 0.85,
             keywords: [
-              { keyword: 'comfortable sleep mask', monthlyRevenue: 34000, monthlyOrders: 160, conversionRate: 10.8, aov: 21.99, cpc: 0.88, difficulty: 40 },
-              { keyword: 'soft sleep headphones', monthlyRevenue: 21000, monthlyOrders: 95, conversionRate: 10.2, aov: 20.99, cpc: 0.82, difficulty: 38 },
-              { keyword: 'comfortable sleep headband', monthlyRevenue: 12000, monthlyOrders: 45, conversionRate: 9.8, aov: 19.99, cpc: 0.85, difficulty: 35 }
+              { 
+                keyword: 'comfortable sleep mask', 
+                monthlyRevenue: 34000, 
+                monthlyOrders: 160, 
+                conversionRate: 10.8, 
+                aov: 21.99, 
+                cpc: 0.88, 
+                difficulty: 40,
+                searchVolume: 9800,
+                trend: '+15%',
+                competitors: ['Tempur', 'Mavogel'],
+                rankingDifficulty: 'easy',
+                estimatedPPCBudget: 900
+              },
+              { 
+                keyword: 'soft sleep headphones', 
+                monthlyRevenue: 21000, 
+                monthlyOrders: 95, 
+                conversionRate: 10.2, 
+                aov: 20.99, 
+                cpc: 0.82, 
+                difficulty: 38,
+                searchVolume: 6700,
+                trend: '+22%',
+                competitors: [],
+                rankingDifficulty: 'easy',
+                estimatedPPCBudget: 600
+              },
+              { 
+                keyword: 'comfortable sleep headband', 
+                monthlyRevenue: 12000, 
+                monthlyOrders: 45, 
+                conversionRate: 9.8, 
+                aov: 19.99, 
+                cpc: 0.85, 
+                difficulty: 35,
+                searchVolume: 3900,
+                trend: '+18%',
+                competitors: [],
+                rankingDifficulty: 'easy',
+                estimatedPPCBudget: 350
+              }
             ]
           }
         }
@@ -1045,6 +1400,343 @@ export const mockProductData = {
         'Address common pain points from reviews',
         'Use power words and emotional triggers'
       ]
+    },
+    // Advanced Listing Features
+    completeImageAnalysis: {
+      imageGallery: {
+        ourProduct: {
+          mainImage: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&h=600&fit=crop',
+          images: [
+            { url: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&h=400&fit=crop', type: 'main', score: 88, caption: 'Hero shot - clean white background' },
+            { url: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop', type: 'lifestyle', score: 85, caption: 'Side sleeping demonstration' },
+            { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop', type: 'detail', score: 82, caption: 'Feature callouts and specs' },
+            { url: 'https://images.unsplash.com/photo-1573868396123-ef72a7f7b94f?w=400&h=400&fit=crop', type: 'comparison', score: 78, caption: 'Package contents overview' }
+          ]
+        },
+        competitors: [
+          {
+            name: 'MUSICOZY',
+            asin: 'B08MVBRNKV',
+            totalScore: 92,
+            images: [
+              { url: 'https://images.unsplash.com/photo-1559563458-527698bf5295?w=400&h=400&fit=crop', type: 'main', score: 95, improvements: ['Better product positioning', 'Improved lighting'] },
+              { url: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&h=400&fit=crop', type: 'lifestyle', score: 90, improvements: ['More diverse models', 'Better bedroom setting'] },
+              { url: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop', type: 'detail', score: 88, improvements: ['Clearer text', 'Better icon design'] },
+              { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop', type: 'infographic', score: 92, improvements: ['More technical details'] },
+              { url: 'https://images.unsplash.com/photo-1573868396123-ef72a7f7b94f?w=400&h=400&fit=crop', type: 'packaging', score: 89, improvements: ['Show warranty info'] },
+              { url: 'https://images.unsplash.com/photo-1560707303-4e980ce876ad?w=400&h=400&fit=crop', type: 'comparison', score: 91, improvements: ['Add size guide'] }
+            ]
+          },
+          {
+            name: 'Perytong',
+            asin: 'B07SHBQY7Z',
+            totalScore: 85,
+            images: [
+              { url: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop', type: 'main', score: 87, improvements: ['Sharper resolution', 'Better color balance'] },
+              { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop', type: 'lifestyle', score: 83, improvements: ['More realistic scenarios'] },
+              { url: 'https://images.unsplash.com/photo-1573868396123-ef72a7f7b94f?w=400&h=400&fit=crop', type: 'detail', score: 85, improvements: ['Better close-ups'] },
+              { url: 'https://images.unsplash.com/photo-1560707303-4e980ce876ad?w=400&h=400&fit=crop', type: 'comparison', score: 82, improvements: ['Clearer comparisons'] },
+              { url: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop', type: 'infographic', score: 86, improvements: ['More benefit-focused'] },
+              { url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop', type: 'packaging', score: 84, improvements: ['Better layout'] }
+            ]
+          }
+        ]
+      },
+      imagePerformanceMetrics: {
+        overallScore: 83,
+        breakdown: {
+          position1: { score: 88, conversionImpact: 'High', optimizationPriority: 'Medium' },
+          position2: { score: 85, conversionImpact: 'High', optimizationPriority: 'High' },
+          position3: { score: 82, conversionImpact: 'Medium', optimizationPriority: 'Medium' },
+          position4: { score: 78, conversionImpact: 'Low', optimizationPriority: 'Low' }
+        },
+        improvementPotential: {
+          currentCVR: 12.5,
+          projectedCVR: 15.8,
+          revenueUplift: 26.4
+        }
+      }
+    },
+    advancedTitleOptimization: {
+      characterAnalysis: {
+        currentTitle: 'Smart Bluetooth Sleep Mask with Built-in Speakers',
+        currentLength: 48,
+        mobileLimit: 80,
+        desktopLimit: 200,
+        utilizationRate: 24
+      },
+      keywordDensity: {
+        primary: { keyword: 'sleep mask', density: 2.1, optimal: 2.5 },
+        secondary: { keyword: 'bluetooth', density: 2.1, optimal: 2.0 },
+        tertiary: { keyword: 'speakers', density: 2.1, optimal: 1.5 }
+      },
+      titleVariations: [
+        {
+          title: 'Bluetooth Sleep Mask with Built-in Speakers - Wireless Audio Headband for Side Sleepers, Meditation & Travel',
+          score: 94,
+          pros: ['Keyword rich', 'Under 200 chars', 'Clear benefits'],
+          cons: ['Could be more emotional'],
+          length: 112
+        },
+        {
+          title: 'Premium Sleep Mask Bluetooth Headphones - Ultra-Soft Wireless Audio Eye Mask for Deep Sleep & Relaxation',
+          score: 91,
+          pros: ['Emotional appeal', 'Clear differentiation'],
+          cons: ['Missing travel keyword', 'Longer length'],
+          length: 118
+        },
+        {
+          title: 'Sleep Mask with Bluetooth Speakers - Comfortable Wireless Headband for Side Sleepers, Travel & Meditation',
+          score: 89,
+          pros: ['Natural flow', 'Key benefits clear'],
+          cons: ['Generic opening', 'Missing premium positioning'],
+          length: 115
+        }
+      ],
+      competitorTitleAnalysis: [
+        {
+          competitor: 'MUSICOZY',
+          title: 'Sleep Headphones Bluetooth Headband - Soft Elastic Comfortable Headband Headphones for Sleeping',
+          score: 87,
+          strengths: ['Clear product type', 'Comfort emphasis'],
+          weaknesses: ['Repetitive', 'Missing use cases']
+        },
+        {
+          competitor: 'Perytong',
+          title: 'Sleep Headphones Bluetooth Sports Headband Thin Speakers Perfect for Workout, Jogging, Yoga',
+          score: 85,
+          strengths: ['Multiple use cases', 'Feature highlight'],
+          weaknesses: ['Too focused on sports', 'Missing sleep emphasis']
+        }
+      ]
+    },
+    enhancedBulletPoints: {
+      currentBullets: [
+        'PREMIUM COMFORT - Ultra-soft, breathable fabric designed specifically for side sleepers',
+        'WIRELESS BLUETOOTH - Latest 5.0 technology for stable connection up to 30 feet',
+        'LONG BATTERY LIFE - Up to 10 hours of continuous playback on single charge',
+        'PERFECT FOR TRAVEL - Compact design fits easily in carry-on luggage',
+        'SATISFACTION GUARANTEE - 30-day money-back guarantee with 1-year warranty'
+      ],
+      optimizedBullets: [
+        {
+          bullet: '🌙 SLEEP DEEPER TONIGHT - Ultra-soft hypoallergenic fabric with flat speakers designed for side sleepers eliminates pressure points while delivering crystal-clear audio for meditation, sleep stories, or music',
+          score: 95,
+          improvements: ['Emotional hook', 'Specific benefits', 'Clear audience'],
+          characterCount: 198
+        },
+        {
+          bullet: '📱 SEAMLESS WIRELESS CONNECTION - Advanced Bluetooth 5.0 technology connects instantly to any device within 30 feet, with automatic reconnection and hands-free calling capability',
+          score: 92,
+          improvements: ['Technical credibility', 'Range specification', 'Added functionality'],
+          characterCount: 178
+        },
+        {
+          bullet: '🔋 ALL-NIGHT BATTERY POWER - Industry-leading 10+ hour battery life means uninterrupted sleep audio, plus quick 2-hour charging via included USB cable',
+          score: 90,
+          improvements: ['Superlative positioning', 'Practical benefit', 'Charging info'],
+          characterCount: 156
+        },
+        {
+          bullet: '✈️ TRAVEL-READY COMFORT - Lightweight, foldable design perfect for flights, hotels, or camping with included travel pouch for protection',
+          score: 88,
+          improvements: ['Use case specific', 'Portability emphasis', 'Protection value'],
+          characterCount: 142
+        },
+        {
+          bullet: '💯 RISK-FREE GUARANTEE - 30-day money-back promise plus 12-month replacement warranty ensures your complete satisfaction',
+          score: 86,
+          improvements: ['Risk reversal', 'Extended warranty', 'Confidence building'],
+          characterCount: 128
+        }
+      ],
+      bulletAnalytics: {
+        averageScore: 90.2,
+        emotionalTriggers: 8,
+        benefitToFeatureRatio: 3.2,
+        readabilityScore: 87,
+        mobileOptimization: 94
+      }
+    },
+    comprehensiveAPlusContent: {
+      moduleRecommendations: [
+        {
+          type: 'Hero Banner',
+          template: 'Standard Company Logo',
+          score: 95,
+          content: {
+            headline: 'Experience Perfect Sleep Audio',
+            subheadline: 'Premium Bluetooth technology meets ultimate comfort',
+            cta: 'Discover the Difference',
+            backgroundType: 'Lifestyle bedroom scene'
+          },
+          mobileOptimization: 92,
+          conversionImpact: 'High'
+        },
+        {
+          type: 'Feature Comparison',
+          template: 'Comparison Chart',
+          score: 93,
+          content: {
+            features: [
+              { feature: 'Speaker Technology', us: 'Ultra-thin HD speakers', competitor1: 'Standard speakers', competitor2: 'Thick speakers' },
+              { feature: 'Battery Life', us: '10+ hours', competitor1: '8 hours', competitor2: '6 hours' },
+              { feature: 'Comfort Rating', us: '5/5 stars', competitor1: '4/5 stars', competitor2: '3/5 stars' },
+              { feature: 'Bluetooth Range', us: '30 feet', competitor1: '20 feet', competitor2: '15 feet' }
+            ]
+          },
+          mobileOptimization: 89,
+          conversionImpact: 'High'
+        },
+        {
+          type: 'Product Description',
+          template: 'Standard Single Image & Text',
+          score: 88,
+          content: {
+            headline: 'Engineered for Side Sleepers',
+            description: 'Our patented ultra-thin speaker design eliminates pressure points while delivering rich, immersive audio...',
+            imageType: 'Cross-section technical diagram'
+          },
+          mobileOptimization: 94,
+          conversionImpact: 'Medium'
+        }
+      ],
+      brandStoryElements: {
+        mission: 'Transforming sleep through innovative audio technology',
+        values: ['Quality', 'Comfort', 'Innovation', 'Customer satisfaction'],
+        differentiators: ['Patented speaker design', 'Sleep-focused engineering', 'Premium materials'],
+        socialProof: ['50,000+ satisfied customers', '4.5-star average rating', 'Featured in Sleep Magazine']
+      },
+      performancePrediction: {
+        currentConversionRate: 12.5,
+        projectedUplift: 18.5,
+        confidenceLevel: 87,
+        timeToImplement: '2-3 weeks'
+      }
+    },
+    advancedVideoStrategy: {
+      storyboards: [
+        {
+          type: 'Product Demo',
+          duration: 60,
+          script: {
+            opening: 'Tired of uncomfortable earbuds ruining your sleep?',
+            demonstration: 'Watch how our ultra-thin speakers provide crystal-clear audio...',
+            closing: 'Experience perfect sleep audio tonight',
+            cta: 'Order now with free shipping'
+          },
+          shotList: [
+            { shot: 'Problem setup - person struggling with earbuds', duration: 8 },
+            { shot: 'Product introduction - clean white background', duration: 6 },
+            { shot: 'Unboxing and setup process', duration: 12 },
+            { shot: 'Bluetooth pairing demonstration', duration: 8 },
+            { shot: 'Comfort demonstration - side sleeping', duration: 15 },
+            { shot: 'Feature callouts with graphics', duration: 8 },
+            { shot: 'Call to action with product shot', duration: 3 }
+          ],
+          productionCost: 2500,
+          expectedROI: 340
+        },
+        {
+          type: 'Lifestyle',
+          duration: 45,
+          script: {
+            opening: 'Transform your nightly routine',
+            demonstration: 'From meditation to sleep stories to music...',
+            closing: 'Sleep better, wake up refreshed',
+            cta: 'Join thousands of better sleepers'
+          },
+          shotList: [
+            { shot: 'Evening routine montage', duration: 10 },
+            { shot: 'Putting on sleep mask - comfortable fit', duration: 8 },
+            { shot: 'Peaceful sleep scenes - various positions', duration: 15 },
+            { shot: 'Morning wake-up - refreshed feeling', duration: 8 },
+            { shot: 'Product beauty shot with branding', duration: 4 }
+          ],
+          productionCost: 3200,
+          expectedROI: 280
+        }
+      ],
+      performanceBenchmarks: {
+        industry: {
+          averageViewRate: 65,
+          averageConversionLift: 12.5,
+          averageCostPerView: 0.08
+        },
+        projected: {
+          viewRate: 78,
+          conversionLift: 18.5,
+          costPerView: 0.06,
+          totalViews: 125000,
+          projectedSales: 2850
+        }
+      }
+    },
+    listingPerformanceSimulator: {
+      currentMetrics: {
+        conversionRate: 12.5,
+        clickThroughRate: 0.42,
+        sessionDuration: 145,
+        bounceRate: 23.8,
+        addToCartRate: 8.9
+      },
+      optimizationImpact: {
+        title: { conversionLift: 2.3, effort: 'Low', timeframe: '1 day' },
+        images: { conversionLift: 8.5, effort: 'Medium', timeframe: '1 week' },
+        bullets: { conversionLift: 4.2, effort: 'Low', timeframe: '1 day' },
+        aplus: { conversionLift: 12.8, effort: 'High', timeframe: '2-3 weeks' },
+        video: { conversionLift: 15.2, effort: 'High', timeframe: '3-4 weeks' }
+      },
+      competitorGapAnalysis: [
+        { area: 'Image Quality', gap: 12, competitorAverage: 87, ourScore: 75 },
+        { area: 'Title Optimization', gap: 8, competitorAverage: 85, ourScore: 77 },
+        { area: 'Bullet Effectiveness', gap: 6, competitorAverage: 82, ourScore: 76 },
+        { area: 'A+ Content', gap: 15, competitorAverage: 90, ourScore: 75 },
+        { area: 'Video Content', gap: 20, competitorAverage: 85, ourScore: 65 }
+      ],
+      priorityMatrix: [
+        { optimization: 'Add product video', impact: 'High', effort: 'High', priority: 1, roi: 340 },
+        { optimization: 'Enhance A+ content', impact: 'High', effort: 'Medium', priority: 2, roi: 280 },
+        { optimization: 'Improve main image', impact: 'Medium', effort: 'Medium', priority: 3, roi: 220 },
+        { optimization: 'Optimize bullets', impact: 'Medium', effort: 'Low', priority: 4, roi: 180 },
+        { optimization: 'Refine title', impact: 'Low', effort: 'Low', priority: 5, roi: 120 }
+      ]
+    },
+    qualityAssurance: {
+      amazonCompliance: {
+        overallScore: 92,
+        checks: [
+          { category: 'Image Guidelines', status: 'Pass', score: 95, issues: [] },
+          { category: 'Text Requirements', status: 'Pass', score: 90, issues: ['Minor: Title could be more keyword-rich'] },
+          { category: 'Prohibited Content', status: 'Pass', score: 100, issues: [] },
+          { category: 'Brand Guidelines', status: 'Warning', score: 85, issues: ['Missing brand logo on secondary images'] },
+          { category: 'Technical Specs', status: 'Pass', score: 88, issues: ['Consider adding more detailed specifications'] }
+        ]
+      },
+      imageQualityAnalysis: {
+        technicalScore: 87,
+        checks: [
+          { criteria: 'Resolution', status: 'Pass', details: 'All images 1000x1000px minimum' },
+          { criteria: 'File Format', status: 'Pass', details: 'JPEG format with RGB color space' },
+          { criteria: 'Background', status: 'Pass', details: 'White background RGB 255,255,255' },
+          { criteria: 'Product Fill', status: 'Good', details: '85% product fill rate achieved' },
+          { criteria: 'Lighting', status: 'Excellent', details: 'Professional even lighting' }
+        ]
+      },
+      brandRiskAssessment: {
+        trademarkRisk: 'Low',
+        copyrightRisk: 'Low',
+        riskFactors: [
+          { type: 'Trademark', description: 'Generic product category terms used', risk: 'Low' },
+          { type: 'Copyright', description: 'Original imagery and text content', risk: 'Low' },
+          { type: 'Claims', description: 'All claims substantiated or qualified', risk: 'Medium' }
+        ],
+        recommendations: [
+          'Register product images with Amazon Brand Registry',
+          'Consider trademark protection for unique product names',
+          'Document all product testing for claims substantiation'
+        ]
+      }
     }
   },
 
@@ -1146,23 +1838,479 @@ export const mockProductData = {
         { name: 'Perytong', price: 25.99, salesRank: 18500, position: 'value' },
         { name: 'CozyPhones', price: 19.95, salesRank: 35600, position: 'budget' }
       ]
+    },
+    // Advanced Financial Modeling
+    cashFlowProjections: {
+      monthly: [
+        { month: 1, revenue: 35000, costs: 25100, cashFlow: 9900, cumulativeCashFlow: -5100, workingCapital: 8500 },
+        { month: 2, revenue: 42000, costs: 30240, cashFlow: 11760, cumulativeCashFlow: 6660, workingCapital: 10200 },
+        { month: 3, revenue: 48000, costs: 34560, cashFlow: 13440, cumulativeCashFlow: 20100, workingCapital: 11680 },
+        { month: 4, revenue: 52000, costs: 37440, cashFlow: 14560, cumulativeCashFlow: 34660, workingCapital: 12840 },
+        { month: 5, revenue: 56000, costs: 40320, cashFlow: 15680, cumulativeCashFlow: 50340, workingCapital: 13800 },
+        { month: 6, revenue: 58000, costs: 41760, cashFlow: 16240, cumulativeCashFlow: 66580, workingCapital: 14280 },
+        { month: 7, revenue: 62000, costs: 44640, cashFlow: 17360, cumulativeCashFlow: 83940, workingCapital: 15240 },
+        { month: 8, revenue: 65000, costs: 46800, cashFlow: 18200, cumulativeCashFlow: 102140, workingCapital: 16000 },
+        { month: 9, revenue: 68000, costs: 48960, cashFlow: 19040, cumulativeCashFlow: 121180, workingCapital: 16720 },
+        { month: 10, revenue: 72000, costs: 51840, cashFlow: 20160, cumulativeCashFlow: 141340, workingCapital: 17680 },
+        { month: 11, revenue: 78000, costs: 56160, cashFlow: 21840, cumulativeCashFlow: 163180, workingCapital: 19200 },
+        { month: 12, revenue: 85000, costs: 61200, cashFlow: 23800, cumulativeCashFlow: 186980, workingCapital: 20900 }
+      ],
+      seasonalAdjustments: {
+        q1: 0.85, // 15% lower demand
+        q2: 0.95, // 5% lower demand
+        q3: 1.05, // 5% higher demand
+        q4: 1.25  // 25% higher demand (holiday season)
+      },
+      cashConversionCycle: {
+        daysInventoryOutstanding: 45,
+        daysReceivablesOutstanding: 14, // Amazon payment cycle
+        daysPayablesOutstanding: 30,
+        cycleDays: 29
+      }
+    },
+    enhancedMetrics: {
+      npv: {
+        discountRate: 0.12,
+        year1: 186980,
+        year2: 298500,
+        year3: 425600,
+        totalNPV: 689420
+      },
+      irr: 285.4, // Internal Rate of Return percentage
+      paybackPeriod: {
+        simple: 3.2, // months
+        discounted: 4.1 // months
+      },
+      sensitivityAnalysis: {
+        priceElasticity: [
+          { priceChange: -10, volumeChange: 25, revenueImpact: 12.5, profitImpact: 8.2 },
+          { priceChange: -5, volumeChange: 12, revenueImpact: 6.4, profitImpact: 4.1 },
+          { priceChange: 0, volumeChange: 0, revenueImpact: 0, profitImpact: 0 },
+          { priceChange: 5, volumeChange: -8, revenueImpact: -3.4, profitImpact: -2.1 },
+          { priceChange: 10, volumeChange: -18, revenueImpact: -8.0, profitImpact: -5.2 }
+        ],
+        costSensitivity: [
+          { costChange: -10, profitImpact: 12.8 },
+          { costChange: -5, profitImpact: 6.4 },
+          { costChange: 0, profitImpact: 0 },
+          { costChange: 5, profitImpact: -6.4 },
+          { costChange: 10, profitImpact: -12.8 }
+        ]
+      },
+      financialRatios: {
+        grossMargin: 71.7,
+        netMargin: 28.3,
+        inventoryTurnover: 8.1,
+        returnOnInvestment: 124.5,
+        assetTurnover: 3.6
+      }
+    },
+    inventoryFinancials: {
+      carryingCosts: {
+        storageFeePerUnit: 0.45,
+        insurancePerUnit: 0.12,
+        obsolescenceRisk: 2.5, // percentage
+        totalCarryingCostPercentage: 18.2
+      },
+      deadStockRisk: {
+        riskLevel: 'Medium',
+        potentialLossValue: 8500,
+        mitigationCost: 1200,
+        riskScore: 6.5
+      },
+      turnoverOptimization: {
+        currentTurnover: 8.1,
+        targetTurnover: 12.0,
+        improvementPotential: 3200, // annual savings
+        reorderPoints: {
+          conservative: 850,
+          aggressive: 450
+        }
+      },
+      seasonalPlanning: {
+        q1: { unitsNeeded: 1200, investmentRequired: 10200 },
+        q2: { unitsNeeded: 1400, investmentRequired: 11900 },
+        q3: { unitsNeeded: 1600, investmentRequired: 13600 },
+        q4: { unitsNeeded: 2200, investmentRequired: 18700 }
+      }
+    },
+    scalingAnalysis: {
+      portfolioModeling: {
+        singleProduct: { monthlyProfit: 14700, investmentRequired: 15000 },
+        threeProducts: { monthlyProfit: 41200, investmentRequired: 42000, synergies: 8.5 },
+        fiveProducts: { monthlyProfit: 68500, investmentRequired: 68000, synergies: 12.2 },
+        tenProducts: { monthlyProfit: 125000, investmentRequired: 125000, synergies: 15.8 }
+      },
+      economiesOfScale: {
+        volume: [
+          { orderSize: 1000, unitCost: 8.50, savingsPercentage: 0 },
+          { orderSize: 2500, unitCost: 7.95, savingsPercentage: 6.5 },
+          { orderSize: 5000, unitCost: 7.35, savingsPercentage: 13.5 },
+          { orderSize: 10000, unitCost: 6.80, savingsPercentage: 20.0 }
+        ],
+        shippingOptimization: {
+          currentCostPerUnit: 4.00,
+          optimizedCostPerUnit: 3.20,
+          annualSavings: 16640
+        }
+      },
+      internationalExpansion: {
+        markets: [
+          { country: 'Canada', marketSize: '15%', investmentRequired: 8500, expectedROI: 95 },
+          { country: 'UK', marketSize: '25%', investmentRequired: 12000, expectedROI: 112 },
+          { country: 'Germany', marketSize: '30%', investmentRequired: 15000, expectedROI: 128 }
+        ],
+        totalExpansionPotential: {
+          additionalRevenue: 187200,
+          additionalInvestment: 35500,
+          combinedROI: 156
+        }
+      },
+      brandBuilding: {
+        investmentAreas: [
+          { area: 'Brand Registry & IP', cost: 2500, expectedReturn: 8500 },
+          { area: 'Content Marketing', cost: 4200, expectedReturn: 12800 },
+          { area: 'Influencer Partnerships', cost: 6000, expectedReturn: 18500 },
+          { area: 'Premium Packaging', cost: 3500, expectedReturn: 9200 }
+        ],
+        totalBrandInvestment: 16200,
+        expectedBrandPremium: 15.5 // percentage price premium
+      }
+    },
+    riskAdjustedReturns: {
+      riskScore: 6.2, // out of 10
+      adjustedROI: 98.4, // risk-adjusted from 124%
+      confidenceIntervals: {
+        conservative: { low: 85, high: 125 },
+        realistic: { low: 110, high: 185 },
+        optimistic: { low: 155, high: 285 }
+      },
+      scenarioAnalysis: [
+        { scenario: 'Economic Downturn', probability: 15, impactOnROI: -35, mitigationCost: 2200 },
+        { scenario: 'New Competitor Entry', probability: 25, impactOnROI: -22, mitigationCost: 3500 },
+        { scenario: 'Supply Chain Disruption', probability: 10, impactOnROI: -18, mitigationCost: 1800 },
+        { scenario: 'Amazon Policy Change', probability: 12, impactOnROI: -28, mitigationCost: 4200 }
+      ],
+      monteCarloSimulation: {
+        iterations: 10000,
+        meanROI: 124.5,
+        standardDeviation: 28.6,
+        percentiles: {
+          p10: 78.2,
+          p25: 98.4,
+          p50: 124.5,
+          p75: 148.7,
+          p90: 172.8
+        }
+      }
     }
   },
 
   // Launch Strategy Data
   launchStrategyData: {
-    pricing: {
-      launchPrice: 19.97,
-      regularPrice: 29.99,
-      discount: 33
+    // Dynamic pricing strategy based on review count
+    dynamicPricing: {
+      currentPrice: 19.97,
+      targetPrice: 29.99,
+      pricingTiers: [
+        { reviewRange: '0-25', price: 19.97, discount: 33, rationale: 'Aggressive launch pricing to build velocity' },
+        { reviewRange: '26-100', price: 22.99, discount: 23, rationale: 'Moderate discount to maintain momentum' },
+        { reviewRange: '101-300', price: 25.99, discount: 13, rationale: 'Reduced discount as credibility builds' },
+        { reviewRange: '301+', price: 29.99, discount: 0, rationale: 'Full price with established social proof' }
+      ],
+      competitorBenchmarking: [
+        { competitor: 'MUSICOZY', price: 26.99, reviews: 4250, rating: 4.3 },
+        { competitor: 'Perytong', price: 24.99, reviews: 2890, rating: 4.2 },
+        { competitor: 'CozyPhones', price: 22.99, reviews: 1560, rating: 4.1 }
+      ],
+      seasonalAdjustments: {
+        holiday: { multiplier: 1.15, duration: 'Nov-Dec' },
+        newYear: { multiplier: 0.95, duration: 'Jan-Feb' },
+        summer: { multiplier: 1.05, duration: 'Jun-Aug' }
+      }
     },
-    targetMetrics: {
-      dailySalesVelocity: 30,
-      reviewsNeeded: 150,
+    
+    // Minimum rating requirements and thresholds
+    ratingRequirements: {
+      minimumRating: 4.0,
       targetRating: 4.3,
-      conversionRate: 15,
-      estimatedBSR: 8500
+      ratingMilestones: [
+        { reviews: 25, targetRating: 4.2, actions: ['Follow-up sequence', 'Quality check'] },
+        { reviews: 100, targetRating: 4.3, actions: ['Price increase', 'Expand keywords'] },
+        { reviews: 300, targetRating: 4.4, actions: ['Full price', 'International expansion'] },
+        { reviews: 500, targetRating: 4.5, actions: ['Premium positioning', 'Variations launch'] }
+      ],
+      reviewQualityMetrics: {
+        averageLength: 120,
+        photoPercentage: 35,
+        verifiedPurchaseRate: 85,
+        sentimentScore: 82
+      },
+      competitorRatingBenchmarks: [
+        { competitor: 'MUSICOZY', rating: 4.3, reviews: 4250, velocity: 8.5 },
+        { competitor: 'Perytong', rating: 4.2, reviews: 2890, velocity: 6.2 },
+        { competitor: 'CozyPhones', rating: 4.1, reviews: 1560, velocity: 4.1 }
+      ]
     },
+
+    // Enhanced PPC campaign strategy
+    enhancedPPCStrategy: {
+      totalBudget: 6500,
+      phases: [
+        {
+          phase: 'Launch Aggressive',
+          duration: 'Week 1-4',
+          totalBudget: 3000,
+          dailyBudget: 107,
+          targetAcos: 80,
+          objectives: ['Build sales velocity', 'Collect performance data', 'Establish keyword rankings']
+        },
+        {
+          phase: 'Optimization',
+          duration: 'Week 5-8',
+          totalBudget: 2500,
+          dailyBudget: 89,
+          targetAcos: 65,
+          objectives: ['Optimize profitable keywords', 'Expand winning campaigns', 'Negative keyword harvest']
+        },
+        {
+          phase: 'Scaling',
+          duration: 'Week 9-12',
+          totalBudget: 2000,
+          dailyBudget: 71,
+          targetAcos: 50,
+          objectives: ['Scale profitable campaigns', 'Maintain organic rankings', 'Profit optimization']
+        }
+      ],
+      detailedCampaigns: [
+        {
+          name: 'Launch - Exact Match High Intent',
+          type: 'Sponsored Products Manual',
+          matchType: 'Exact',
+          dailyBudget: 45,
+          targetAcos: 70,
+          bidStrategy: 'Fixed Bids',
+          priority: 'High',
+          keywords: [
+            { keyword: 'bluetooth sleep mask', bid: 1.45, volume: 45000, cpc: 1.23, roi: 285 },
+            { keyword: 'wireless sleep mask', bid: 1.28, volume: 28000, cpc: 1.15, roi: 245 },
+            { keyword: 'sleep mask with speakers', bid: 1.15, volume: 22000, cpc: 0.98, roi: 265 },
+            { keyword: 'bluetooth eye mask', bid: 1.32, volume: 18000, cpc: 1.08, roi: 220 }
+          ],
+          negativeKeywords: ['cheap', 'free', 'kids', 'children'],
+          targetingOptions: {
+            placement: 'Top of Search',
+            bidAdjustment: 25
+          }
+        },
+        {
+          name: 'Launch - Phrase Match Discovery',
+          type: 'Sponsored Products Manual',
+          matchType: 'Phrase',
+          dailyBudget: 35,
+          targetAcos: 75,
+          bidStrategy: 'Dynamic Down Only',
+          priority: 'High',
+          keywords: [
+            { keyword: 'bluetooth sleep mask', bid: 1.25, volume: 85000, cpc: 1.08, roi: 235 },
+            { keyword: 'wireless sleep headphones', bid: 1.18, volume: 62000, cpc: 0.95, roi: 210 },
+            { keyword: 'sleep mask speakers', bid: 1.05, volume: 45000, cpc: 0.88, roi: 195 },
+            { keyword: 'bluetooth eye mask sleeping', bid: 1.15, volume: 38000, cpc: 0.92, roi: 225 }
+          ],
+          negativeKeywords: ['wired', 'corded', 'disposable'],
+          targetingOptions: {
+            placement: 'Rest of Search',
+            bidAdjustment: 0
+          }
+        },
+        {
+          name: 'Competitor Targeting - MUSICOZY',
+          type: 'Sponsored Products Auto',
+          matchType: 'Auto',
+          dailyBudget: 25,
+          targetAcos: 60,
+          bidStrategy: 'Dynamic Up and Down',
+          priority: 'Medium',
+          targets: [
+            { asin: 'B07SHBQY7Z', bid: 1.85, estimatedCpc: 1.65, competitorShare: 42 },
+            { asin: 'B07Q34GWQT', bid: 1.75, estimatedCpc: 1.55, competitorShare: 28 }
+          ],
+          negativeKeywords: ['musicozy', 'perytong', 'brand'],
+          targetingOptions: {
+            placement: 'Product Pages',
+            bidAdjustment: 50
+          }
+        },
+        {
+          name: 'Brand Defense',
+          type: 'Sponsored Brands',
+          matchType: 'Exact',
+          dailyBudget: 20,
+          targetAcos: 40,
+          bidStrategy: 'Fixed Bids',
+          priority: 'Medium',
+          keywords: [
+            { keyword: 'sleep mask bluetooth', bid: 1.65, volume: 35000, cpc: 1.42, roi: 180 },
+            { keyword: 'bluetooth sleep headphones', bid: 1.55, volume: 28000, cpc: 1.38, roi: 165 }
+          ],
+          creativeTesting: {
+            headlines: ['Premium Sleep Audio Technology', 'Better Sleep Starts Here'],
+            images: ['lifestyle', 'product-focus', 'benefit-callout']
+          }
+        }
+      ],
+      keywordTierStrategy: {
+        tier1HighValue: {
+          keywords: ['bluetooth sleep mask', 'wireless sleep mask', 'sleep mask with speakers'],
+          strategy: 'Aggressive bidding, exact match priority',
+          averageCpc: 1.35,
+          expectedRoi: 250
+        },
+        tier2Moderate: {
+          keywords: ['sleep headphones bluetooth', 'bluetooth eye mask', 'wireless sleep headphones'],
+          strategy: 'Moderate bidding, phrase match focus',
+          averageCpc: 1.15,
+          expectedRoi: 215
+        },
+        tier3Discovery: {
+          keywords: ['sleep mask audio', 'bluetooth sleep aid', 'wireless sleep device'],
+          strategy: 'Conservative bidding, broad match testing',
+          averageCpc: 0.95,
+          expectedRoi: 185
+        }
+      }
+    },
+
+    // Bulk operation files and templates
+    bulkOperationFiles: {
+      campaignTemplates: [
+        {
+          name: 'Amazon Ads Campaign Builder',
+          type: 'excel',
+          description: 'Complete campaign setup with keywords, bids, and targeting',
+          columns: ['Campaign Name', 'Ad Group', 'Keyword', 'Match Type', 'Bid', 'Daily Budget', 'Target ACoS'],
+          sampleData: [
+            ['Launch-Exact-High-Intent', 'Bluetooth Sleep Mask', 'bluetooth sleep mask', 'Exact', 1.45, 45, 70],
+            ['Launch-Phrase-Discovery', 'Wireless Sleep', 'wireless sleep mask', 'Phrase', 1.25, 35, 75]
+          ]
+        },
+        {
+          name: 'Keyword List Generator',
+          type: 'csv',
+          description: 'Pre-researched keywords with recommended bids and match types',
+          totalKeywords: 245,
+          keywordCategories: ['Primary', 'Secondary', 'Long-tail', 'Competitor'],
+          estimatedSetupTime: '30 minutes'
+        },
+        {
+          name: 'Negative Keyword Lists',
+          type: 'txt',
+          description: 'Comprehensive negative keyword lists for each campaign type',
+          lists: [
+            { name: 'Generic Negatives', keywords: ['cheap', 'free', 'kids', 'children', 'toy'] },
+            { name: 'Competitor Negatives', keywords: ['musicozy', 'perytong', 'cozyphones', 'brand'] },
+            { name: 'Irrelevant Negatives', keywords: ['wired', 'corded', 'disposable', 'paper'] }
+          ]
+        },
+        {
+          name: 'Bid Management Tracker',
+          type: 'excel',
+          description: 'Track performance and optimize bids across all campaigns',
+          features: ['Performance tracking', 'Bid calculations', 'ROI analysis', 'Automated recommendations']
+        }
+      ],
+      exportFormats: ['Excel (.xlsx)', 'CSV (.csv)', 'Amazon Ads Bulk Upload (.xlsx)', 'Google Sheets'],
+      scheduledUpdates: 'Weekly optimization recommendations'
+    },
+
+    // Advanced launch analytics
+    launchAnalytics: {
+      realTimeMetrics: {
+        currentSales: 28,
+        targetSales: 35,
+        salesVelocity: 'Above target',
+        currentReviews: 18,
+        targetReviews: 25,
+        reviewVelocity: 'Below target',
+        currentRating: 4.1,
+        targetRating: 4.3,
+        organicRank: 145,
+        targetRank: 50
+      },
+      performancePrediction: {
+        day30Forecast: {
+          sales: 890,
+          reviews: 75,
+          rating: 4.2,
+          organicRank: 85,
+          revenue: 19840,
+          profitability: 35
+        },
+        day60Forecast: {
+          sales: 1650,
+          reviews: 185,
+          rating: 4.3,
+          organicRank: 45,
+          revenue: 41250,
+          profitability: 42
+        },
+        day90Forecast: {
+          sales: 2200,
+          reviews: 325,
+          rating: 4.4,
+          organicRank: 25,
+          revenue: 65890,
+          profitability: 48
+        }
+      },
+      competitorTracking: {
+        keyCompetitors: [
+          {
+            name: 'MUSICOZY',
+            asin: 'B07SHBQY7Z',
+            currentPrice: 26.99,
+            priceChange: '+5.2%',
+            ranking: 8,
+            rankingChange: '+2',
+            ppcSpend: 4500,
+            organicShare: 42,
+            threat: 'High'
+          },
+          {
+            name: 'Perytong',
+            asin: 'B07Q34GWQT',
+            currentPrice: 24.99,
+            priceChange: '-2.1%',
+            ranking: 12,
+            rankingChange: '-1',
+            ppcSpend: 3200,
+            organicShare: 28,
+            threat: 'Medium'
+          }
+        ],
+        marketIntelligence: {
+          averageMarketPrice: 25.45,
+          priceInflation: '+3.2%',
+          newEntrants: 2,
+          exitingBrands: 1,
+          overallCompetition: 'Increasing'
+        }
+      },
+      riskAssessment: {
+        currentRisks: [
+          { risk: 'Review velocity below target', severity: 'Medium', action: 'Increase follow-up campaigns' },
+          { risk: 'Competitor price reduction', severity: 'Low', action: 'Monitor pricing strategy' },
+          { risk: 'Inventory stockout risk', severity: 'Low', action: 'Prepare reorder schedule' }
+        ],
+        mitigationStrategies: [
+          'Diversify traffic sources beyond PPC',
+          'Implement review velocity acceleration',
+          'Prepare competitive response plans'
+        ]
+      }
+    },
+
+    // Launch timeline with enhanced milestones
     timeline: [
       {
         week: 1,
@@ -1170,127 +2318,181 @@ export const mockProductData = {
         description: 'Finalize listing, prepare inventory, set up campaigns',
         activities: [
           'Optimize listing with all images and A+ content',
-          'Create auto and manual PPC campaigns',
-          'Set up review automation sequences',
-          'Prepare launch discount codes'
+          'Create detailed PPC campaigns with keyword research',
+          'Set up review automation and follow-up sequences',
+          'Prepare launch discount codes and promotions',
+          'Configure analytics tracking and competitor monitoring'
         ],
         metrics: {
           sales: 0,
           reviews: 0,
           salesProgress: 0,
-          reviewProgress: 0
-        }
+          reviewProgress: 0,
+          organicRank: 0,
+          ppcSpend: 0
+        },
+        checkpoints: ['Listing optimization score > 90%', 'PPC campaigns approved', 'Inventory confirmed']
       },
       {
         week: 4,
         phase: 'Launch & Momentum',
         description: 'Heavy promotions and PPC to drive initial velocity',
         activities: [
-          'Activate 50% launch discount',
-          'Run aggressive PPC campaigns',
-          'Engage with early customers',
-          'Monitor and adjust pricing'
+          'Activate 50% launch discount and lightning deals',
+          'Run aggressive PPC campaigns across all match types',
+          'Engage with early customers and collect reviews',
+          'Monitor and adjust pricing based on performance',
+          'Track competitor responses and adjust strategy'
         ],
         metrics: {
           sales: 35,
           reviews: 25,
           salesProgress: 35,
-          reviewProgress: 17
-        }
+          reviewProgress: 17,
+          organicRank: 145,
+          ppcSpend: 3000
+        },
+        checkpoints: ['Sales velocity > 30 units/day', 'Review rating > 4.0', 'Organic rank improving']
       },
       {
         week: 8,
-        phase: 'Stabilization',
-        description: 'Reduce discounts, optimize for profitability',
+        phase: 'Optimization & Stabilization',
+        description: 'Optimize campaigns and reduce dependence on discounts',
         activities: [
-          'Gradually increase price to target',
-          'Optimize PPC for ACoS targets',
-          'Focus on organic ranking',
-          'Implement upsell strategies'
+          'Gradually increase price towards target',
+          'Optimize PPC for profitability (target ACoS < 65%)',
+          'Focus on organic ranking improvements',
+          'Implement upsell and cross-sell strategies',
+          'Analyze and expand winning keyword campaigns'
         ],
         metrics: {
           sales: 30,
-          reviews: 75,
+          reviews: 85,
           salesProgress: 60,
-          reviewProgress: 50
-        }
+          reviewProgress: 57,
+          organicRank: 85,
+          ppcSpend: 2500
+        },
+        checkpoints: ['ACoS < 65%', 'Organic rank < 100', 'Review velocity stable']
       },
       {
         week: 12,
         phase: 'Growth & Scale',
         description: 'Achieve sustainable growth and profitability',
         activities: [
-          'Launch variation products',
+          'Reach target pricing with full profit margins',
+          'Launch product variations and bundles',
           'Expand to international markets',
-          'Build brand presence',
-          'Optimize for long-term profitability'
+          'Build brand presence and customer loyalty',
+          'Optimize for long-term profitability and growth'
         ],
         metrics: {
           sales: 25,
-          reviews: 150,
+          reviews: 185,
           salesProgress: 100,
-          reviewProgress: 100
-        }
+          reviewProgress: 100,
+          organicRank: 45,
+          ppcSpend: 2000
+        },
+        checkpoints: ['Target ACoS < 50%', 'Organic rank < 50', 'Profitability > 40%']
       }
     ],
+
+    // Investment and ROI calculations
     investment: {
-      initialInventory: 8500,
-      marketingBudget: 4500,
-      totalLaunchCost: 15000,
-      unitsOrdered: 1000,
-      breakEvenDays: 90
+      initialInventory: 12000,
+      marketingBudget: 6500,
+      operationalCosts: 2500,
+      totalLaunchCost: 21000,
+      unitsOrdered: 1200,
+      unitCost: 10.0,
+      breakEvenAnalysis: {
+        fixedCosts: 8500,
+        variableCosts: 10.0,
+        breakEvenUnits: 850,
+        breakEvenDays: 75,
+        paybackPeriod: 4.2
+      },
+      roiProjections: {
+        month1: { revenue: 19840, profit: 3960, roi: 19 },
+        month2: { revenue: 41250, profit: 12375, roi: 59 },
+        month3: { revenue: 65890, profit: 23270, roi: 111 }
+      }
     },
-    ppcStrategy: {
-      totalBudget: 4500,
-      campaigns: [
-        {
-          type: 'Sponsored Products Auto',
-          dailyBudget: 25,
-          targetAcos: 70,
-          bidStrategy: 'Dynamic Down Only',
-          priority: 'High',
-          keywords: 85
-        },
-        {
-          type: 'Sponsored Products Manual',
-          dailyBudget: 35,
-          targetAcos: 50,
-          bidStrategy: 'Fixed Bids',
-          priority: 'High',
-          keywords: 120
-        },
-        {
-          type: 'Sponsored Brands',
-          dailyBudget: 15,
-          targetAcos: 40,
-          bidStrategy: 'Portfolio Bid+',
-          priority: 'Medium',
-          keywords: 25
-        }
-      ]
-    },
+
+    // Promotions and incentives
     promotions: [
       {
-        type: 'Lightning Deal',
+        type: 'Launch Lightning Deal',
         discount: '50% OFF',
         duration: 'Week 1-2',
         target: 'All customers',
-        goal: 'Drive initial velocity'
+        goal: 'Build initial velocity',
+        budget: 1500,
+        expectedUnits: 300,
+        expectedRevenue: 5991
       },
       {
-        type: 'Coupon',
+        type: 'Early Bird Coupon',
         discount: '30% OFF',
         duration: 'Week 3-4',
-        target: 'New customers',
-        goal: 'Maintain momentum'
+        target: 'First-time buyers',
+        goal: 'Maintain momentum',
+        budget: 1200,
+        expectedUnits: 200,
+        expectedRevenue: 4598
+      },
+      {
+        type: 'Review Incentive',
+        discount: '15% OFF',
+        duration: 'Week 5-8',
+        target: 'Verified purchasers',
+        goal: 'Accelerate reviews',
+        budget: 800,
+        expectedUnits: 150,
+        expectedRevenue: 3297
       },
       {
         type: 'Subscribe & Save',
-        discount: '15% OFF',
+        discount: '20% OFF',
         duration: 'Ongoing',
-        target: 'Repeat buyers',
-        goal: 'Build recurring revenue'
+        target: 'Repeat customers',
+        goal: 'Build recurring revenue',
+        budget: 500,
+        expectedUnits: 100,
+        expectedRevenue: 2399
       }
-    ]
+    ],
+
+    // Launch checklist and crisis management
+    launchChecklist: [
+      { category: 'Listing', items: ['Title optimized', 'Images approved', 'A+ content live', 'Inventory confirmed'] },
+      { category: 'PPC', items: ['Campaigns created', 'Keywords researched', 'Bids set', 'Budgets allocated'] },
+      { category: 'Analytics', items: ['Tracking setup', 'Competitor monitoring', 'Review automation', 'Alerts configured'] },
+      { category: 'Support', items: ['Customer service ready', 'FAQ prepared', 'Return policy set', 'Quality control verified'] }
+    ],
+
+    crisisManagement: {
+      scenarios: [
+        {
+          crisis: 'Stockout during launch',
+          indicators: ['Sales velocity > 40 units/day', 'Inventory < 30 days'],
+          actions: ['Expedite reorder', 'Reduce PPC spend', 'Pause promotions', 'Communicate with customers'],
+          severity: 'High'
+        },
+        {
+          crisis: 'Negative review spike',
+          indicators: ['Rating drops below 4.0', '> 20% negative reviews'],
+          actions: ['Investigate product quality', 'Increase customer service', 'Respond to reviews', 'Adjust messaging'],
+          severity: 'Medium'
+        },
+        {
+          crisis: 'Competitor price war',
+          indicators: ['Competitor prices drop > 20%', 'Sales velocity decreases'],
+          actions: ['Analyze competitor strategy', 'Adjust pricing', 'Emphasize differentiation', 'Increase value perception'],
+          severity: 'Medium'
+        }
+      ]
+    }
   }
 }

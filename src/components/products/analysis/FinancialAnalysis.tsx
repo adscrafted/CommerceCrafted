@@ -17,7 +17,15 @@ import {
   AlertCircle,
   CheckCircle,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  TrendingDown,
+  Zap,
+  Globe,
+  ShoppingCart,
+  Target,
+  Layers,
+  RotateCcw,
+  Gauge
 } from 'lucide-react'
 
 interface FinancialAnalysisProps {
@@ -368,6 +376,473 @@ export default function FinancialAnalysis({ data }: FinancialAnalysisProps) {
                 </div>
               </div>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Advanced Cash Flow Analysis */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Activity className="h-5 w-5 text-blue-600" />
+            <span>Monthly Cash Flow Projections</span>
+          </CardTitle>
+          <CardDescription>
+            Detailed cash flow analysis with working capital requirements
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Cash Flow Chart */}
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-3">12-Month Cash Flow Trajectory</h4>
+              <div className="grid grid-cols-12 gap-1 h-32 mb-4">
+                {financialData.cashFlowProjections.monthly.map((month: any, i: number) => (
+                  <div key={i} className="flex flex-col justify-end items-center">
+                    <div 
+                      className={`rounded-t transition-all duration-300 ${month.cashFlow > 0 ? 'bg-green-500' : 'bg-red-500'}`}
+                      style={{ height: `${Math.abs(month.cashFlow / 1000)}%`, minHeight: '8px' }}
+                    ></div>
+                    <div className="text-xs text-gray-500 text-center mt-1">{month.month}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-xs text-gray-500 text-center">Monthly Cash Flow ($000s)</div>
+            </div>
+
+            {/* Key Metrics */}
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Cash Conversion Cycle</span>
+                  <Gauge className="h-4 w-4 text-blue-500" />
+                </div>
+                <div className="text-2xl font-bold text-blue-600">{financialData.cashFlowProjections.cashConversionCycle.cycleDays} days</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Inventory: {financialData.cashFlowProjections.cashConversionCycle.daysInventoryOutstanding}d | 
+                  Receivables: {financialData.cashFlowProjections.cashConversionCycle.daysReceivablesOutstanding}d | 
+                  Payables: {financialData.cashFlowProjections.cashConversionCycle.daysPayablesOutstanding}d
+                </div>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Year-End Cash Position</span>
+                  <TrendingUp className="h-4 w-4 text-green-500" />
+                </div>
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(financialData.cashFlowProjections.monthly[11].cumulativeCashFlow)}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">Cumulative cash flow</div>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Peak Working Capital</span>
+                  <Package className="h-4 w-4 text-orange-500" />
+                </div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {formatCurrency(Math.max(...financialData.cashFlowProjections.monthly.map((m: any) => m.workingCapital)))}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">Maximum capital required</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Enhanced Financial Metrics */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Calculator className="h-5 w-5 text-purple-600" />
+            <span>Advanced Financial Metrics</span>
+          </CardTitle>
+          <CardDescription>
+            NPV, IRR, and sensitivity analysis for investment decisions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* NPV & IRR */}
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-4">Investment Valuation</h4>
+              <div className="space-y-4">
+                <div className="p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-blue-50">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600">Net Present Value (NPV)</span>
+                    <TrendingUp className="h-4 w-4 text-green-500" />
+                  </div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {formatCurrency(financialData.enhancedMetrics.npv.totalNPV)}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Discount rate: {formatPercent(financialData.enhancedMetrics.npv.discountRate * 100)}
+                  </div>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600">Internal Rate of Return (IRR)</span>
+                    <Zap className="h-4 w-4 text-yellow-500" />
+                  </div>
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {formatPercent(financialData.enhancedMetrics.irr)}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">Exceptional return rate</div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-3 border rounded-lg text-center">
+                    <div className="text-lg font-bold text-blue-600">
+                      {financialData.enhancedMetrics.paybackPeriod.simple} mo
+                    </div>
+                    <div className="text-xs text-gray-600">Simple Payback</div>
+                  </div>
+                  <div className="p-3 border rounded-lg text-center">
+                    <div className="text-lg font-bold text-purple-600">
+                      {financialData.enhancedMetrics.paybackPeriod.discounted} mo
+                    </div>
+                    <div className="text-xs text-gray-600">Discounted Payback</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sensitivity Analysis */}
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-4">Sensitivity Analysis</h4>
+              <div className="space-y-4">
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">Price Elasticity Impact</h5>
+                  <div className="space-y-2">
+                    {financialData.enhancedMetrics.sensitivityAnalysis.priceElasticity.map((scenario: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                        <div className="flex items-center space-x-2">
+                          <span className={`w-2 h-2 rounded-full ${scenario.priceChange > 0 ? 'bg-green-500' : scenario.priceChange < 0 ? 'bg-red-500' : 'bg-gray-500'}`}></span>
+                          <span>{scenario.priceChange > 0 ? '+' : ''}{scenario.priceChange}% Price</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium">{scenario.volumeChange > 0 ? '+' : ''}{scenario.volumeChange}% Volume</div>
+                          <div className="text-xs text-gray-600">{scenario.profitImpact > 0 ? '+' : ''}{scenario.profitImpact}% Profit</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">Financial Ratios</h5>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 bg-blue-50 rounded text-center">
+                      <div className="text-lg font-bold text-blue-600">{formatPercent(financialData.enhancedMetrics.financialRatios.grossMargin)}</div>
+                      <div className="text-xs text-gray-600">Gross Margin</div>
+                    </div>
+                    <div className="p-2 bg-green-50 rounded text-center">
+                      <div className="text-lg font-bold text-green-600">{financialData.enhancedMetrics.financialRatios.inventoryTurnover}x</div>
+                      <div className="text-xs text-gray-600">Inventory Turnover</div>
+                    </div>
+                    <div className="p-2 bg-purple-50 rounded text-center">
+                      <div className="text-lg font-bold text-purple-600">{formatPercent(financialData.enhancedMetrics.financialRatios.returnOnInvestment)}</div>
+                      <div className="text-xs text-gray-600">ROI</div>
+                    </div>
+                    <div className="p-2 bg-orange-50 rounded text-center">
+                      <div className="text-lg font-bold text-orange-600">{financialData.enhancedMetrics.financialRatios.assetTurnover}x</div>
+                      <div className="text-xs text-gray-600">Asset Turnover</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Inventory Financial Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Package className="h-5 w-5 text-orange-600" />
+            <span>Inventory Financial Management</span>
+          </CardTitle>
+          <CardDescription>
+            Carrying costs, turnover optimization, and seasonal planning
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-4">Carrying Costs & Turnover</h4>
+              <div className="space-y-4">
+                <div className="p-4 border rounded-lg">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm text-gray-600">Total Carrying Cost</span>
+                    <Badge variant="secondary">{formatPercent(financialData.inventoryFinancials.carryingCosts.totalCarryingCostPercentage)}</Badge>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Storage fees per unit:</span>
+                      <span className="font-medium">{formatCurrency(financialData.inventoryFinancials.carryingCosts.storageFeePerUnit)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Insurance per unit:</span>
+                      <span className="font-medium">{formatCurrency(financialData.inventoryFinancials.carryingCosts.insurancePerUnit)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Obsolescence risk:</span>
+                      <span className="font-medium">{formatPercent(financialData.inventoryFinancials.carryingCosts.obsolescenceRisk)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 border rounded-lg bg-gradient-to-r from-green-50 to-blue-50">
+                  <h5 className="font-medium text-gray-900 mb-2">Turnover Optimization</h5>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-gray-900">{financialData.inventoryFinancials.turnoverOptimization.currentTurnover}x</div>
+                      <div className="text-xs text-gray-600">Current Turnover</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-green-600">{financialData.inventoryFinancials.turnoverOptimization.targetTurnover}x</div>
+                      <div className="text-xs text-gray-600">Target Turnover</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 p-2 bg-white rounded">
+                    <div className="text-sm text-center">
+                      <span className="text-gray-600">Annual savings potential: </span>
+                      <span className="font-semibold text-green-600">{formatCurrency(financialData.inventoryFinancials.turnoverOptimization.improvementPotential)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-4">Seasonal Planning & Risk</h4>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(financialData.inventoryFinancials.seasonalPlanning).map(([quarter, data]: [string, any]) => (
+                    <div key={quarter} className="p-3 border rounded-lg">
+                      <div className="text-center">
+                        <div className="text-sm font-medium text-gray-700 mb-1">{quarter.toUpperCase()}</div>
+                        <div className="text-lg font-bold text-blue-600">{data.unitsNeeded}</div>
+                        <div className="text-xs text-gray-600">Units needed</div>
+                        <div className="text-sm font-medium text-green-600 mt-1">{formatCurrency(data.investmentRequired)}</div>
+                        <div className="text-xs text-gray-600">Investment</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h5 className="font-medium text-gray-900">Dead Stock Risk Assessment</h5>
+                    <Badge variant={financialData.inventoryFinancials.deadStockRisk.riskLevel === 'High' ? 'destructive' : 'secondary'}>
+                      {financialData.inventoryFinancials.deadStockRisk.riskLevel} Risk
+                    </Badge>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Potential loss value:</span>
+                      <span className="font-medium text-red-600">{formatCurrency(financialData.inventoryFinancials.deadStockRisk.potentialLossValue)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Mitigation cost:</span>
+                      <span className="font-medium text-blue-600">{formatCurrency(financialData.inventoryFinancials.deadStockRisk.mitigationCost)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Risk score:</span>
+                      <span className="font-medium">{financialData.inventoryFinancials.deadStockRisk.riskScore}/10</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Scaling & Portfolio Analysis */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Layers className="h-5 w-5 text-blue-600" />
+            <span>Scaling & Portfolio Analysis</span>
+          </CardTitle>
+          <CardDescription>
+            Growth potential through portfolio expansion and international markets
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Portfolio Modeling */}
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-4">Portfolio Growth Modeling</h4>
+              <div className="grid md:grid-cols-4 gap-4">
+                {Object.entries(financialData.scalingAnalysis.portfolioModeling).map(([key, scenario]: [string, any]) => (
+                  <div key={key} className={`p-4 border rounded-lg ${key === 'fiveProducts' ? 'border-blue-200 bg-blue-50' : ''}`}>
+                    <div className="text-center">
+                      <div className="text-sm font-medium text-gray-700 mb-2 capitalize">
+                        {key.replace(/([A-Z])/g, ' $1').replace(/^\w/, c => c.toUpperCase())}
+                      </div>
+                      <div className="text-xl font-bold text-green-600 mb-1">
+                        {formatCurrency(scenario.monthlyProfit)}
+                      </div>
+                      <div className="text-xs text-gray-600 mb-2">Monthly Profit</div>
+                      <div className="text-sm text-blue-600">
+                        {formatCurrency(scenario.investmentRequired)} investment
+                      </div>
+                      {scenario.synergies && (
+                        <div className="text-xs text-purple-600 mt-1">
+                          +{scenario.synergies}% synergies
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* International Expansion */}
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-4">International Expansion Opportunities</h4>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  {financialData.scalingAnalysis.internationalExpansion.markets.map((market: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Globe className="h-5 w-5 text-blue-500" />
+                        <div>
+                          <div className="font-medium text-gray-900">{market.country}</div>
+                          <div className="text-sm text-gray-600">Market size: {market.marketSize}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-green-600">{formatPercent(market.expectedROI)} ROI</div>
+                        <div className="text-sm text-gray-600">{formatCurrency(market.investmentRequired)} investment</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-4 border rounded-lg bg-gradient-to-r from-green-50 to-blue-50">
+                  <h5 className="font-medium text-gray-900 mb-3">Total Expansion Potential</h5>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Additional Revenue:</span>
+                      <span className="font-semibold text-green-600">
+                        {formatCurrency(financialData.scalingAnalysis.internationalExpansion.totalExpansionPotential.additionalRevenue)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Total Investment:</span>
+                      <span className="font-semibold text-blue-600">
+                        {formatCurrency(financialData.scalingAnalysis.internationalExpansion.totalExpansionPotential.additionalInvestment)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="text-sm font-medium text-gray-700">Combined ROI:</span>
+                      <span className="font-bold text-green-600">
+                        {formatPercent(financialData.scalingAnalysis.internationalExpansion.totalExpansionPotential.combinedROI)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Risk-Adjusted Returns */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Target className="h-5 w-5 text-red-600" />
+            <span>Risk-Adjusted Returns & Monte Carlo Analysis</span>
+          </CardTitle>
+          <CardDescription>
+            Advanced risk modeling and scenario analysis for informed decision making
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-4">Risk Assessment</h4>
+              <div className="space-y-4">
+                <div className="p-4 border rounded-lg bg-gradient-to-r from-yellow-50 to-red-50">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm text-gray-600">Overall Risk Score</span>
+                    <Badge variant="secondary">{financialData.riskAdjustedReturns.riskScore}/10</Badge>
+                  </div>
+                  <div className="text-2xl font-bold text-orange-600 mb-2">
+                    {formatPercent(financialData.riskAdjustedReturns.adjustedROI)} ROI
+                  </div>
+                  <div className="text-sm text-gray-600">Risk-adjusted from {formatPercent(financialData.roi.year1ROI)}</div>
+                </div>
+
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">Scenario Analysis</h5>
+                  <div className="space-y-2">
+                    {financialData.riskAdjustedReturns.scenarioAnalysis.map((scenario: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${scenario.probability > 20 ? 'bg-red-500' : scenario.probability > 15 ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
+                          <span className="text-sm text-gray-700">{scenario.scenario}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-red-600">{scenario.impactOnROI}%</div>
+                          <div className="text-xs text-gray-600">{scenario.probability}% chance</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-4">Monte Carlo Simulation</h4>
+              <div className="space-y-4">
+                <div className="p-4 border rounded-lg">
+                  <div className="text-center mb-4">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {formatPercent(financialData.riskAdjustedReturns.monteCarloSimulation.meanROI)}
+                    </div>
+                    <div className="text-sm text-gray-600">Mean ROI ({financialData.riskAdjustedReturns.monteCarloSimulation.iterations.toLocaleString()} simulations)</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-gray-700">
+                      ±{formatPercent(financialData.riskAdjustedReturns.monteCarloSimulation.standardDeviation)}
+                    </div>
+                    <div className="text-xs text-gray-600">Standard Deviation</div>
+                  </div>
+                </div>
+
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">ROI Confidence Intervals</h5>
+                  <div className="space-y-2">
+                    {Object.entries(financialData.riskAdjustedReturns.confidenceIntervals).map(([scenario, interval]: [string, any]) => (
+                      <div key={scenario} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm text-gray-700 capitalize">{scenario}</span>
+                        <span className="text-sm font-medium">
+                          {formatPercent(interval.low)} - {formatPercent(interval.high)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">Percentile Distribution</h5>
+                  <div className="grid grid-cols-3 gap-2">
+                    {Object.entries(financialData.riskAdjustedReturns.monteCarloSimulation.percentiles).map(([percentile, value]: [string, any]) => (
+                      <div key={percentile} className="p-2 bg-blue-50 rounded text-center">
+                        <div className="text-lg font-bold text-blue-600">{formatPercent(value)}</div>
+                        <div className="text-xs text-gray-600">{percentile.toUpperCase()}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

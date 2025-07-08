@@ -1,5 +1,6 @@
 import { SellingPartnerAPI } from 'amazon-sp-api'
 import { BigQuery } from '@google-cloud/bigquery'
+import { getBigQueryClient } from './bigquery-client'
 import { z } from 'zod'
 
 // Schema for Brand Analytics Search Terms data
@@ -65,14 +66,11 @@ export class AmazonAnalyticsService {
       access_token: process.env.AMAZON_SP_API_ACCESS_TOKEN,
     })
 
-    // Initialize BigQuery
-    this.bigQuery = new BigQuery({
-      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-      keyFilename: process.env.GOOGLE_CLOUD_KEY_FILE,
-    })
+    // Initialize BigQuery using the new client
+    this.bigQuery = getBigQueryClient()
 
-    this.datasetId = process.env.BIGQUERY_DATASET_ID || 'amazon_analytics'
-    this.tableId = process.env.BIGQUERY_TABLE_ID || 'search_terms_report'
+    this.datasetId = process.env.BIGQUERY_DATASET || 'amazon_analytics'
+    this.tableId = 'search_terms'
   }
 
   /**
@@ -306,7 +304,7 @@ export class AmazonAnalyticsService {
             clickShare3 as click_share,
             conversionShare3 as conversion_share
           ) ORDER BY reportDate DESC LIMIT 1)[OFFSET(0)] as top_product_3
-        FROM \`${process.env.GOOGLE_CLOUD_PROJECT_ID}.${this.datasetId}.${this.tableId}\`
+        FROM \`${process.env.BIGQUERY_PROJECT_ID || 'commercecrafted'}.${this.datasetId}.${this.tableId}\`
         WHERE searchTerm IN UNNEST(@keywords)
           AND reportDate >= DATE_SUB(CURRENT_DATE(), INTERVAL @weeks WEEK)
         GROUP BY keyword, week

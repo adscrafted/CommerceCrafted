@@ -19,9 +19,14 @@ export async function GET(request: NextRequest) {
 
     // Check if BigQuery is configured
     if (!process.env.GOOGLE_CLOUD_PROJECT || !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      console.error('BigQuery configuration missing:', {
+        project: !!process.env.GOOGLE_CLOUD_PROJECT,
+        credentials: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
+        projectValue: process.env.GOOGLE_CLOUD_PROJECT
+      })
       return NextResponse.json({
         success: false,
-        error: 'BigQuery not configured',
+        error: 'BigQuery not configured. Please check environment variables.',
         data: []
       })
     }
@@ -70,10 +75,14 @@ export async function GET(request: NextRequest) {
       
     } catch (error) {
       console.error('BigQuery error:', error)
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
       
       return NextResponse.json({
         success: false,
-        error: 'Failed to fetch data from BigQuery',
+        error: error instanceof Error ? error.message : 'Failed to fetch data from BigQuery',
         data: []
       })
     }

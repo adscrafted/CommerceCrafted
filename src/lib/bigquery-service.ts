@@ -172,47 +172,74 @@ export class BigQueryService {
   // Get top search terms with historical trend data
   async getTopSearchTerms(weekStartDate: string, limit: number = 100): Promise<any[]> {
     const query = `
-      WITH latest_week_data AS (
-        -- Get the latest week's complete data for ASINs
+      WITH report_quality AS (
+        -- Calculate report quality metrics
         SELECT 
-          search_term,
-          search_frequency_rank,
-          total_click_share as latest_click_share,
-          total_conversion_share as latest_conversion_share,
-          clicked_asin_1,
-          product_title_1,
-          click_share_1,
-          conversion_share_1,
-          clicked_asin_2,
-          product_title_2,
-          click_share_2,
-          conversion_share_2,
-          clicked_asin_3,
-          product_title_3,
-          click_share_3,
-          conversion_share_3,
-          marketplace_id,
+          report_id,
           week_start_date,
-          ROW_NUMBER() OVER (
-            PARTITION BY search_term 
-            ORDER BY week_start_date DESC, ingested_at DESC, 
-                     (CASE WHEN clicked_asin_2 IS NOT NULL THEN 1 ELSE 0 END + 
-                      CASE WHEN clicked_asin_3 IS NOT NULL THEN 1 ELSE 0 END) DESC
-          ) as rn
+          COUNT(*) as report_record_count,
+          AVG(CASE WHEN clicked_asin_2 IS NOT NULL THEN 1 ELSE 0 END + 
+              CASE WHEN clicked_asin_3 IS NOT NULL THEN 1 ELSE 0 END) as avg_asin_completeness
         FROM \`${process.env.GOOGLE_CLOUD_PROJECT}.${this.dataset}.${this.table}\`
         WHERE search_frequency_rank > 0
+        GROUP BY report_id, week_start_date
+      ),
+      latest_week_data AS (
+        -- Get the latest week's complete data for ASINs, prioritizing better reports
+        SELECT 
+          st.search_term,
+          st.search_frequency_rank,
+          st.total_click_share as latest_click_share,
+          st.total_conversion_share as latest_conversion_share,
+          st.clicked_asin_1,
+          st.product_title_1,
+          st.click_share_1,
+          st.conversion_share_1,
+          st.clicked_asin_2,
+          st.product_title_2,
+          st.click_share_2,
+          st.conversion_share_2,
+          st.clicked_asin_3,
+          st.product_title_3,
+          st.click_share_3,
+          st.conversion_share_3,
+          st.marketplace_id,
+          st.week_start_date,
+          ROW_NUMBER() OVER (
+            PARTITION BY st.search_term, st.week_start_date 
+            ORDER BY 
+              -- Prioritize reports with more records
+              rq.report_record_count DESC,
+              -- Then by data completeness (more ASINs = better)
+              (CASE WHEN st.clicked_asin_2 IS NOT NULL THEN 1 ELSE 0 END + 
+               CASE WHEN st.clicked_asin_3 IS NOT NULL THEN 1 ELSE 0 END) DESC,
+              -- Finally by ingestion time (latest)
+              st.ingested_at DESC
+          ) as rn
+        FROM \`${process.env.GOOGLE_CLOUD_PROJECT}.${this.dataset}.${this.table}\` st
+        JOIN report_quality rq ON st.report_id = rq.report_id AND st.week_start_date = rq.week_start_date
+        WHERE st.search_frequency_rank > 0
       ),
       historical_data AS (
-        -- Get all historical data for trend analysis
+        -- Get all historical data for trend analysis, prioritizing better reports
         SELECT 
-          search_term,
-          week_start_date,
-          week_end_date,
-          search_frequency_rank,
-          total_click_share,
-          total_conversion_share
-        FROM \`${process.env.GOOGLE_CLOUD_PROJECT}.${this.dataset}.${this.table}\`
-        WHERE search_frequency_rank > 0
+          st.search_term,
+          st.week_start_date,
+          st.week_end_date,
+          st.search_frequency_rank,
+          st.total_click_share,
+          st.total_conversion_share,
+          ROW_NUMBER() OVER (
+            PARTITION BY st.search_term, st.week_start_date 
+            ORDER BY 
+              rq.report_record_count DESC,
+              (CASE WHEN st.clicked_asin_2 IS NOT NULL THEN 1 ELSE 0 END + 
+               CASE WHEN st.clicked_asin_3 IS NOT NULL THEN 1 ELSE 0 END) DESC,
+              st.ingested_at DESC
+          ) as rn
+        FROM \`${process.env.GOOGLE_CLOUD_PROJECT}.${this.dataset}.${this.table}\` st
+        JOIN report_quality rq ON st.report_id = rq.report_id AND st.week_start_date = rq.week_start_date
+        WHERE st.search_frequency_rank > 0
       ),
       trend_data AS (
         SELECT 
@@ -228,6 +255,7 @@ export class BigQueryService {
             ORDER BY week_start_date
           ) as weekly_data
         FROM historical_data
+        WHERE rn = 1  -- Only use the best report for each week
         GROUP BY search_term
       )
       SELECT 

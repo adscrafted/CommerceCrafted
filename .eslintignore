@@ -1,0 +1,10 @@
+# Dependencies
+node_modules/
+.next/
+out/
+
+# Generated files
+src/generated/
+
+# Scripts
+scripts/

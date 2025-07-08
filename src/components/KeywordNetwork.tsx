@@ -46,8 +46,12 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
   const [nodes, setNodes] = useState<NetworkNode[]>([])
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [zoomLevel, setZoomLevel] = useState(1)
+  const [panX, setPanX] = useState(0)
+  const [panY, setPanY] = useState(0)
+  const [isPanning, setIsPanning] = useState(false)
+  const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 })
   
-  const height = isFullscreen ? window.innerHeight - 40 : 600
+  const height = isFullscreen ? window.innerHeight - 40 : 800
   const width = isFullscreen ? window.innerWidth - 40 : 800
 
   useEffect(() => {
@@ -399,6 +403,9 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
     if (simulationRef.current) {
       simulationRef.current.alpha(1).restart()
     }
+    // Reset pan position
+    setPanX(0)
+    setPanY(0)
   }
 
   const handleZoomIn = () => {
@@ -413,8 +420,31 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
     setIsFullscreen(!isFullscreen)
   }
 
+  const handlePanStart = (event: React.MouseEvent) => {
+    if (event.button === 0) { // Left mouse button
+      setIsPanning(true)
+      setLastPanPoint({ x: event.clientX, y: event.clientY })
+    }
+  }
+
+  const handlePanMove = (event: React.MouseEvent) => {
+    if (isPanning) {
+      const deltaX = event.clientX - lastPanPoint.x
+      const deltaY = event.clientY - lastPanPoint.y
+      
+      setPanX(prev => prev + deltaX)
+      setPanY(prev => prev + deltaY)
+      
+      setLastPanPoint({ x: event.clientX, y: event.clientY })
+    }
+  }
+
+  const handlePanEnd = () => {
+    setIsPanning(false)
+  }
+
   return (
-    <div className={`relative bg-gray-50 rounded-lg border ${className} ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}>
+    <div className={`relative bg-gray-50 ${className} ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}>
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         <Button
           variant="outline"
@@ -456,8 +486,22 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
         </Button>
       </div>
       
-      <div className="p-4" style={{ overflow: 'hidden' }}>
-        <div style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center', transition: 'transform 0.2s' }}>
+      <div 
+        className="p-0" 
+        style={{ 
+          overflow: 'hidden',
+          cursor: isPanning ? 'grabbing' : 'grab'
+        }}
+        onMouseDown={handlePanStart}
+        onMouseMove={handlePanMove}
+        onMouseUp={handlePanEnd}
+        onMouseLeave={handlePanEnd}
+      >
+        <div style={{ 
+          transform: `scale(${zoomLevel}) translate(${panX}px, ${panY}px)`, 
+          transformOrigin: 'center', 
+          transition: isPanning ? 'none' : 'transform 0.2s' 
+        }}>
           <svg ref={svgRef} className="w-full" style={{ height: `${height}px` }} />
         </div>
       </div>
@@ -490,7 +534,7 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
         </div>
       )}
 
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-4 absolute bottom-0 left-0 right-0 bg-white bg-opacity-90">
         <div className="text-xs text-gray-500 flex flex-wrap gap-4">
           <span className="flex items-center gap-1">
             <div className="w-3 h-3 rounded-full bg-gray-800"></div>
