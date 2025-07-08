@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import CompetitionAnalysis from '@/components/products/analysis/CompetitionAnalysis'
 import { MembershipGate } from '@/components/MembershipGate'
+import { mockProductData } from '@/lib/mockProductData'
 
 interface CompetitionPageProps {
   params: Promise<{ slug: string }>
@@ -17,124 +18,14 @@ interface CompetitionPageProps {
 
 // Mock data - in production this would come from API
 const productData = {
-  id: 'daily_product_1',
-  title: 'Smart Bluetooth Sleep Mask with Built-in Speakers',
-  mainImage: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&h=600&fit=crop',
-  scores: {
-    competition: 78
-  },
+  ...mockProductData,
+  // Ensure backward compatibility with existing fields
   competitionData: {
-    totalCompetitors: 127,
-    topCompetitors: [
-      {
-        rank: 1,
-        name: 'MUSICOZY Sleep Headphones',
-        asin: 'B07SHBQY7Z',
-        price: 29.99,
-        rating: 4.3,
-        reviews: 15234,
-        monthlyRevenue: 456000,
-        monthlyClicks: 45600,
-        monthlyOrders: 15234,
-        conversionRate: 12.5,
-        aov: 29.99,
-        keywordStrength: 23.5,
-        mainImage: 'https://images.unsplash.com/photo-1559563458-527698bf5295?w=200&h=200&fit=crop',
-        images: [
-          'https://images.unsplash.com/photo-1559563458-527698bf5295?w=400&h=400&fit=crop',
-          'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&h=400&fit=crop',
-          'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop',
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop'
-        ],
-        dominance: 23.5,
-        listing: {
-          title: 'MUSICOZY Sleep Headphones Bluetooth Headband, Soft Sleeping Wireless Music Sport Headbands, Long Time Play Sleeping Headphones for Side Sleepers',
-          bulletPoints: [
-            'Premium Sound Quality - Advanced Bluetooth 5.0 technology ensures crystal clear audio',
-            'Ultra-Comfortable Design - Made with breathable, moisture-wicking fabric',
-            'Long Battery Life - Up to 10 hours of continuous playback',
-            'Perfect for Side Sleepers - Thin speakers won\'t cause discomfort',
-            'Washable & Durable - Machine washable design for easy maintenance'
-          ],
-          keywords: ['sleep headphones', 'bluetooth headband', 'wireless music', 'side sleepers'],
-          description: 'Experience the ultimate in sleep comfort with our premium Bluetooth sleep headphones...'
-        }
-      },
-      {
-        rank: 2,
-        name: 'Perytong Sleep Headphones',
-        asin: 'B07Q34GWQT',
-        price: 25.99,
-        rating: 4.1,
-        reviews: 12456,
-        monthlyRevenue: 324000,
-        monthlyClicks: 32400,
-        monthlyOrders: 12456,
-        conversionRate: 11.8,
-        aov: 25.99,
-        keywordStrength: 18.2,
-        mainImage: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=200&h=200&fit=crop',
-        images: [
-          'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&h=400&fit=crop',
-          'https://images.unsplash.com/photo-1559563458-527698bf5295?w=400&h=400&fit=crop',
-          'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop'
-        ],
-        dominance: 18.2,
-        listing: {
-          title: 'Perytong Sleep Headphones Bluetooth Sports Headband Thin Speakers Perfect for Workout, Jogging, Yoga, Insomnia, Side Sleepers',
-          bulletPoints: [
-            'Thin Speakers Design - Ultra-thin speakers for maximum comfort during sleep',
-            'Bluetooth 5.0 Technology - Stable connection with all Bluetooth devices',
-            'Sports & Sleep Dual Use - Perfect for both workouts and sleep',
-            'Soft Elastic Headband - One size fits all comfortable design',
-            'Easy Controls - Simple button controls for music and calls'
-          ],
-          keywords: ['sleep headphones', 'sports headband', 'bluetooth speakers', 'workout headphones'],
-          description: 'Discover the perfect combination of comfort and functionality with our versatile sleep headphones...'
-        }
-      },
-      {
-        rank: 3,
-        name: 'CozyPhones Sleep Headphones',
-        asin: 'B00MFQJK1G',
-        price: 19.95,
-        rating: 4.0,
-        reviews: 8934,
-        monthlyRevenue: 178000,
-        monthlyClicks: 23400,
-        monthlyOrders: 8934,
-        conversionRate: 10.2,
-        aov: 19.95,
-        keywordStrength: 12.8,
-        mainImage: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=200&h=200&fit=crop',
-        images: [
-          'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop',
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop'
-        ],
-        dominance: 12.8,
-        listing: {
-          title: 'CozyPhones Sleep Headphones & Travel Bag - Soft Braided Cord - Noise Isolating Earbuds Ideal for Side Sleepers',
-          bulletPoints: [
-            'Patented Design - Unique flat speaker design for side sleepers',
-            'Noise Isolation - Block out ambient noise for better sleep',
-            'Durable Braided Cord - Tangle-free braided cord construction',
-            'Travel Ready - Includes premium travel bag',
-            'Hypoallergenic Materials - Safe for sensitive skin'
-          ],
-          keywords: ['sleep headphones', 'side sleepers', 'noise isolation', 'travel headphones'],
-          description: 'Transform your sleep experience with our patented flat speaker design headphones...'
-        }
-      }
-    ],
-    priceDistribution: [
-      { range: '$0-20', count: 34, percentage: 26.8 },
-      { range: '$20-30', count: 52, percentage: 40.9 },
-      { range: '$30-40', count: 28, percentage: 22.0 },
-      { range: '$40+', count: 13, percentage: 10.2 }
-    ],
-    averageRating: 4.2,
-    averageReviews: 3421,
-    averagePrice: 27.99
+    ...mockProductData.competitionData,
+    totalCompetitors: mockProductData.competitionData?.totalCompetitors || 127,
+    averageRating: mockProductData.competitionData?.averageRating || 4.2,
+    averagePrice: mockProductData.competitionData?.averagePrice || 27.99,
+    averageReviews: mockProductData.competitionData?.averageReviews || 3421
   }
 }
 

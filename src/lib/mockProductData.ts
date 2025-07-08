@@ -188,6 +188,33 @@ export const mockProductData = {
   // Competition Analysis Data
   competitionData: {
     totalCompetitors: 127,
+    averageRating: 4.2,
+    averagePrice: 27.99,
+    averageReviews: 3421,
+    priceDistribution: [
+      { range: '$0-20', count: 34, percentage: 26.8 },
+      { range: '$20-30', count: 52, percentage: 40.9 },
+      { range: '$30-40', count: 28, percentage: 22.0 },
+      { range: '$40+', count: 13, percentage: 10.2 }
+    ],
+    marketShareData: [
+      { name: 'MUSICOZY', share: 23.5, revenue: 456000, color: '#3B82F6' },
+      { name: 'Perytong', share: 18.2, revenue: 324000, color: '#10B981' },
+      { name: 'CozyPhones', share: 12.8, revenue: 178000, color: '#F59E0B' },
+      { name: 'LC-dolida', share: 8.9, revenue: 125000, color: '#8B5CF6' },
+      { name: 'Fulext', share: 6.2, revenue: 89000, color: '#EF4444' },
+      { name: 'Others', share: 30.4, revenue: 428000, color: '#6B7280' }
+    ],
+    keywordOwnership: [
+      { keyword: 'bluetooth sleep mask', top3ASINs: ['B07SHBQY7Z', 'B07Q34GWQT', 'B08MVBRNKV'], dominantASIN: 'B07SHBQY7Z', dominanceScore: 42 },
+      { keyword: 'sleep headphones bluetooth', top3ASINs: ['B07SHBQY7Z', 'B07Q34GWQT', 'B00MFQJK1G'], dominantASIN: 'B07SHBQY7Z', dominanceScore: 38 },
+      { keyword: 'wireless sleep mask', top3ASINs: ['B07Q34GWQT', 'B07SHBQY7Z', 'B08K4F3G2K'], dominantASIN: 'B07Q34GWQT', dominanceScore: 35 },
+      { keyword: 'sleep mask with speakers', top3ASINs: ['B00MFQJK1G', 'B07SHBQY7Z', 'B07Q34GWQT'], dominantASIN: 'B00MFQJK1G', dominanceScore: 31 },
+      { keyword: 'bluetooth headband sleep', top3ASINs: ['B07SHBQY7Z', 'B08K4F3G2K', 'B07Q34GWQT'], dominantASIN: 'B07SHBQY7Z', dominanceScore: 45 },
+      { keyword: 'side sleeper headphones', top3ASINs: ['B00MFQJK1G', 'B08GC7JJH3', 'B07SHBQY7Z'], dominantASIN: 'B00MFQJK1G', dominanceScore: 48 },
+      { keyword: 'sleep music headphones', top3ASINs: ['B07Q34GWQT', 'B07SHBQY7Z', 'B08K4F3G2K'], dominantASIN: 'B07Q34GWQT', dominanceScore: 29 },
+      { keyword: 'night mask bluetooth', top3ASINs: ['B08K4F3G2K', 'B07SHBQY7Z', 'B07Q34GWQT'], dominantASIN: 'B08K4F3G2K', dominanceScore: 33 }
+    ],
     topCompetitors: [
       {
         rank: 1,
@@ -204,11 +231,49 @@ export const mockProductData = {
         keywordStrength: 23.5,
         mainImage: 'https://images.unsplash.com/photo-1559563458-527698bf5295?w=200&h=200&fit=crop',
         images: [
-          'https://images.unsplash.com/photo-1559563458-527698bf5295?w=400&h=400&fit=crop',
-          'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&h=400&fit=crop',
-          'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop',
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop'
+          { url: 'https://images.unsplash.com/photo-1559563458-527698bf5295?w=400&h=400&fit=crop', type: 'main', caption: 'Product front view' },
+          { url: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&h=400&fit=crop', type: 'lifestyle', caption: 'In use while sleeping' },
+          { url: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop', type: 'detail', caption: 'Bluetooth controls close-up' },
+          { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop', type: 'lifestyle', caption: 'Travel use case' },
+          { url: 'https://images.unsplash.com/photo-1573868396123-ef72a7f7b94f?w=400&h=400&fit=crop', type: 'comparison', caption: 'Size comparison' },
+          { url: 'https://images.unsplash.com/photo-1560707303-4e980ce876ad?w=400&h=400&fit=crop', type: 'packaging', caption: 'Premium packaging' },
+          { url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop', type: 'infographic', caption: 'Features overview' },
+          { url: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop', type: 'detail', caption: 'Material texture' }
         ],
+        imageQualityScore: 92,
+        keywordRankings: [
+          { keyword: 'bluetooth sleep mask', rank: 1, clickShare: 42, conversionShare: 38 },
+          { keyword: 'sleep headphones bluetooth', rank: 1, clickShare: 38, conversionShare: 35 },
+          { keyword: 'wireless sleep mask', rank: 2, clickShare: 28, conversionShare: 25 },
+          { keyword: 'bluetooth headband sleep', rank: 1, clickShare: 45, conversionShare: 42 },
+          { keyword: 'side sleeper headphones', rank: 3, clickShare: 22, conversionShare: 18 },
+          { keyword: 'sleep music headphones', rank: 2, clickShare: 31, conversionShare: 28 },
+          { keyword: 'comfortable sleep headphones', rank: 1, clickShare: 35, conversionShare: 32 },
+          { keyword: 'workout headband bluetooth', rank: 4, clickShare: 18, conversionShare: 15 },
+          { keyword: 'yoga headband speakers', rank: 5, clickShare: 15, conversionShare: 12 },
+          { keyword: 'travel sleep mask bluetooth', rank: 2, clickShare: 33, conversionShare: 30 }
+        ],
+        salesTrend: [
+          { month: 'Jan', revenue: 412000, orders: 13700 },
+          { month: 'Feb', revenue: 428000, orders: 14300 },
+          { month: 'Mar', revenue: 445000, orders: 14800 },
+          { month: 'Apr', revenue: 438000, orders: 14600 },
+          { month: 'May', revenue: 452000, orders: 15100 },
+          { month: 'Jun', revenue: 456000, orders: 15234 }
+        ],
+        listingQualityScore: {
+          overall: 88,
+          title: 92,
+          bullets: 85,
+          images: 92,
+          keywords: 86,
+          aPlus: true,
+          video: true
+        },
+        estimatedPPCSpend: 45600,
+        launchDate: '2019-03-15',
+        brandRegistered: true,
+        variations: 3,
         dominance: 23.5,
         listing: {
           title: 'MUSICOZY Sleep Headphones Bluetooth Headband, Soft Sleeping Wireless Music Sport Headbands, Long Time Play Sleeping Headphones for Side Sleepers',
@@ -238,10 +303,44 @@ export const mockProductData = {
         keywordStrength: 18.2,
         mainImage: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=200&h=200&fit=crop',
         images: [
-          'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&h=400&fit=crop',
-          'https://images.unsplash.com/photo-1559563458-527698bf5295?w=400&h=400&fit=crop',
-          'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop'
+          { url: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&h=400&fit=crop', type: 'main', caption: 'Product view' },
+          { url: 'https://images.unsplash.com/photo-1559563458-527698bf5295?w=400&h=400&fit=crop', type: 'lifestyle', caption: 'Sleeping comfort' },
+          { url: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop', type: 'lifestyle', caption: 'Sports use' },
+          { url: 'https://images.unsplash.com/photo-1573868396123-ef72a7f7b94f?w=400&h=400&fit=crop', type: 'detail', caption: 'Speaker detail' },
+          { url: 'https://images.unsplash.com/photo-1560707303-4e980ce876ad?w=400&h=400&fit=crop', type: 'comparison', caption: 'Size guide' },
+          { url: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop', type: 'infographic', caption: 'How to use' },
+          { url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop', type: 'packaging', caption: 'Gift box' }
         ],
+        imageQualityScore: 85,
+        keywordRankings: [
+          { keyword: 'bluetooth sleep mask', rank: 2, clickShare: 28, conversionShare: 25 },
+          { keyword: 'sleep headphones bluetooth', rank: 2, clickShare: 31, conversionShare: 28 },
+          { keyword: 'wireless sleep mask', rank: 1, clickShare: 35, conversionShare: 32 },
+          { keyword: 'sports headband bluetooth', rank: 1, clickShare: 42, conversionShare: 38 },
+          { keyword: 'workout sleep headphones', rank: 1, clickShare: 38, conversionShare: 35 },
+          { keyword: 'yoga headband speakers', rank: 2, clickShare: 32, conversionShare: 29 }
+        ],
+        salesTrend: [
+          { month: 'Jan', revenue: 298000, orders: 11500 },
+          { month: 'Feb', revenue: 305000, orders: 11700 },
+          { month: 'Mar', revenue: 312000, orders: 12000 },
+          { month: 'Apr', revenue: 318000, orders: 12200 },
+          { month: 'May', revenue: 322000, orders: 12400 },
+          { month: 'Jun', revenue: 324000, orders: 12456 }
+        ],
+        listingQualityScore: {
+          overall: 82,
+          title: 85,
+          bullets: 80,
+          images: 85,
+          keywords: 78,
+          aPlus: true,
+          video: false
+        },
+        estimatedPPCSpend: 32400,
+        launchDate: '2019-08-22',
+        brandRegistered: true,
+        variations: 5,
         dominance: 18.2,
         listing: {
           title: 'Perytong Sleep Headphones Bluetooth Sports Headband Thin Speakers Perfect for Workout, Jogging, Yoga, Insomnia, Side Sleepers',
@@ -271,9 +370,42 @@ export const mockProductData = {
         keywordStrength: 12.8,
         mainImage: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=200&h=200&fit=crop',
         images: [
-          'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop',
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop'
+          { url: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop', type: 'main', caption: 'Classic design' },
+          { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop', type: 'lifestyle', caption: 'Travel ready' },
+          { url: 'https://images.unsplash.com/photo-1573868396123-ef72a7f7b94f?w=400&h=400&fit=crop', type: 'detail', caption: 'Flat speakers' },
+          { url: 'https://images.unsplash.com/photo-1560707303-4e980ce876ad?w=400&h=400&fit=crop', type: 'infographic', caption: 'Features list' },
+          { url: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop', type: 'packaging', caption: 'Travel bag included' },
+          { url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop', type: 'comparison', caption: 'vs Regular headphones' }
         ],
+        imageQualityScore: 78,
+        keywordRankings: [
+          { keyword: 'bluetooth sleep mask', rank: 5, clickShare: 12, conversionShare: 10 },
+          { keyword: 'side sleeper headphones', rank: 1, clickShare: 48, conversionShare: 45 },
+          { keyword: 'sleep mask with speakers', rank: 1, clickShare: 31, conversionShare: 28 },
+          { keyword: 'travel sleep headphones', rank: 2, clickShare: 28, conversionShare: 25 },
+          { keyword: 'noise isolation sleep mask', rank: 1, clickShare: 35, conversionShare: 32 }
+        ],
+        salesTrend: [
+          { month: 'Jan', revenue: 165000, orders: 8300 },
+          { month: 'Feb', revenue: 168000, orders: 8400 },
+          { month: 'Mar', revenue: 172000, orders: 8600 },
+          { month: 'Apr', revenue: 175000, orders: 8800 },
+          { month: 'May', revenue: 177000, orders: 8900 },
+          { month: 'Jun', revenue: 178000, orders: 8934 }
+        ],
+        listingQualityScore: {
+          overall: 75,
+          title: 78,
+          bullets: 72,
+          images: 78,
+          keywords: 70,
+          aPlus: false,
+          video: false
+        },
+        estimatedPPCSpend: 17800,
+        launchDate: '2018-11-05',
+        brandRegistered: true,
+        variations: 2,
         dominance: 12.8,
         listing: {
           title: 'CozyPhones Sleep Headphones & Travel Bag - Soft Braided Cord - Noise Isolating Earbuds Ideal for Side Sleepers',
@@ -287,17 +419,133 @@ export const mockProductData = {
           keywords: ['sleep headphones', 'side sleepers', 'noise isolation', 'travel headphones'],
           description: 'Transform your sleep experience with our patented flat speaker design headphones...'
         }
+      },
+      // Additional competitors
+      {
+        rank: 4,
+        name: 'LC-dolida Sleep Headphones',
+        asin: 'B08K4F3G2K',
+        price: 23.99,
+        rating: 4.2,
+        reviews: 7823,
+        monthlyRevenue: 125000,
+        monthlyClicks: 15600,
+        monthlyOrders: 5210,
+        conversionRate: 10.8,
+        aov: 23.99,
+        keywordStrength: 15.3,
+        mainImage: 'https://images.unsplash.com/photo-1605462863863-10d9e47e15ee?w=200&h=200&fit=crop',
+        images: [
+          { url: 'https://images.unsplash.com/photo-1605462863863-10d9e47e15ee?w=400&h=400&fit=crop', type: 'main', caption: 'Modern design' },
+          { url: 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=400&h=400&fit=crop', type: 'lifestyle', caption: 'Comfort wear' },
+          { url: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=400&h=400&fit=crop', type: 'detail', caption: 'Control buttons' },
+          { url: 'https://images.unsplash.com/photo-1560707303-4e980ce876ad?w=400&h=400&fit=crop', type: 'infographic', caption: 'Tech specs' },
+          { url: 'https://images.unsplash.com/photo-1573868396123-ef72a7f7b94f?w=400&h=400&fit=crop', type: 'comparison', caption: 'Color options' }
+        ],
+        imageQualityScore: 82,
+        dominance: 8.9,
+        listing: {
+          title: 'LC-dolida Sleep Headphones Bluetooth Headband Wireless Music Sport Headbands Long Play Time Sleeping Headphones',
+          bulletPoints: [
+            '【Latest Version】Bluetooth 5.2 for stable connection',
+            '【10 Hours Play Time】Built-in 200mAh battery',
+            '【HD Stereo Sound】Premium audio drivers',
+            '【Washable Material】Remove speakers to wash',
+            '【Perfect Gift】Comes in beautiful gift box'
+          ],
+          keywords: ['sleep headphones', 'bluetooth 5.2', 'long battery', 'gift idea'],
+          description: 'Upgrade your sleep experience with the latest Bluetooth 5.2 technology...'
+        },
+        keywordRankings: [
+          { keyword: 'bluetooth sleep mask', rank: 4, clickShare: 15, conversionShare: 12 },
+          { keyword: 'wireless sleep mask', rank: 3, clickShare: 22, conversionShare: 19 },
+          { keyword: 'night mask bluetooth', rank: 1, clickShare: 33, conversionShare: 30 },
+          { keyword: 'gift sleep headphones', rank: 1, clickShare: 42, conversionShare: 38 }
+        ],
+        salesTrend: [
+          { month: 'Jan', revenue: 115000, orders: 4800 },
+          { month: 'Feb', revenue: 118000, orders: 4900 },
+          { month: 'Mar', revenue: 120000, orders: 5000 },
+          { month: 'Apr', revenue: 122000, orders: 5100 },
+          { month: 'May', revenue: 124000, orders: 5150 },
+          { month: 'Jun', revenue: 125000, orders: 5210 }
+        ],
+        listingQualityScore: {
+          overall: 80,
+          title: 82,
+          bullets: 78,
+          images: 82,
+          keywords: 76,
+          aPlus: false,
+          video: true
+        },
+        estimatedPPCSpend: 12500,
+        launchDate: '2020-06-18',
+        brandRegistered: true,
+        variations: 4
+      },
+      {
+        rank: 5,
+        name: 'Fulext Sleep Headphones',
+        asin: 'B08GC7JJH3',
+        price: 19.99,
+        rating: 4.0,
+        reviews: 4456,
+        monthlyRevenue: 89000,
+        monthlyClicks: 11200,
+        monthlyOrders: 4450,
+        conversionRate: 9.8,
+        aov: 19.99,
+        keywordStrength: 10.2,
+        mainImage: 'https://images.unsplash.com/photo-1625948515291-69613efd103f?w=200&h=200&fit=crop',
+        images: [
+          { url: 'https://images.unsplash.com/photo-1625948515291-69613efd103f?w=400&h=400&fit=crop', type: 'main', caption: 'Budget option' },
+          { url: 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=400&h=400&fit=crop', type: 'lifestyle', caption: 'Daily use' },
+          { url: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=400&h=400&fit=crop', type: 'detail', caption: 'Simple controls' },
+          { url: 'https://images.unsplash.com/photo-1573868396123-ef72a7f7b94f?w=400&h=400&fit=crop', type: 'packaging', caption: 'Basic package' }
+        ],
+        imageQualityScore: 70,
+        dominance: 6.2,
+        listing: {
+          title: 'Fulext Sleep Headphones Bluetooth Headband Sleeping Headphones Sports Headband',
+          bulletPoints: [
+            'Bluetooth 5.0 wireless technology',
+            'Ultra-thin flat speakers',
+            'Breathable fabric material',
+            'One size fits most',
+            'Great value for money'
+          ],
+          keywords: ['sleep headphones', 'bluetooth headband', 'budget', 'value'],
+          description: 'Affordable sleep headphones solution for everyone...'
+        },
+        keywordRankings: [
+          { keyword: 'cheap sleep headphones', rank: 1, clickShare: 45, conversionShare: 42 },
+          { keyword: 'budget bluetooth sleep mask', rank: 1, clickShare: 38, conversionShare: 35 },
+          { keyword: 'affordable sleep headphones', rank: 2, clickShare: 32, conversionShare: 28 }
+        ],
+        salesTrend: [
+          { month: 'Jan', revenue: 82000, orders: 4100 },
+          { month: 'Feb', revenue: 84000, orders: 4200 },
+          { month: 'Mar', revenue: 86000, orders: 4300 },
+          { month: 'Apr', revenue: 87000, orders: 4350 },
+          { month: 'May', revenue: 88000, orders: 4400 },
+          { month: 'Jun', revenue: 89000, orders: 4450 }
+        ],
+        listingQualityScore: {
+          overall: 68,
+          title: 70,
+          bullets: 65,
+          images: 70,
+          keywords: 65,
+          aPlus: false,
+          video: false
+        },
+        estimatedPPCSpend: 8900,
+        launchDate: '2020-09-12',
+        brandRegistered: false,
+        variations: 1
       }
-    ],
-    priceDistribution: [
-      { range: '$0-20', count: 34, percentage: 26.8 },
-      { range: '$20-30', count: 52, percentage: 40.9 },
-      { range: '$30-40', count: 28, percentage: 22.0 },
-      { range: '$40+', count: 13, percentage: 10.2 }
-    ],
-    averageRating: 4.2,
-    averageReviews: 3421,
-    averagePrice: 27.99
+    ]
   },
   
   // Keywords Analysis Data
