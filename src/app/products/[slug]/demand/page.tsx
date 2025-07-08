@@ -10,52 +10,14 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import DemandAnalysis from '@/components/products/analysis/DemandAnalysis'
 import { MembershipGate } from '@/components/MembershipGate'
+import { mockProductData } from '@/lib/mockProductData'
 
 interface DemandPageProps {
   params: Promise<{ slug: string }>
 }
 
-// Mock data - in production this would come from API
-const productData = {
-  id: 'daily_product_1',
-  title: 'Smart Bluetooth Sleep Mask with Built-in Speakers',
-  mainImage: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&h=600&fit=crop',
-  scores: {
-    demand: 92
-  },
-  demandData: {
-    monthlySearchVolume: 45000,
-    searchTrend: '+23%',
-    marketSize: 1200000000,
-    marketGrowth: '+15%',
-    conversionRate: 12.5,
-    clickShare: 32,
-    seasonality: {
-      jan: 85, feb: 82, mar: 78, apr: 75, may: 70, jun: 68,
-      jul: 65, aug: 70, sep: 75, oct: 80, nov: 90, dec: 100
-    },
-    googleTrends: [
-      { month: 'Jan', value: 85 },
-      { month: 'Feb', value: 82 },
-      { month: 'Mar', value: 78 },
-      { month: 'Apr', value: 75 },
-      { month: 'May', value: 70 },
-      { month: 'Jun', value: 68 },
-      { month: 'Jul', value: 65 },
-      { month: 'Aug', value: 70 },
-      { month: 'Sep', value: 75 },
-      { month: 'Oct', value: 80 },
-      { month: 'Nov', value: 90 },
-      { month: 'Dec', value: 100 }
-    ],
-    socialSignals: {
-      tiktok: { posts: 2341, views: 4500000, engagement: '8.2%' },
-      instagram: { posts: 5678, engagement: '6.5%' },
-      youtube: { videos: 892, avgViews: 45000 },
-      reddit: { discussions: 234, sentiment: 'positive' }
-    }
-  }
-}
+// Use the shared mock data
+const productData = mockProductData
 
 export default function DemandPage({ params }: DemandPageProps) {
   const { data: session, status } = useSession()

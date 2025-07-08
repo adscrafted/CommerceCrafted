@@ -5,8 +5,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import MarketIntelligence from '@/components/products/analysis/MarketIntelligence'
 import { MembershipGate } from '@/components/MembershipGate'
@@ -75,7 +74,7 @@ export default function IntelligencePage({ params }: IntelligencePageProps) {
                 </div>
                 <div>
                   <h1 className="text-2xl font-semibold text-gray-900">Market Intelligence</h1>
-                  <p className="text-base text-gray-600">Reviews, sentiment & customer insights</p>
+                  <p className="text-base text-gray-600">Deep analysis of customer sentiment & niche dynamics</p>
                 </div>
               </div>
               <Link href={`/products/${slug}`}>
@@ -115,33 +114,6 @@ export default function IntelligencePage({ params }: IntelligencePageProps) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Key Insights */}
-        <Card className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50">
-          <CardHeader>
-            <CardTitle>Key Intelligence Insights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-green-600">4.2★</div>
-                <div className="text-sm text-gray-600">Sentiment Score</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-blue-600">36.6K</div>
-                <div className="text-sm text-gray-600">Total Reviews</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-purple-600">4</div>
-                <div className="text-sm text-gray-600">Opportunities</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-orange-600">3 Types</div>
-                <div className="text-sm text-gray-600">Customer Avatars</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Market Intelligence Component */}
         <MarketIntelligence data={mockProductData} />
       </div>

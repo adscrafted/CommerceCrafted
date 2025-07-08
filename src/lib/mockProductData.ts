@@ -72,6 +72,116 @@ export const mockProductData = {
       instagram: { posts: 5678, engagement: '6.5%' },
       youtube: { videos: 892, avgViews: 45000 },
       reddit: { discussions: 234, sentiment: 'positive' }
+    },
+    keywordMetrics: {
+      totalKeywords: 1250,
+      totalMarketRevenue: 8500000, // Monthly revenue across all keywords
+      topKeywords: [
+        { 
+          keyword: 'bluetooth sleep mask', 
+          orders: 12500, 
+          revenue: 374875, 
+          growth: '+45%',
+          searchVolume: 18500,
+          clickShare: 42,
+          conversionRate: 14.2
+        },
+        { 
+          keyword: 'sleep headphones bluetooth', 
+          orders: 8900, 
+          revenue: 266811, 
+          growth: '+38%',
+          searchVolume: 14200,
+          clickShare: 38,
+          conversionRate: 12.8
+        },
+        { 
+          keyword: 'wireless sleep mask', 
+          orders: 6200, 
+          revenue: 185938, 
+          growth: '+52%',
+          searchVolume: 9800,
+          clickShare: 35,
+          conversionRate: 11.5
+        },
+        { 
+          keyword: 'sleep mask with speakers', 
+          orders: 5100, 
+          revenue: 152949, 
+          growth: '+28%',
+          searchVolume: 8200,
+          clickShare: 31,
+          conversionRate: 13.1
+        },
+        { 
+          keyword: 'bluetooth eye mask for sleeping', 
+          orders: 3800, 
+          revenue: 113962, 
+          growth: '+67%',
+          searchVolume: 6500,
+          clickShare: 28,
+          conversionRate: 10.9
+        }
+      ],
+      keywordDepth: {
+        top10: 65, // percentage of revenue
+        top50: 85,
+        longTail: 15
+      },
+      concentrationIndex: 0.72, // 0-1 scale, higher = more concentrated
+      averageOrderValue: 29.99
+    },
+    salesRankHistory: [
+      { date: '2025-07', rank: 1234, categoryRank: 89, subcategory: 'Sleep Masks' },
+      { date: '2025-06', rank: 1456, categoryRank: 102, subcategory: 'Sleep Masks' },
+      { date: '2025-05', rank: 1678, categoryRank: 118, subcategory: 'Sleep Masks' },
+      { date: '2025-04', rank: 1890, categoryRank: 134, subcategory: 'Sleep Masks' },
+      { date: '2025-03', rank: 2123, categoryRank: 152, subcategory: 'Sleep Masks' },
+      { date: '2025-02', rank: 2456, categoryRank: 178, subcategory: 'Sleep Masks' },
+      { date: '2025-01', rank: 2789, categoryRank: 198, subcategory: 'Sleep Masks' }
+    ],
+    trendingKeywords: [
+      { keyword: 'asmr sleep mask', growth: '+145%', newRank: 156, oldRank: 389 },
+      { keyword: 'sleep mask with bluetooth headphones', growth: '+89%', newRank: 223, oldRank: 421 },
+      { keyword: 'travel sleep mask bluetooth', growth: '+76%', newRank: 312, oldRank: 548 },
+      { keyword: 'meditation sleep mask', growth: '+62%', newRank: 445, oldRank: 721 }
+    ],
+    demandVelocity: {
+      monthOverMonth: '+12%',
+      quarterOverQuarter: '+38%',
+      yearOverYear: '+125%',
+      acceleration: 'increasing',
+      momentumScore: 85,
+      signals: [
+        'Holiday season approaching - expect 40% surge',
+        'TikTok viral trend driving youth adoption',
+        'New competitor (SleepPhones) gaining market share'
+      ]
+    },
+    categoryPenetration: {
+      nicheSize: 0.082, // 8.2% of category
+      categoryGrowth: '+10%',
+      nicheGrowth: '+23%',
+      saturationLevel: 'moderate',
+      marketMaturity: 'growth phase',
+      whiteSpaceOpportunity: 68 // score out of 100
+    },
+    priceElasticity: {
+      coefficient: -1.2,
+      optimalPrice: 29.99,
+      sensitivityScore: 'moderate',
+      segmentDemand: {
+        budget: { range: '$10-20', percentage: 25 },
+        mid: { range: '$20-35', percentage: 60 },
+        premium: { range: '$35+', percentage: 15 }
+      },
+      priceVsVolume: [
+        { price: 19.99, estimatedVolume: 18500 },
+        { price: 24.99, estimatedVolume: 16200 },
+        { price: 29.99, estimatedVolume: 14100 },
+        { price: 34.99, estimatedVolume: 10800 },
+        { price: 39.99, estimatedVolume: 7200 }
+      ]
     }
   },
 
@@ -275,6 +385,290 @@ export const mockProductData = {
     overallSentiment: 'positive',
     sentimentScore: 4.2,
     totalReviews: 36624,
+    emotionalTriggers: {
+      positive: [
+        {
+          trigger: 'Peace of Mind',
+          frequency: 892,
+          examples: ['finally sleep through the night', 'no more tossing and turning', 'wake up refreshed'],
+          impact: 'high'
+        },
+        {
+          trigger: 'Freedom',
+          frequency: 734,
+          examples: ['move without tangled wires', 'sleep in any position', 'travel anywhere'],
+          impact: 'high'
+        },
+        {
+          trigger: 'Belonging',
+          frequency: 456,
+          examples: ['my partner loves it too', 'whole family uses them', 'gift for loved ones'],
+          impact: 'medium'
+        },
+        {
+          trigger: 'Achievement',
+          frequency: 312,
+          examples: ['finally found the solution', 'best purchase this year', 'problem solved'],
+          impact: 'medium'
+        }
+      ],
+      negative: [
+        {
+          trigger: 'Frustration',
+          frequency: 234,
+          examples: ['controls are confusing', 'keeps disconnecting', 'battery dies too fast'],
+          impact: 'high'
+        },
+        {
+          trigger: 'Disappointment',
+          frequency: 189,
+          examples: ['not as advertised', 'quality issues', 'stopped working after 3 months'],
+          impact: 'high'
+        },
+        {
+          trigger: 'Anxiety',
+          frequency: 123,
+          examples: ['worried about durability', 'concerned about warranty', 'unsure about size'],
+          impact: 'medium'
+        }
+      ]
+    },
+    voiceOfCustomer: {
+      featureRequests: [
+        {
+          feature: 'Adjustable Volume Controls',
+          mentions: 456,
+          sentiment: 'highly requested',
+          examples: ['wish I could control volume easier', 'need better button placement', 'volume buttons hard to find in dark']
+        },
+        {
+          feature: 'Multiple Size Options',
+          mentions: 389,
+          sentiment: 'critical need',
+          examples: ['too tight for my head', 'one size doesn\'t fit all', 'needs XL option']
+        },
+        {
+          feature: 'Longer Battery Life',
+          mentions: 267,
+          sentiment: 'moderate request',
+          examples: ['dies after one night', 'want 12+ hours', 'need week-long battery']
+        },
+        {
+          feature: 'Better App Integration',
+          mentions: 198,
+          sentiment: 'nice to have',
+          examples: ['want sleep tracking', 'integrate with meditation apps', 'custom sound profiles']
+        }
+      ],
+      useCases: [
+        {
+          scenario: 'Night Shift Workers',
+          percentage: 28,
+          description: 'Blocking out daylight and noise during daytime sleep',
+          keywords: ['day sleeping', 'light blocking', 'shift work']
+        },
+        {
+          scenario: 'Meditation & Relaxation',
+          percentage: 24,
+          description: 'Using guided meditations and calming sounds',
+          keywords: ['meditation', 'mindfulness', 'relaxation', 'ASMR']
+        },
+        {
+          scenario: 'Travel & Commute',
+          percentage: 22,
+          description: 'Sleeping on planes, trains, and in hotels',
+          keywords: ['travel', 'airplane', 'hotel', 'portable']
+        },
+        {
+          scenario: 'Partner Compatibility',
+          percentage: 18,
+          description: 'One partner needs audio while other needs silence',
+          keywords: ['snoring partner', 'different schedules', 'white noise']
+        },
+        {
+          scenario: 'Tinnitus Relief',
+          percentage: 8,
+          description: 'Managing tinnitus symptoms with background sounds',
+          keywords: ['tinnitus', 'ear ringing', 'masking sounds']
+        }
+      ],
+      purchaseMotivations: [
+        {
+          motivation: 'Better Sleep Quality',
+          percentage: 42,
+          description: 'Primary goal is improving sleep depth and duration'
+        },
+        {
+          motivation: 'Convenience',
+          percentage: 28,
+          description: 'Wireless design and all-in-one solution'
+        },
+        {
+          motivation: 'Partner Harmony',
+          percentage: 18,
+          description: 'Solving sleep conflicts with partners'
+        },
+        {
+          motivation: 'Health & Wellness',
+          percentage: 12,
+          description: 'Part of broader wellness routine'
+        }
+      ]
+    },
+    competitiveIntelligence: {
+      marketPosition: {
+        topPerformers: [
+          { x: 85, y: 70, label: 'MUSICOZY', size: 'large', type: 'leader' },
+          { x: 75, y: 80, label: 'Premium Segment', size: 'medium', type: 'opportunity' },
+          { x: 70, y: 65, label: 'Perytong', size: 'medium', type: 'established' },
+          { x: 60, y: 60, label: 'CozyPhones', size: 'medium', type: 'established' },
+          { x: 50, y: 55, label: 'LC-dolida', size: 'small', type: 'emerging' },
+          { x: 45, y: 50, label: 'TOPOINT', size: 'small', type: 'emerging' }
+        ],
+        axes: { x: 'Quality Score', y: 'Value Perception' }
+      },
+      featureComparison: {
+        features: [
+          {
+            name: 'Battery Life',
+            ourScore: 8,
+            competitors: { MUSICOZY: 9, Perytong: 7, CozyPhones: 6 }
+          },
+          {
+            name: 'Sound Quality',
+            ourScore: 9,
+            competitors: { MUSICOZY: 8, Perytong: 7, CozyPhones: 6 }
+          },
+          {
+            name: 'Comfort',
+            ourScore: 9,
+            competitors: { MUSICOZY: 8, Perytong: 8, CozyPhones: 7 }
+          },
+          {
+            name: 'Durability',
+            ourScore: 7,
+            competitors: { MUSICOZY: 8, Perytong: 6, CozyPhones: 7 }
+          },
+          {
+            name: 'Price Value',
+            ourScore: 8,
+            competitors: { MUSICOZY: 7, Perytong: 9, CozyPhones: 9 }
+          }
+        ]
+      },
+      reviewShareOfVoice: {
+        total: 45678,
+        breakdown: [
+          { brand: 'MUSICOZY', percentage: 35, reviews: 15989 },
+          { brand: 'Perytong', percentage: 18, reviews: 8222 },
+          { brand: 'CozyPhones', percentage: 15, reviews: 6852 },
+          { brand: 'LC-dolida', percentage: 12, reviews: 5481 },
+          { brand: 'TOPOINT', percentage: 10, reviews: 4568 },
+          { brand: 'Others', percentage: 10, reviews: 4566 }
+        ]
+      }
+    },
+    socialMediaInsights: {
+      platforms: [
+        {
+          name: 'TikTok',
+          sentiment: 'very positive',
+          reach: 4500000,
+          engagement: 8.2,
+          trending: true,
+          topContent: [
+            { type: 'Sleep routine videos', views: 1200000 },
+            { type: 'ASMR sleep content', views: 890000 },
+            { type: 'Travel sleep hacks', views: 670000 }
+          ],
+          hashtags: ['#sleepmaskhack', '#bluetoothsleepphone', '#sleepbetter']
+        },
+        {
+          name: 'Reddit',
+          sentiment: 'positive',
+          discussions: 234,
+          topSubreddits: ['/r/sleep', '/r/BuyItForLife', '/r/insomnia'],
+          commonTopics: ['durability questions', 'vs regular headphones', 'meditation uses']
+        },
+        {
+          name: 'YouTube',
+          sentiment: 'positive',
+          videos: 892,
+          avgViews: 45000,
+          topCategories: ['Review Videos', 'Sleep Music Channels', 'Unboxing']
+        },
+        {
+          name: 'Instagram',
+          sentiment: 'positive',
+          posts: 5678,
+          engagement: 6.5,
+          influencerReach: 'medium',
+          contentTypes: ['Lifestyle posts', 'Travel photos', 'Wellness content']
+        }
+      ],
+      emergingTrends: [
+        {
+          trend: 'Sleep Tourism',
+          growth: '+145%',
+          description: 'Hotels and resorts offering sleep-focused packages',
+          opportunity: 'Partner with luxury hotels for branded amenities'
+        },
+        {
+          trend: 'Biohacking Sleep',
+          growth: '+89%',
+          description: 'Optimizing sleep with technology and data',
+          opportunity: 'Add sleep tracking features and app integration'
+        },
+        {
+          trend: 'Mindful Mornings',
+          growth: '+67%',
+          description: 'Morning meditation and gratitude practices',
+          opportunity: 'Create morning meditation content library'
+        }
+      ]
+    },
+    marketOpportunities: {
+      untappedSegments: [
+        {
+          segment: 'Senior Market',
+          size: 'Large',
+          fit: 'High',
+          strategy: 'Focus on ease of use, larger controls, hearing aid compatibility'
+        },
+        {
+          segment: 'Children/Teens',
+          size: 'Medium',
+          fit: 'Medium',
+          strategy: 'Fun designs, parental controls, educational content'
+        },
+        {
+          segment: 'Corporate Wellness',
+          size: 'Large',
+          fit: 'High',
+          strategy: 'Bulk sales, branded options, employee wellness programs'
+        }
+      ],
+      productExtensions: [
+        {
+          idea: 'Smart Sleep System',
+          description: 'Integrate with smart home, track sleep patterns, AI recommendations',
+          marketSize: '$2.3B',
+          difficulty: 'High'
+        },
+        {
+          idea: 'Subscription Audio Content',
+          description: 'Exclusive sleep stories, meditations, and soundscapes',
+          marketSize: '$450M',
+          difficulty: 'Medium'
+        },
+        {
+          idea: 'Premium Materials Line',
+          description: 'Silk, bamboo, and cooling fabric options',
+          marketSize: '$180M',
+          difficulty: 'Low'
+        }
+      ]
+    },
     competitorReviews: [
       {
         competitor: 'MUSICOZY Sleep Headphones',
