@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import Image from 'next/image'
 import { 
   Star, 
   TrendingUp, 
@@ -436,9 +437,11 @@ export default function ProductOfTheDayPage() {
               {/* Product Image and Basic Info */}
               <div>
                 <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-6">
-                  <img
+                  <Image
                     src={product.images[0]}
                     alt={product.title}
+                    width={400}
+                    height={400}
                     className="w-full h-full object-contain p-8"
                   />
                 </div>

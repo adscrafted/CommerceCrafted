@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,7 +14,7 @@ import {
   ArrowLeft
 } from 'lucide-react'
 
-export default function VerifyEmailPage() {
+function VerifyEmailComponent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
   const router = useRouter()
@@ -44,7 +44,7 @@ export default function VerifyEmailPage() {
           setStatus('error')
           setMessage(data.error || 'Failed to verify email')
         }
-      } catch (error) {
+      } catch {
         setStatus('error')
         setMessage('An error occurred while verifying your email')
       }
@@ -89,7 +89,7 @@ export default function VerifyEmailPage() {
                 <div className="bg-green-50 p-4 rounded-lg">
                   <h3 className="text-sm font-medium text-green-900 mb-2">Welcome to CommerceCrafted!</h3>
                   <p className="text-xs text-green-800">
-                    Your account is now active. You'll be redirected to sign in shortly.
+                    Your account is now active. You&apos;ll be redirected to sign in shortly.
                   </p>
                 </div>
                 
@@ -169,5 +169,26 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full">
+          <Card>
+            <CardContent className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-sm text-gray-600">Loading...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    }>
+      <VerifyEmailComponent />
+    </Suspense>
   )
 }

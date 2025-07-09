@@ -10,15 +10,10 @@ import { Badge } from '@/components/ui/badge'
 import {
   Users,
   BarChart3,
-  Settings,
-  Mail,
-  Database,
   Shield,
   LogOut,
   Home,
-  ChevronRight,
-  Bell,
-  Activity
+  ChevronRight
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 

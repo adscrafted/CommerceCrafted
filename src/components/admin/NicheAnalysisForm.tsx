@@ -55,11 +55,11 @@ export function NicheAnalysisForm({ initialData, onSave, onReprocess, isNew = fa
 
   const [isSaving, setIsSaving] = useState(false)
 
-  const updateField = (field: keyof NicheAnalysisFormData, value: any) => {
+  const updateField = (field: keyof NicheAnalysisFormData, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const updateAIAnalysisField = (field: string, value: any) => {
+  const updateAIAnalysisField = (field: string, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       aiAnalysis: {

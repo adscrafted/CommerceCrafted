@@ -14,10 +14,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Users,
   Search,
   Filter,
-  UserPlus,
   MoreHorizontal,
   Mail,
   Crown,
@@ -26,7 +24,6 @@ import {
   CheckCircle,
   Eye,
   Edit,
-  Download,
   RefreshCw
 } from 'lucide-react'
 

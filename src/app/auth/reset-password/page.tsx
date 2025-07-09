@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,7 +19,7 @@ import {
   XCircle
 } from 'lucide-react'
 
-export default function ResetPasswordPage() {
+function ResetPasswordComponent() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -339,11 +339,32 @@ export default function ResetPasswordPage() {
           <ul className="text-xs text-blue-800 space-y-1">
             <li>• Use a combination of letters, numbers, and symbols</li>
             <li>• Make it at least 8 characters long</li>
-            <li>• Don't reuse passwords from other accounts</li>
+            <li>• Don&apos;t reuse passwords from other accounts</li>
             <li>• Consider using a password manager</li>
           </ul>
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full">
+          <Card>
+            <CardContent className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-sm text-gray-600">Loading...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    }>
+      <ResetPasswordComponent />
+    </Suspense>
   )
 }

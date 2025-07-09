@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -21,7 +21,7 @@ import {
   CheckCircle
 } from 'lucide-react'
 
-export default function SignInPage() {
+function SignInComponent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -131,7 +131,7 @@ export default function SignInPage() {
                 <CheckCircle className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-800">
                   <strong>{selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)} Plan Selected</strong> - ${planPrice}/year
-                  <br />After signing in, you'll be redirected to complete your payment.
+                  <br />After signing in, you&apos;ll be redirected to complete your payment.
                 </AlertDescription>
               </Alert>
             )}
@@ -294,5 +294,26 @@ export default function SignInPage() {
 
       </div>
     </div>
+  )
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full">
+          <Card>
+            <CardContent className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-sm text-gray-600">Loading...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    }>
+      <SignInComponent />
+    </Suspense>
   )
 }

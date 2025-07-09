@@ -5,7 +5,6 @@ import { NextResponse } from 'next/server'
 import { aiService } from '@/lib/ai-service'
 import { amazonApiService } from '@/lib/amazon-api-service'
 import { keywordService } from '@/lib/keyword-service'
-import { ExternalAPIService } from '@/lib/external-api-service'
 
 export async function GET() {
   const startTime = Date.now()

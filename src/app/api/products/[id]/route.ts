@@ -27,7 +27,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     })
     
     // Get additional analysis components
-    const [keywordAnalysis, ppcStrategy, inventoryAnalysis, demandAnalysis, competitorAnalysis, financialModel] = await Promise.all([
+    const [keywordAnalysis, _ppcStrategy, inventoryAnalysis, _demandAnalysis, competitorAnalysis, financialModel] = await Promise.all([
       aiService.analyzeKeywords({ product }),
       aiService.calculatePPCStrategy({ product }),
       aiService.analyzeInventory({ product }),

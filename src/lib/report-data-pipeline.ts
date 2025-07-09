@@ -9,6 +9,22 @@ import zlib from 'zlib'
 import { pipeline } from 'stream/promises'
 import path from 'path'
 
+interface AmazonReport {
+  id: string
+  amazonReportId: string
+  reportDocumentId: string | null
+  status: string
+  startDate: Date
+  endDate: Date
+  marketplaceId: string
+  user: {
+    id: string
+    email: string
+  }
+}
+
+// Remove unused interface - keeping options inline where used
+
 export class ReportDataPipeline {
   private searchTermsService = getAmazonSearchTermsService()
   private bigQueryService = getBigQueryService()
@@ -88,7 +104,7 @@ export class ReportDataPipeline {
     reportId: string
   ): Promise<{ downloadPath: string, recordCount: number }> {
     // Get download URL from Amazon
-    const client = (this.searchTermsService as any).client
+    const client = (this.searchTermsService as { client: unknown }).client
     const documentResponse = await client.callAPI({
       operation: 'getReportDocument',
       endpoint: 'reports',
@@ -133,7 +149,7 @@ export class ReportDataPipeline {
   // Transform to BigQuery format
   private async transformToBigQueryFormat(
     inputPath: string,
-    report: any
+    report: AmazonReport
   ): Promise<string> {
     const outputPath = path.join(this.tempDir, `report-${report.id}-bq.ndjson`)
 
@@ -171,14 +187,14 @@ export class ReportDataPipeline {
 
 // Integration with polling service
 export async function enhancePollingService(): Promise<void> {
-  const { getReportPollingService } = require('./report-polling-service')
+  const { getReportPollingService } = await import('./report-polling-service')
   const pollingService = getReportPollingService()
   const pipeline = new ReportDataPipeline()
 
   // Override the handleCompletedReport method
   const originalHandler = pollingService.handleCompletedReport
   
-  pollingService.handleCompletedReport = async function(report: any, status: any) {
+  pollingService.handleCompletedReport = async function(report: AmazonReport & { type?: string }, status: unknown) {
     // Call original handler first
     await originalHandler.call(this, report, status)
     

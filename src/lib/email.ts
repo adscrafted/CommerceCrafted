@@ -19,7 +19,7 @@ class EmailService {
       // For development, use console transport if no email config
       if (!process.env.EMAIL_SERVER_HOST) {
         console.warn('No email configuration found. Using console transport.')
-        this.transporter = nodemailer.createTransporter({
+        this.transporter = nodemailer.createTransport({
           streamTransport: true,
           newline: 'unix',
           buffer: true
@@ -28,7 +28,7 @@ class EmailService {
       }
 
       // Production email configuration
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         host: process.env.EMAIL_SERVER_HOST,
         port: parseInt(process.env.EMAIL_SERVER_PORT || '587'),
         secure: process.env.EMAIL_SERVER_PORT === '465',

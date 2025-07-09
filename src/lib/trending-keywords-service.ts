@@ -6,13 +6,25 @@ import { getBigQueryService } from './bigquery-service'
 export interface TrendingKeyword {
   searchTerm: string
   currentRank: number
-  previousRank: number
+  previousRank: number | null
   rankImprovement: number
   growthPercentage: number
   totalClickShare: number
   totalConversionShare: number
   weekStartDate: string
   marketplaceId: string
+}
+
+interface BigQueryRow {
+  search_term: string
+  current_rank: number
+  previous_rank: number
+  rank_improvement: number
+  growth_percentage: number
+  total_click_share: number
+  total_conversion_share: number
+  week_start_date: { value?: string } | string
+  marketplace_id: string
 }
 
 export class TrendingKeywordsService {
@@ -82,7 +94,7 @@ export class TrendingKeywordsService {
       const [job] = await this.bigQueryService.client.createQueryJob(options)
       const [rows] = await job.getQueryResults()
       
-      return rows.map((row: any) => ({
+      return rows.map((row: BigQueryRow): TrendingKeyword => ({
         searchTerm: row.search_term,
         currentRank: row.current_rank,
         previousRank: row.previous_rank === 999999 ? null : row.previous_rank,
@@ -90,7 +102,7 @@ export class TrendingKeywordsService {
         growthPercentage: row.growth_percentage,
         totalClickShare: row.total_click_share,
         totalConversionShare: row.total_conversion_share,
-        weekStartDate: row.week_start_date.value || row.week_start_date,
+        weekStartDate: typeof row.week_start_date === 'object' ? row.week_start_date.value || '' : row.week_start_date,
         marketplaceId: row.marketplace_id
       }))
     } catch (error) {
@@ -157,7 +169,7 @@ export class TrendingKeywordsService {
       const [job] = await this.bigQueryService.client.createQueryJob(options)
       const [rows] = await job.getQueryResults()
       
-      return rows.map((row: any) => ({
+      return rows.map((row: BigQueryRow): TrendingKeyword => ({
         searchTerm: row.search_term,
         currentRank: row.current_rank,
         previousRank: null, // New keywords have no previous rank
@@ -165,7 +177,7 @@ export class TrendingKeywordsService {
         growthPercentage: row.growth_percentage,
         totalClickShare: row.total_click_share,
         totalConversionShare: row.total_conversion_share,
-        weekStartDate: row.week_start_date.value || row.week_start_date,
+        weekStartDate: typeof row.week_start_date === 'object' ? row.week_start_date.value || '' : row.week_start_date,
         marketplaceId: row.marketplace_id
       }))
     } catch (error) {

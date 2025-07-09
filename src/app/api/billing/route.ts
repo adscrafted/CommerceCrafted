@@ -5,7 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { getStripeInvoices, getStripeUpcomingInvoice, formatCurrency } from '@/lib/stripe'
 import { getAllUserUsage } from '@/lib/usage'
 
-export async function GET(request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
@@ -46,8 +47,24 @@ export async function GET(request: NextRequest) {
     })
 
     // Get Stripe invoices if customer exists
-    let stripeInvoices: any[] = []
-    let upcomingInvoice: any = null
+    let stripeInvoices: Array<{
+      id: string;
+      amount: string;
+      status: string;
+      date: string;
+      description: string;
+      invoiceUrl: string | null;
+      hostedInvoiceUrl: string | null;
+      periodStart: Date;
+      periodEnd: Date;
+    }> = []
+    let upcomingInvoice: {
+      amount: string;
+      date: string;
+      description: string;
+      periodStart: Date;
+      periodEnd: Date;
+    } | null = null
 
     if (user.stripeCustomerId) {
       try {

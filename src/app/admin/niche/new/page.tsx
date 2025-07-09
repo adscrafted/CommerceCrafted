@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation'
 import { NicheAnalysisForm } from '@/components/admin/NicheAnalysisForm'
+import { NicheAnalysisFormData } from '@/types/niche'
 
 export default function NewNicheAnalysisPage() {
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: NicheAnalysisFormData) => {
     'use server'
     // Implement save logic here
     console.log('Creating new niche analysis:', data)

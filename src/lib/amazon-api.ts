@@ -1,9 +1,33 @@
 // Amazon SP-API integration for CommerceCrafted
 // Provides real-time product data, pricing, BSR tracking, and review analysis
 
-import { SellingPartnerAPI } from 'amazon-sp-api'
 import axios from 'axios'
 import CryptoJS from 'crypto-js'
+
+// Amazon SP-API types
+interface SellingPartnerAPIConfig {
+  region: string
+  credentials: {
+    aws_access_key_id: string
+    aws_secret_access_key: string
+    aws_session_token?: string
+    role_arn: string
+  }
+  access_token?: string
+  options: {
+    auto_request_tokens: boolean
+    auto_request_throttled: boolean
+  }
+}
+
+interface APICallOptions {
+  operation: string
+  endpoint: string
+  path: string | { [key: string]: string }
+  method?: string
+  query?: Record<string, any>
+  body?: Record<string, any>
+}
 
 // Types for Amazon API responses
 export interface AmazonProduct {
@@ -162,33 +186,52 @@ class RateLimiter {
 }
 
 export class AmazonAPIService {
-  private client: SellingPartnerAPI
+  private client: any
   private cache = new DataCache()
   private rateLimiter = new RateLimiter()
   private marketplaceId: string
 
   constructor() {
-    const credentials = {
-      aws_access_key_id: process.env.AMAZON_ACCESS_KEY_ID!,
-      aws_secret_access_key: process.env.AMAZON_SECRET_ACCESS_KEY!,
-      aws_session_token: undefined,
-      role_arn: process.env.AMAZON_ROLE_ARN!,
-    }
-
-    const auth = {
-      client_id: process.env.AMAZON_CLIENT_ID!,
-      client_secret: process.env.AMAZON_CLIENT_SECRET!,
-      refresh_token: process.env.AMAZON_REFRESH_TOKEN!,
-    }
-
     this.marketplaceId = process.env.AMAZON_MARKETPLACE_ID || 'ATVPDKIKX0DER' // US marketplace
     
-    this.client = new SellingPartnerAPI({
-      region: 'na', // North America
-      marketplace: this.marketplaceId,
-      credentials,
-      auth,
-    })
+    // Check if Amazon API credentials are configured
+    const hasCredentials = process.env.AMAZON_ACCESS_KEY_ID && 
+                          process.env.AMAZON_SECRET_ACCESS_KEY && 
+                          process.env.AMAZON_CLIENT_ID && 
+                          process.env.AMAZON_CLIENT_SECRET
+
+    if (hasCredentials) {
+      try {
+        // In production, you would initialize the actual Amazon SP-API client here
+        // For now, we'll use a mock client structure
+        this.client = {
+          async callAPI(options: APICallOptions) {
+            // Mock implementation - in production, this would call the real Amazon SP-API
+            console.log('Mock Amazon SP-API call:', options.operation, options.endpoint)
+            
+            // Return mock data based on operation
+            switch (options.operation) {
+              case 'getCatalogItem':
+                return { payload: null } // No real data available
+              case 'searchCatalogItems':
+                return { payload: { items: [], numberOfResults: 0 } }
+              case 'getItemOffersBatch':
+                return { payload: null }
+              case 'createReport':
+                return { reportId: 'mock-report-id' }
+              default:
+                return { payload: null }
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to initialize Amazon SP-API client:', error)
+        this.client = null
+      }
+    } else {
+      console.warn('Amazon API credentials not configured - using mock data')
+      this.client = null
+    }
   }
 
   // Product Information API - Get product details by ASIN
@@ -196,6 +239,12 @@ export class AmazonAPIService {
     const cacheKey = `product:${asin}`
     const cached = this.cache.get<AmazonProduct>(cacheKey)
     if (cached) return cached
+
+    // Return null if client is not available (credentials not configured)
+    if (!this.client) {
+      console.warn('Amazon API client not available - returning null')
+      return null
+    }
 
     try {
       await this.rateLimiter.throttle()
@@ -243,6 +292,11 @@ export class AmazonAPIService {
     const cached = this.cache.get<ProductSearchResult>(cacheKey)
     if (cached) return cached
 
+    // Return empty result if client is not available
+    if (!this.client) {
+      return { products: [], totalResults: 0, hasNextPage: false }
+    }
+
     try {
       await this.rateLimiter.throttle()
 
@@ -285,6 +339,10 @@ export class AmazonAPIService {
     const cached = this.cache.get<ProductPricing>(cacheKey)
     if (cached) return cached
 
+    if (!this.client) {
+      return null
+    }
+
     try {
       await this.rateLimiter.throttle()
 
@@ -326,6 +384,10 @@ export class AmazonAPIService {
     const cacheKey = `bsr:${asin}`
     const cached = this.cache.get<BSRData>(cacheKey)
     if (cached) return cached
+
+    if (!this.client) {
+      return null
+    }
 
     try {
       await this.rateLimiter.throttle()

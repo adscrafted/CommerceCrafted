@@ -11,14 +11,12 @@ import {
   Crown,
   Shield,
   CheckCircle,
-  FileText,
-  Users,
-  BarChart3,
   ArrowLeft,
   CreditCard,
   Lock
 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface ClaimPageProps {
   params: Promise<{ id: string }>
@@ -114,9 +112,11 @@ export default function ClaimPage({ params }: ClaimPageProps) {
               </CardHeader>
               <CardContent>
                 <div className="flex gap-4">
-                  <img 
+                  <Image 
                     src={productData.image}
                     alt={productData.title}
+                    width={80}
+                    height={80}
                     className="w-20 h-20 object-cover rounded-lg"
                   />
                   <div className="flex-1">

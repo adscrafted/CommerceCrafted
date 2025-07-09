@@ -83,10 +83,10 @@ export async function GET(request: NextRequest) {
     
     // Group by category
     const categorized = {
-      skyrocketing: rows.filter((r: any) => r.trendCategory === 'SKYROCKETING'),
-      hot: rows.filter((r: any) => r.trendCategory === 'HOT'),
-      rising: rows.filter((r: any) => r.trendCategory === 'RISING'),
-      growing: rows.filter((r: any) => r.trendCategory === 'GROWING'),
+      skyrocketing: rows.filter((r: { trendCategory: string }) => r.trendCategory === 'SKYROCKETING'),
+      hot: rows.filter((r: { trendCategory: string }) => r.trendCategory === 'HOT'),
+      rising: rows.filter((r: { trendCategory: string }) => r.trendCategory === 'RISING'),
+      growing: rows.filter((r: { trendCategory: string }) => r.trendCategory === 'GROWING'),
     }
     
     return NextResponse.json({

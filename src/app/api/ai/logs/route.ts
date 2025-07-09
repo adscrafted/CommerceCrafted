@@ -128,7 +128,8 @@ export async function GET(request: NextRequest) {
 }
 
 // DELETE /api/ai/logs - Clear logs (admin only)
-export async function DELETE(request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function DELETE(_request: NextRequest) {
   try {
     // Authenticate user
     const session = await getServerSession(authOptions)

@@ -3,6 +3,25 @@ import { prisma } from '@/lib/prisma'
 import { getAmazonSearchTermsService } from './amazon-search-terms-service'
 import type { SearchTermData, ReportMetadata } from './amazon-search-terms-service'
 
+interface DatabaseReport {
+  id: string
+  type: string
+  amazonReportId: string
+  status: string
+  startDate: Date
+  endDate: Date
+  marketplaceId: string
+  userId: string
+  createdAt: Date
+  completedAt: Date | null
+  error: string | null
+  reportDocumentId: string | null
+  retryCount: number
+  lastPolledAt: Date | null
+}
+
+type ParsedReportData = SearchTermData | { rawData: string }
+
 export enum ReportStatus {
   PENDING = 'PENDING',
   PROCESSING = 'PROCESSING',
@@ -35,13 +54,7 @@ interface ReportRequest {
   lastPolledAt?: Date
 }
 
-interface ReportData {
-  id: string
-  reportRequestId: string
-  data: any
-  recordCount: number
-  createdAt: Date
-}
+// ReportData interface removed - using inline types for better clarity
 
 export class ReportPollingService {
   private pollingInterval: number = 30000 // 30 seconds
@@ -112,7 +125,7 @@ export class ReportPollingService {
 
       // Process each report
       for (const report of pendingReports) {
-        await this.pollSingleReport(report as any)
+        await this.pollSingleReport(report as DatabaseReport)
       }
     } catch (error) {
       console.error('Error polling pending reports:', error)
@@ -201,7 +214,7 @@ export class ReportPollingService {
       const csvData = await service.downloadReport(status.reportDocumentId)
       
       // Parse the data based on report type
-      let parsedData: any[]
+      let parsedData: ParsedReportData[]
       let recordCount: number
 
       switch (report.type) {
@@ -358,7 +371,7 @@ export class ReportPollingService {
   }
 
   // Get report status
-  async getReportStatus(reportId: string): Promise<any> {
+  async getReportStatus(reportId: string): Promise<DatabaseReport & { reportData?: { recordCount: number; createdAt: Date } }> {
     const report = await prisma.amazonReport.findUnique({
       where: { id: reportId },
       include: {
@@ -379,7 +392,14 @@ export class ReportPollingService {
   }
 
   // Get report data
-  async getReportData(reportId: string): Promise<any> {
+  async getReportData(reportId: string): Promise<{
+    id: string
+    reportId: string
+    data: ParsedReportData[]
+    recordCount: number
+    createdAt: Date
+    report: DatabaseReport
+  }> {
     const data = await prisma.amazonReportData.findFirst({
       where: { reportId },
       include: {

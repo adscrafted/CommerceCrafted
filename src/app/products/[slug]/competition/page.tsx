@@ -128,33 +128,6 @@ export default function CompetitionPage({ params }: CompetitionPageProps) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Key Insights */}
-        <Card className="mb-6 bg-gradient-to-r from-red-50 to-orange-50">
-          <CardHeader>
-            <CardTitle>Key Competition Insights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-green-600">Moderate</div>
-                <div className="text-sm text-gray-600">Competition Level</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-blue-600">$20-30</div>
-                <div className="text-sm text-gray-600">Sweet Spot</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-purple-600">3,421</div>
-                <div className="text-sm text-gray-600">Avg Reviews</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-orange-600">40.9%</div>
-                <div className="text-sm text-gray-600">In Price Range</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Competition Analysis Component */}
         <CompetitionAnalysis data={productData} />
       </div>

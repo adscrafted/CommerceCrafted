@@ -128,33 +128,6 @@ export default function KeywordsPage({ params }: KeywordsPageProps) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Key Insights */}
-        <Card className="mb-6 bg-gradient-to-r from-green-50 to-blue-50">
-          <CardHeader>
-            <CardTitle>Key Keywords Insights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-green-600">248</div>
-                <div className="text-sm text-gray-600">Total Keywords</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-blue-600">$454K</div>
-                <div className="text-sm text-gray-600">Monthly Revenue</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-purple-600">Medium</div>
-                <div className="text-sm text-gray-600">Competition</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-orange-600">$1.23</div>
-                <div className="text-sm text-gray-600">Avg CPC</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Keywords Analysis Component */}
         <KeywordsAnalysis data={mockProductData} searchTermsData={searchTermsData} />
       </div>

@@ -41,33 +41,35 @@ export interface NewsletterCampaign {
   updatedAt: Date
 }
 
-export interface DailDealEmailData {
-  product: {
-    id: string
-    asin: string
-    title: string
-    category: string
-    brand: string
-    price: number
-    originalPrice?: number
-    discount?: number
-    rating: number
-    reviewCount: number
-    imageUrl: string
-    opportunityScore: number
-    estimatedRevenue: number
-    competitionLevel: string
-    demandTrend: string
-    headline?: string
-    summary?: string
-    keyInsights: string[]
-    quickStats: {
-      marketSize: string
-      growthRate: number
-      averageMargin: number
-      timeToMarket: string
-    }
+export interface MockProductData {
+  id: string
+  asin: string
+  title: string
+  category: string
+  brand: string
+  price: number
+  originalPrice?: number
+  discount?: number
+  rating: number
+  reviewCount: number
+  imageUrl: string
+  opportunityScore: number
+  estimatedRevenue: number
+  competitionLevel: string
+  demandTrend: string
+  headline?: string
+  summary?: string
+  keyInsights: string[]
+  quickStats: {
+    marketSize: string
+    growthRate: number
+    averageMargin: number
+    timeToMarket: string
   }
+}
+
+export interface DailDealEmailData {
+  product: MockProductData
   unsubscribeUrl: string
   webViewUrl: string
   recipientEmail: string
@@ -89,7 +91,7 @@ export class NewsletterService {
       id: `sub_${Date.now()}`,
       email,
       userId,
-      subscriptionType: subscriptionType as any,
+      subscriptionType: subscriptionType as NewsletterSubscription['subscriptionType'],
       isActive: true,
       preferences: {
         categories: ['electronics', 'home-garden', 'health'],
@@ -213,13 +215,14 @@ export class NewsletterService {
   static async trackEmailOpen(subscriptionId: string, campaignId: string): Promise<void> {
     await this.updateSubscriptionMetrics(subscriptionId, 'email_opened')
     // Update campaign open rate
+    console.log(`Email opened for campaign ${campaignId}`)
   }
 
   // Track email clicks
   static async trackEmailClick(subscriptionId: string, campaignId: string, url: string): Promise<void> {
     await this.updateSubscriptionMetrics(subscriptionId, 'email_clicked')
     // Update campaign click rate
-    console.log(`Click tracked: ${url}`)
+    console.log(`Click tracked for campaign ${campaignId}: ${url}`)
   }
 
   // Helper Methods
@@ -228,7 +231,7 @@ export class NewsletterService {
     return 'unsub_' + Math.random().toString(36).substring(2) + Date.now().toString(36)
   }
 
-  private static async getMockProductData(productId: string) {
+  private static async getMockProductData(productId: string): Promise<MockProductData> {
     // Mock product data - in production, fetch from database
     return {
       id: productId,
@@ -306,7 +309,7 @@ export class NewsletterService {
     }
   }
 
-  private static generateDailyDealTextContent(product: any): string {
+  private static generateDailyDealTextContent(product: MockProductData): string {
     return `
 🔥 TODAY'S AMAZON OPPORTUNITY
 
@@ -336,7 +339,7 @@ Unsubscribe: https://commercecrafted.com/unsubscribe
     `.trim()
   }
 
-  private static generateDailyDealHtmlContent(product: any): string {
+  private static generateDailyDealHtmlContent(product: MockProductData): string {
     const formatCurrency = (amount: number) => {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
     }
@@ -513,7 +516,8 @@ Unsubscribe: https://commercecrafted.com/unsubscribe?token=${subscription.unsubs
 
   // Analytics and reporting
   static async getNewsletterAnalytics(timeframe: '7d' | '30d' | '90d' = '30d') {
-    // Mock analytics data - in production, query database
+    // Mock analytics data - in production, query database based on timeframe
+    console.log(`Getting analytics for timeframe: ${timeframe}`)
     return {
       totalSubscribers: 15420,
       activeSubscribers: 14890,

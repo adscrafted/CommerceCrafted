@@ -17,7 +17,11 @@ import {
   AlertCircle,
   ChevronUp,
   Users,
-  Sparkles
+  Sparkles,
+  Eye,
+  List,
+  Network,
+  Activity
 } from 'lucide-react'
 import KeywordNetwork from '@/components/KeywordNetwork'
 import { Button } from '@/components/ui/button'
@@ -182,519 +186,435 @@ const KeywordPivotTable = ({ keywordHierarchy }: { keywordHierarchy: any }) => {
 }
 
 export default function KeywordsAnalysis({ data, searchTermsData }: KeywordsAnalysisProps) {
+  const [activeTab, setActiveTab] = useState('overview')
+  
   return (
     <div className="space-y-6">
-      {/* Keyword Overview */}
-      <div className="grid md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Primary Keyword</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold text-blue-600 mb-1">
-              {data.keywordsData.primaryKeyword}
-            </div>
-            <div className="text-sm text-gray-600">
-              ${data.keywordsData.cpc} CPC
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Total Keywords</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold text-purple-600 mb-1">
-              {data.keywordsData.totalKeywords}
-            </div>
-            <div className="text-sm text-gray-600">
-              {data.keywordsData.monthlySearchVolume.toLocaleString()} searches/mo
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Average ROI</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold text-green-600 mb-1">
-              {data.keywordsData.averageROI}%
-            </div>
-            <div className="text-sm text-gray-600">
-              Expected Return
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Total Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold text-green-600 mb-1">
-              ${Object.values(data.keywordsData.keywordHierarchy).reduce((sum: number, root: any) => sum + root.totalRevenue, 0).toLocaleString()}
-            </div>
-            <div className="text-sm text-gray-600">
-              Monthly Potential
-            </div>
-          </CardContent>
-        </Card>
+      {/* Tab Navigation */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        {[
+          { id: 'overview', label: 'Overview', icon: Eye },
+          { id: 'hierarchy', label: 'Keyword Hierarchy', icon: List },
+          { id: 'opportunities', label: 'Opportunities', icon: Lightbulb },
+          { id: 'trending', label: 'Trending Keywords', icon: TrendingUp },
+          { id: 'network', label: 'Keyword Network', icon: Network }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            <span>{tab.label}</span>
+          </button>
+        ))}
       </div>
 
-      {/* Trending Keywords */}
-      {data.keywordsData.trendingKeywords && (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <TrendingUp className="h-5 w-5 text-green-600" />
-            <span>Trending Keywords</span>
-          </CardTitle>
-          <CardDescription>
-            Fast-growing keywords with high opportunity potential
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {data.keywordsData.trendingKeywords.map((keyword: any, index: number) => (
-              <div key={index} className="border rounded-lg p-4 bg-gradient-to-r from-green-50 to-blue-50">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{keyword.keyword}</h4>
-                    <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
-                      <span>Volume: {keyword.currentVolume.toLocaleString()}</span>
-                      <span>CPC: ${keyword.cpc}</span>
-                      <span className="capitalize">Seasonality: {keyword.seasonality}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center space-x-1 text-green-600 font-semibold">
-                      <ChevronUp className="h-4 w-4" />
-                      <span>{keyword.trend}</span>
-                    </div>
-                    <Badge 
-                      variant={keyword.velocity === 'skyrocketing' ? 'default' : 'secondary'}
-                      className="mt-1"
-                    >
-                      {keyword.velocity}
-                    </Badge>
-                  </div>
+      {/* Overview Tab */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* Keyword Overview */}
+          <div className="grid md:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Primary Keyword</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-bold text-blue-600 mb-1">
+                  {data.keywordsData.primaryKeyword}
                 </div>
-                <div className="flex items-center justify-between mt-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">Opportunity Score:</span>
-                    <div className="flex items-center space-x-2">
-                      <Progress value={keyword.opportunity} className="w-24 h-2" />
-                      <span className="text-sm font-medium">{keyword.opportunity}/100</span>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Target className="h-3 w-3 mr-1" />
-                    Target Keyword
-                  </Button>
+                <div className="text-sm text-gray-600">
+                  ${data.keywordsData.cpc} CPC
                 </div>
-              </div>
-            ))}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Total Keywords</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-bold text-purple-600 mb-1">
+                  {data.keywordsData.totalKeywords}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {data.keywordsData.monthlySearchVolume.toLocaleString()} searches/mo
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Average ROI</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-bold text-green-600 mb-1">
+                  {data.keywordsData.averageROI}%
+                </div>
+                <div className="text-sm text-gray-600">
+                  Expected Return
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Total Revenue</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-bold text-green-600 mb-1">
+                  ${Object.values(data.keywordsData.keywordHierarchy).reduce((sum: number, root: any) => sum + root.totalRevenue, 0).toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Monthly Potential
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Top Keywords */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Search className="h-5 w-5 text-blue-600" />
+                <span>Top Performing Keywords</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {data.demandData?.keywordMetrics?.topKeywords?.slice(0, 6).map((keyword: any, index: number) => (
+                  <div key={index} className="p-4 border rounded-lg">
+                    <div className="font-medium text-gray-900 mb-2">{keyword.keyword}</div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Volume:</span>
+                        <span className="font-medium">{keyword.searchVolume?.toLocaleString() || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Orders:</span>
+                        <span className="font-medium">{keyword.orders?.toLocaleString() || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Revenue:</span>
+                        <span className="font-medium">${keyword.revenue?.toLocaleString() || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Growth:</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {keyword.growth || 'N/A'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {/* Keyword Hierarchy Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Search className="h-5 w-5 text-blue-600" />
-            <span>Keyword Analysis Hierarchy</span>
-          </CardTitle>
-          <CardDescription>
-            Detailed breakdown of keyword opportunities by category and performance metrics
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <KeywordPivotTable keywordHierarchy={data.keywordsData.keywordHierarchy} />
-        </CardContent>
-      </Card>
+      {/* Hierarchy Tab */}
+      {activeTab === 'hierarchy' && (
+        <div className="space-y-6">
+          {/* Keyword Hierarchy Pivot Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <List className="h-5 w-5 text-blue-600" />
+                <span>Keyword Hierarchy & Revenue Analysis</span>
+              </CardTitle>
+              <CardDescription>
+                Hierarchical view of keyword groups and their revenue potential
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <KeywordPivotTable keywordHierarchy={data.keywordsData.keywordHierarchy} />
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-      {/* Competitor Keyword Analysis */}
-      {data.keywordsData.competitorKeywords && (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Users className="h-5 w-5 text-red-600" />
-            <span>Competitor Keyword Analysis</span>
-          </CardTitle>
-          <CardDescription>
-            Keywords your competitors are ranking for and their PPC investments
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {data.keywordsData.competitorKeywords.map((keyword: any, index: number) => (
-              <div key={index} className="border rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{keyword.keyword}</h4>
-                    <div className="flex items-center space-x-3 mt-1">
-                      {keyword.keywordGap && (
-                        <Badge variant="destructive" className="text-xs">
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          Keyword Gap
-                        </Badge>
-                      )}
-                      <span className="text-sm text-gray-600">Difficulty: {keyword.difficulty}</span>
-                      <span className="text-sm text-gray-600">Recommended Bid: ${keyword.recommendedBid}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-gray-600">Our Rank</div>
-                    <div className="text-lg font-semibold">
-                      {keyword.ourRank || <span className="text-gray-400">Not Ranking</span>}
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {keyword.competitors.map((comp: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium">
-                          {comp.rank}
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">{comp.brand}</div>
-                          <div className="text-xs text-gray-600">ASIN: {comp.asin}</div>
+      {/* Opportunities Tab */}
+      {activeTab === 'opportunities' && (
+        <div className="space-y-6">
+          {/* Keyword Opportunities */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Lightbulb className="h-5 w-5 text-yellow-600" />
+                <span>High Opportunity Keywords</span>
+              </CardTitle>
+              <CardDescription>
+                Keywords with the best balance of search volume, competition, and ROI potential
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {data.keywordsData?.opportunityMatrix?.slice(0, 5).map((keyword: any, index: number) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-grow">
+                        <h4 className="font-semibold text-gray-900">{keyword.keyword}</h4>
+                        <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
+                          <span>Volume: {keyword.searchVolume?.toLocaleString() || 'N/A'}</span>
+                          <span>Competition: {keyword.competition || 'N/A'}</span>
+                          <span>CPC: ${keyword.cpc || 'N/A'}</span>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4 text-sm">
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-600">{keyword.opportunityScore}</div>
+                        <div className="text-xs text-gray-600">Opportunity Score</div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4 mb-3">
+                      <div className="text-center p-2 bg-blue-50 rounded">
+                        <div className="text-lg font-semibold text-blue-600">{keyword.trendMomentum || 'N/A'}%</div>
+                        <div className="text-xs text-gray-600">Trend Momentum</div>
+                      </div>
+                      <div className="text-center p-2 bg-green-50 rounded">
+                        <div className="text-lg font-semibold text-green-600">{keyword.conversionPotential || 'N/A'}%</div>
+                        <div className="text-xs text-gray-600">Conv. Potential</div>
+                      </div>
+                      <div className="text-center p-2 bg-purple-50 rounded">
+                        <div className="text-lg font-semibold text-purple-600">{keyword.actionPriority || 'N/A'}</div>
+                        <div className="text-xs text-gray-600">Priority</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Sparkles className="h-4 w-4 text-yellow-500" />
+                        <span className="text-sm text-gray-600">Opportunity Score:</span>
+                        <Progress value={keyword.opportunityScore || 0} className="w-24 h-2" />
+                        <span className="text-sm font-medium">{keyword.opportunityScore || 0}%</span>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        <Target className="h-3 w-3 mr-1" />
+                        Target Keyword
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Long-tail Opportunities */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Zap className="h-5 w-5 text-purple-600" />
+                <span>Long-tail Keyword Opportunities</span>
+              </CardTitle>
+              <CardDescription>
+                Lower competition keywords with specific buyer intent
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                {data.keywordsData?.longTailKeywords?.map((keyword: any, index: number) => (
+                  <div key={index} className="p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50">
+                    <div className="font-medium text-gray-900 mb-2">{keyword.keyword}</div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-gray-600">Volume: </span>
+                        <span className="font-medium">{keyword.volume?.toLocaleString() || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Competition: </span>
+                        <span className="font-medium text-green-600">Low</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">CPC: </span>
+                        <span className="font-medium">${keyword.cpc || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Intent: </span>
+                        <Badge variant="secondary" className="text-xs">{keyword.intent || 'N/A'}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Trending Tab */}
+      {activeTab === 'trending' && (
+        <div className="space-y-6">
+          {/* Trending Keywords */}
+          {data.keywordsData.trendingKeywords && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  <span>Trending Keywords</span>
+                </CardTitle>
+                <CardDescription>
+                  Fast-growing keywords with high opportunity potential
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {data.keywordsData.trendingKeywords.map((keyword: any, index: number) => (
+                    <div key={index} className="border rounded-lg p-4 bg-gradient-to-r from-green-50 to-blue-50">
+                      <div className="flex items-start justify-between mb-2">
                         <div>
-                          <span className="text-gray-600">PPC Spend:</span>
-                          <span className="font-medium ml-1">${comp.ppcSpend.toLocaleString()}</span>
+                          <h4 className="font-semibold text-gray-900">{keyword.keyword}</h4>
+                          <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
+                            <span>Volume: {keyword.currentVolume.toLocaleString()}</span>
+                            <span>CPC: ${keyword.cpc}</span>
+                            <span className="capitalize">Seasonality: {keyword.seasonality}</span>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-gray-600">Organic:</span>
-                          <span className="font-medium ml-1">{comp.organicShare}%</span>
+                        <div className="text-right">
+                          <div className="flex items-center space-x-1 text-green-600 font-semibold">
+                            <ChevronUp className="h-4 w-4" />
+                            <span>{keyword.trend}</span>
+                          </div>
+                          <Badge 
+                            variant={keyword.velocity === 'skyrocketing' ? 'default' : 'secondary'}
+                            className="mt-1"
+                          >
+                            {keyword.velocity}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600">Opportunity Score:</span>
+                          <div className="flex items-center space-x-2">
+                            <Progress value={keyword.opportunity} className="w-24 h-2" />
+                            <span className="text-sm font-medium">{keyword.opportunity}/100</span>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <Target className="h-3 w-3 mr-1" />
+                          Target Keyword
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Seasonal Keywords */}
+          {data.keywordsData.seasonalKeywords && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Activity className="h-5 w-5 text-blue-600" />
+                  <span>Seasonal Keyword Trends</span>
+                </CardTitle>
+                <CardDescription>
+                  Keywords with strong seasonal patterns
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {data.keywordsData.seasonalKeywords.map((keyword: any, index: number) => (
+                    <div key={index} className="p-4 border rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-2">{keyword.keyword}</h4>
+                      <div className="grid grid-cols-4 gap-2 text-sm">
+                        <div className="text-center p-2 bg-blue-50 rounded">
+                          <div className="font-semibold">{keyword.peak.month}</div>
+                          <div className="text-xs text-gray-600">{keyword.peak.volume.toLocaleString()}</div>
+                        </div>
+                        <div className="text-center p-2 bg-gray-50 rounded">
+                          <div className="font-semibold">Off-peak</div>
+                          <div className="text-xs text-gray-600">{keyword.offPeak.volume.toLocaleString()}</div>
+                        </div>
+                        <div className="text-center p-2 bg-green-50 rounded">
+                          <div className="font-semibold">{keyword.multiplier}x</div>
+                          <div className="text-xs text-gray-600">Peak Multiplier</div>
+                        </div>
+                        <div className="text-center p-2 bg-purple-50 rounded">
+                          <div className="font-semibold">{keyword.nextPeak}</div>
+                          <div className="text-xs text-gray-600">Next Peak</div>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Network Tab */}
+      {activeTab === 'network' && (
+        <div className="space-y-6">
+          {/* Keyword Network Visualization */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Network className="h-5 w-5 text-purple-600" />
+                <span>Keyword Relationship Network</span>
+              </CardTitle>
+              <CardDescription>
+                Visual representation of keyword relationships and clusters
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[600px] w-full">
+                <KeywordNetwork data={data.keywordsData.networkData} />
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-      )}
+            </CardContent>
+          </Card>
 
-      {/* CPC & Profitability Analysis */}
-      {data.keywordsData.cpcAnalysis && (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <DollarSign className="h-5 w-5 text-green-600" />
-            <span>CPC & Profitability Analysis</span>
-          </CardTitle>
-          <CardDescription>
-            Cost-per-click breakdown and ROI projections by match type
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Match Type Analysis */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Match Type Performance</h4>
-            <div className="grid md:grid-cols-3 gap-4">
-              {data.keywordsData.cpcAnalysis.matchTypes.map((type: any, index: number) => (
-                <div key={index} className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h5 className="font-medium">{type.type}</h5>
-                    <Badge variant={type.roi > 250 ? 'default' : 'secondary'}>
-                      {type.roi}% ROI
-                    </Badge>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Avg CPC:</span>
-                      <span className="font-medium">${type.avgCPC}</span>
+          {/* Keyword Clusters */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Keyword Clusters</CardTitle>
+              <CardDescription>
+                Groups of related keywords that can be targeted together
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                {data.keywordsData?.keywordTierStrategy && Object.entries(data.keywordsData.keywordTierStrategy).map(([tier, data]: [string, any], index: number) => (
+                  <div key={index} className="p-4 border rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-2">
+                      {tier === 'tier1HighValue' ? 'Tier 1: High Value' : 
+                       tier === 'tier2Moderate' ? 'Tier 2: Moderate' : 
+                       'Tier 3: Discovery'}
+                    </h4>
+                    <div className="text-sm text-gray-600 mb-3">
+                      {data.keywords?.length || 0} keywords • Avg CPC: ${data.averageCpc || 'N/A'} • ROI: {data.expectedRoi || 'N/A'}%
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Conv Rate:</span>
-                      <span className="font-medium">{type.conversionRate}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Volume:</span>
-                      <span className="font-medium">{type.volume.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Budget Simulator */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-3">PPC Budget Simulator</h4>
-            <div className="space-y-3">
-              {data.keywordsData.cpcAnalysis.budgetSimulator.map((sim: any, index: number) => (
-                <div key={index} className="flex items-center space-x-4 p-3 border rounded-lg">
-                  <div className="w-24">
-                    <div className="text-lg font-semibold">${sim.budget.toLocaleString()}</div>
-                    <div className="text-xs text-gray-600">Monthly Budget</div>
-                  </div>
-                  <div className="flex-grow grid grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Clicks:</span>
-                      <span className="font-medium ml-1">{sim.expectedClicks.toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Orders:</span>
-                      <span className="font-medium ml-1">{sim.expectedOrders}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Revenue:</span>
-                      <span className="font-medium ml-1">${sim.expectedRevenue.toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Profit:</span>
-                      <span className="font-medium text-green-600 ml-1">${sim.profit.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Bid Recommendations */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Bid Recommendations</h4>
-            <div className="space-y-2">
-              {data.keywordsData.cpcAnalysis.bidRecommendations.map((rec: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-blue-50">
-                  <div>
-                    <div className="font-medium text-gray-900">{rec.keyword}</div>
-                    <div className="text-sm text-gray-600">{rec.reason}</div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <div className="text-sm text-gray-600">Current</div>
-                      <div className="font-medium">${rec.currentCPC}</div>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-gray-400" />
-                    <div className="text-right">
-                      <div className="text-sm text-gray-600">Recommended</div>
-                      <div className="font-medium text-blue-600">${rec.recommendedBid}</div>
-                    </div>
-                    <Badge variant="secondary">
-                      {rec.expectedROI}% ROI
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      )}
-
-      {/* Keyword Opportunity Scoring */}
-      {data.keywordsData.opportunityMatrix && (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Sparkles className="h-5 w-5 text-purple-600" />
-            <span>Keyword Opportunity Matrix</span>
-          </CardTitle>
-          <CardDescription>
-            Multi-factor opportunity scoring for keyword prioritization
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {data.keywordsData.opportunityMatrix.map((opp: any, index: number) => (
-              <div key={index} className="border rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{opp.keyword}</h4>
-                    <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
-                      <span>Volume: {opp.searchVolume.toLocaleString()}</span>
-                      <span>Competition: {opp.competition}</span>
-                      <span>CPC: ${opp.cpc}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-purple-600">{opp.opportunityScore}</div>
-                    <Badge 
-                      variant={opp.actionPriority === 'immediate' ? 'default' : opp.actionPriority === 'high' ? 'secondary' : 'outline'}
-                    >
-                      {opp.actionPriority} priority
-                    </Badge>
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <div className="text-gray-600">Conversion Potential</div>
-                    <Progress value={opp.conversionPotential * 7} className="h-2 mt-1" />
-                    <div className="font-medium mt-1">{opp.conversionPotential}%</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-600">Trend Momentum</div>
-                    <Progress value={Math.min(opp.trendMomentum, 100)} className="h-2 mt-1" />
-                    <div className="font-medium mt-1">+{opp.trendMomentum}%</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-600">Competition Level</div>
-                    <Progress 
-                      value={opp.competition === 'low' ? 25 : opp.competition === 'medium' ? 50 : 75} 
-                      className="h-2 mt-1" 
-                    />
-                    <div className="font-medium mt-1 capitalize">{opp.competition}</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-600">Overall Score</div>
-                    <Progress value={opp.opportunityScore} className="h-2 mt-1" />
-                    <div className="font-medium mt-1">{opp.opportunityScore}/100</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-      )}
-
-      {/* Keyword Network Visualization */}
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center space-x-2">
-            <Lightbulb className="h-5 w-5 text-yellow-600" />
-            <span>Keyword Network & Opportunities</span>
-          </CardTitle>
-          <CardDescription>
-            Interactive visualization of keyword relationships and market opportunities
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="h-[800px] overflow-hidden">
-            <KeywordNetwork 
-              keywordClusters={{
-                technology: {
-                  root: 'Sleep Technology',
-                  subroots: Object.keys(data.keywordsData.keywordHierarchy['Sleep Technology'].subroots),
-                  keywords: Object.values(data.keywordsData.keywordHierarchy['Sleep Technology'].subroots)
-                    .flatMap((subroot: any) => subroot.keywords.slice(0, 3))
-                    .map((k: any) => k.keyword)
-                },
-                comfort: {
-                  root: 'Sleep Comfort',
-                  subroots: Object.keys(data.keywordsData.keywordHierarchy['Sleep Comfort'].subroots),
-                  keywords: Object.values(data.keywordsData.keywordHierarchy['Sleep Comfort'].subroots)
-                    .flatMap((subroot: any) => subroot.keywords.slice(0, 3))
-                    .map((k: any) => k.keyword)
-                },
-                audio: {
-                  root: 'Audio Keywords',
-                  subroots: ['Bluetooth Audio', 'Wireless Audio'],
-                  keywords: ['bluetooth headphones sleep', 'wireless sleep speakers', 'audio sleep mask']
-                },
-                travel: {
-                  root: 'Travel Keywords',
-                  subroots: ['Portable Sleep', 'Travel Comfort'],
-                  keywords: ['travel sleep mask', 'portable sleep headphones', 'airline sleep mask']
-                }
-              }}
-              primaryKeyword={data.keywordsData.primaryKeyword}
-              className="h-full"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Long-tail Keywords */}
-      {data.keywordsData.longTailKeywords && (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Zap className="h-5 w-5 text-orange-600" />
-            <span>Long-tail Keyword Discovery</span>
-          </CardTitle>
-          <CardDescription>
-            High-converting, low-competition keyword variations
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-2 gap-4">
-            {data.keywordsData.longTailKeywords.map((keyword: any, index: number) => (
-              <div key={index} className="p-4 border rounded-lg bg-gradient-to-r from-orange-50 to-yellow-50">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-grow">
-                    <h4 className="font-medium text-gray-900 mb-1">{keyword.keyword}</h4>
-                    <div className="flex items-center space-x-3 text-sm text-gray-600">
-                      <span>Volume: {keyword.volume}</span>
-                      <span>CPC: ${keyword.cpc}</span>
-                    </div>
-                  </div>
-                  <Badge 
-                    variant={keyword.intent === 'transactional' ? 'default' : 'secondary'}
-                    className="text-xs"
-                  >
-                    {keyword.intent}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-      )}
-
-      {/* Keyword Cannibalization Analysis */}
-      {data.keywordsData.cannibalizationRisks && (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <AlertCircle className="h-5 w-5 text-red-600" />
-            <span>Keyword Cannibalization Risks</span>
-          </CardTitle>
-          <CardDescription>
-            Overlapping keywords that may compete against each other
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {data.keywordsData.cannibalizationRisks.map((risk: any, index: number) => (
-              <div key={index} className="border rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Badge 
-                        variant={risk.risk === 'high' ? 'destructive' : 'default'}
-                      >
-                        {risk.risk} risk
-                      </Badge>
-                      <span className="text-sm text-gray-600">
-                        Affects {risk.affectedASINs} ASINs
-                      </span>
-                    </div>
-                    <div className="space-y-1">
-                      {risk.keywordGroup.map((keyword: string, i: number) => (
-                        <span key={i} className="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm mr-2">
+                    <p className="text-xs text-gray-500 mb-3">{data.strategy}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {data.keywords?.slice(0, 5).map((keyword: string, i: number) => (
+                        <Badge key={i} variant="outline" className="text-xs">
                           {keyword}
-                        </span>
+                        </Badge>
                       ))}
+                      {data.keywords?.length > 5 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{data.keywords.length - 5} more
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                </div>
-                <div className="p-3 bg-blue-50 rounded text-sm">
-                  <strong>Recommendation:</strong> {risk.recommendation}
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {/* Amazon Search Terms Integration */}
-      {searchTermsData && Array.isArray(searchTermsData) && searchTermsData.length > 0 && (
+      {/* Real-time Amazon Search Data - Always show if available */}
+      {searchTermsData && searchTermsData.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">

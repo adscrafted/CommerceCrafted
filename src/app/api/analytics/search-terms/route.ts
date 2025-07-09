@@ -10,7 +10,7 @@ const requestSchema = z.object({
 })
 
 // Cache for search terms data
-const searchTermsCache = new Map<string, { data: any; timestamp: number }>()
+const searchTermsCache = new Map<string, { data: unknown; timestamp: number }>()
 const CACHE_DURATION = 60 * 60 * 1000 // 1 hour
 
 export async function POST(request: NextRequest) {
@@ -79,9 +79,9 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json(result)
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If Amazon API or BigQuery fails, return mock data
-      console.warn('Failed to fetch real data, using mock data:', error.message)
+      console.warn('Failed to fetch real data, using mock data:', error instanceof Error ? error.message : 'Unknown error')
       return NextResponse.json({
         keywords,
         weeks,

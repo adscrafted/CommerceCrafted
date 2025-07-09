@@ -566,6 +566,9 @@ const mockTrendingProducts: Product[] = [
   }
 ]
 
+// Force dynamic behavior since we use searchParams
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -573,7 +576,7 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'opportunity'
 
     // Sort products based on sortBy parameter
-    let sortedProducts = [...mockTrendingProducts]
+    const sortedProducts = [...mockTrendingProducts]
     switch (sortBy) {
       case 'opportunity':
         sortedProducts.sort((a, b) => (b.analysis?.opportunityScore || 0) - (a.analysis?.opportunityScore || 0))

@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
               </Alert>
 
               <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="text-sm font-medium text-blue-900 mb-2">What's Next?</h3>
+                <h3 className="text-sm font-medium text-blue-900 mb-2">What&apos;s Next?</h3>
                 <ul className="text-xs text-blue-800 space-y-1">
                   <li>• Check your email inbox (and spam folder)</li>
                   <li>• Click the reset link in the email</li>
@@ -117,7 +117,7 @@ export default function ForgotPasswordPage() {
           {/* Support Info */}
           <div className="text-center">
             <p className="text-xs text-gray-500">
-              Didn't receive an email? Contact{' '}
+              Didn&apos;t receive an email? Contact{' '}
               <a href="mailto:support@commercecrafted.com" className="text-blue-600 hover:text-blue-500">
                 support@commercecrafted.com
               </a>
@@ -135,7 +135,7 @@ export default function ForgotPasswordPage() {
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900">Forgot Password</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Enter your email and we'll send you a reset link
+            Enter your email and we&apos;ll send you a reset link
           </p>
         </div>
 
@@ -146,7 +146,7 @@ export default function ForgotPasswordPage() {
               Reset Password
             </CardTitle>
             <CardDescription className="text-center">
-              We'll send password reset instructions to your email
+              We&apos;ll send password reset instructions to your email
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -214,7 +214,7 @@ export default function ForgotPasswordPage() {
           <ul className="text-xs text-yellow-800 space-y-1">
             <li>• Reset links expire after 1 hour for security</li>
             <li>• Only the most recent reset link will work</li>
-            <li>• We'll never ask for your password via email</li>
+            <li>• We&apos;ll never ask for your password via email</li>
           </ul>
         </div>
       </div>

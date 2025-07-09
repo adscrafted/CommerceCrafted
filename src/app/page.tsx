@@ -27,6 +27,7 @@ import {
 import { APIService } from '@/lib/api-service'
 import { Product, DailyFeature } from '@/types/api'
 import Link from 'next/link'
+import Image from 'next/image'
 import { mockTrends } from '@/lib/trends-data'
 
 
@@ -336,9 +337,11 @@ export default function HomePage() {
                     {/* Product Image with Opportunity Score */}
                     <div className="relative text-center">
                       <div className="relative inline-block">
-                        <img 
+                        <Image 
                           src={dailyFeature.product.imageUrls?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop'}
                           alt={dailyFeature.product.title}
+                          width={256}
+                          height={256}
                           className="rounded-lg shadow-2xl w-64 h-64 object-cover"
                         />
                         <div className="absolute -top-4 -right-4 bg-yellow-400 text-black rounded-full p-4 shadow-lg">
@@ -531,9 +534,11 @@ export default function HomePage() {
                     {/* Header with product info */}
                     <div className="flex flex-col space-y-4">
                       <div className="flex items-start space-x-4">
-                        <img
+                        <Image
                           src={product.images?.[0] || product.imageUrl || 'https://via.placeholder.com/80x80?text=Product'}
                           alt={product.title}
+                          width={80}
+                          height={80}
                           className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
                         />
                         <div className="flex-1">
@@ -700,14 +705,12 @@ export default function HomePage() {
                         {trend.top3ASINs.map((asin, i) => (
                           <div key={i} className="flex-1 text-center">
                             <div className="w-12 h-12 mx-auto bg-gray-100 rounded overflow-hidden mb-1">
-                              <img
-                                src={asin.image}
+                              <Image
+                                src={asin.image || 'https://via.placeholder.com/48x48?text=Product'}
                                 alt={asin.asin}
+                                width={48}
+                                height={48}
                                 className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = 'https://via.placeholder.com/48x48?text=Product';
-                                }}
                               />
                             </div>
                             <div className="text-xs text-gray-600">

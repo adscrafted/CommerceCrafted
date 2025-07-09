@@ -125,7 +125,12 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     const expiresAt = new Date(subscription.current_period_end * 1000)
     
     // Handle subscription status changes
-    let updateData: any = {
+    const updateData: {
+      subscriptionExpiresAt: Date | null;
+      stripeCustomerId: string;
+      stripeSubscriptionId: string;
+      subscriptionTier?: string;
+    } = {
       subscriptionExpiresAt: expiresAt,
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscription.id,

@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { UserRole, SubscriptionTier } from "@/types/auth"
 
 declare module "next-auth" {
   interface Session {
@@ -11,8 +12,8 @@ declare module "next-auth" {
       id: string
       email: string
       name: string
-      role: string
-      subscriptionTier: string
+      role: UserRole
+      subscriptionTier: SubscriptionTier
       subscriptionExpiresAt?: Date
       emailVerified?: Date
     }
@@ -22,8 +23,8 @@ declare module "next-auth" {
     id: string
     email: string
     name: string
-    role: string
-    subscriptionTier: string
+    role: UserRole
+    subscriptionTier: SubscriptionTier
     subscriptionExpiresAt?: Date
     emailVerified?: Date
   }
@@ -32,8 +33,8 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     id: string
-    role: string
-    subscriptionTier: string
+    role: UserRole
+    subscriptionTier: SubscriptionTier
     subscriptionExpiresAt?: Date
     emailVerified?: Date
   }
@@ -94,8 +95,8 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name || "",
-          role: user.role,
-          subscriptionTier: user.subscriptionTier,
+          role: user.role as UserRole,
+          subscriptionTier: user.subscriptionTier as SubscriptionTier,
           subscriptionExpiresAt: user.subscriptionExpiresAt || undefined,
           emailVerified: user.emailVerified,
         }
@@ -162,8 +163,8 @@ export const authOptions: NextAuthOptions = {
               data: {
                 email: user.email!,
                 name: user.name || "",
-                role: "USER",
-                subscriptionTier: "free",
+                role: "USER" as UserRole,
+                subscriptionTier: "free" as SubscriptionTier,
                 emailSubscribed: true,
               }
             })

@@ -127,34 +127,34 @@ export function withSubscription(
 }
 
 // Usage tracking decorators for common operations
-export const trackAnalysisUsage = (handler: Function) => {
+export const trackAnalysisUsage = (handler: (request: NextRequest) => Promise<NextResponse>) => {
   return withSubscription(handler, {
     usageType: 'analyses',
     incrementOnSuccess: true
   })
 }
 
-export const trackAIQueryUsage = (handler: Function) => {
+export const trackAIQueryUsage = (handler: (request: NextRequest) => Promise<NextResponse>) => {
   return withSubscription(handler, {
     usageType: 'aiQueries',
     incrementOnSuccess: true
   })
 }
 
-export const trackExportUsage = (handler: Function) => {
+export const trackExportUsage = (handler: (request: NextRequest) => Promise<NextResponse>) => {
   return withSubscription(handler, {
     usageType: 'exports',
     incrementOnSuccess: true
   })
 }
 
-export const requireProTier = (handler: Function) => {
+export const requireProTier = (handler: (request: NextRequest) => Promise<NextResponse>) => {
   return withSubscription(handler, {
     requiredTier: 'pro'
   })
 }
 
-export const requireEnterpriseTier = (handler: Function) => {
+export const requireEnterpriseTier = (handler: (request: NextRequest) => Promise<NextResponse>) => {
   return withSubscription(handler, {
     requiredTier: 'enterprise'
   })

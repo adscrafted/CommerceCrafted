@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress'
 import { Star, TrendingUp, DollarSign, Eye } from 'lucide-react'
 import { MockProduct } from '@/lib/mockData'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface ProductAnalysisCardProps {
   product: MockProduct
@@ -33,9 +34,11 @@ export function ProductAnalysisCard({ product }: ProductAnalysisCardProps) {
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
       <div className="aspect-square bg-gray-50 overflow-hidden">
-        <img
+        <Image
           src={product.imageUrls[0]}
           alt={product.title}
+          width={300}
+          height={300}
           className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
         />
       </div>

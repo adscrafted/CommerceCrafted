@@ -42,6 +42,43 @@ export interface ExportOptions {
   includeAnalysis?: boolean
 }
 
+interface CSVRowData {
+  [key: string]: string | undefined
+  asin: string
+  title?: string
+  category?: string
+  subcategory?: string
+  brand?: string
+  price?: string
+  tags?: string
+}
+
+interface MockProduct {
+  id: string
+  asin: string
+  title: string
+  category: string
+  brand: string
+  price: number
+  rating: number
+  reviewCount: number
+  imageUrl: string
+  opportunityScore: number
+  status: string
+  createdAt: Date
+}
+
+interface MockAmazonData {
+  asin: string
+  title: string
+  category: string
+  brand: string
+  price: number
+  rating: number
+  reviewCount: number
+  imageUrl: string
+}
+
 export interface BulkOperationResult {
   success: boolean
   processedCount: number
@@ -95,7 +132,7 @@ export class ProductImportService {
       // Process data rows
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim())
-        const rowData: any = {}
+        const rowData: CSVRowData = { asin: '' }
 
         // Map values to fields
         headers.forEach((header, index) => {
@@ -385,13 +422,13 @@ export class ProductImportService {
     return asinRegex.test(asin?.toUpperCase() || '')
   }
 
-  private static async findProductByASIN(asin: string): Promise<any> {
+  private static async findProductByASIN(asin: string): Promise<MockProduct | null> {
     // In production, query database for existing product
     console.log(`Checking for existing product with ASIN: ${asin}`)
     return null // Mock: no duplicates found
   }
 
-  private static async processImportRow(rowData: any, rowNumber: number): Promise<{
+  private static async processImportRow(rowData: CSVRowData, rowNumber: number): Promise<{
     data: ProductImportData
     errors: ImportError[]
   }> {
@@ -448,7 +485,7 @@ export class ProductImportService {
     return { data, errors }
   }
 
-  private static async createProductFromImport(data: ProductImportData): Promise<any> {
+  private static async createProductFromImport(data: ProductImportData): Promise<MockProduct> {
     // In production, create product in database
     console.log('Creating product from import:', data)
     return {
@@ -459,7 +496,7 @@ export class ProductImportService {
     }
   }
 
-  private static async fetchAmazonProductData(asin: string): Promise<any> {
+  private static async fetchAmazonProductData(asin: string): Promise<MockAmazonData | null> {
     // In production, fetch from Amazon SP-API
     console.log(`Fetching Amazon data for ASIN: ${asin}`)
     
@@ -476,7 +513,7 @@ export class ProductImportService {
     }
   }
 
-  private static async createProductFromAmazon(amazonData: any): Promise<any> {
+  private static async createProductFromAmazon(amazonData: MockAmazonData): Promise<MockProduct> {
     // In production, create product from Amazon data
     console.log('Creating product from Amazon data:', amazonData)
     return {
@@ -487,7 +524,7 @@ export class ProductImportService {
     }
   }
 
-  private static async getProductsForExport(productIds: string[], options: ExportOptions): Promise<any[]> {
+  private static async getProductsForExport(productIds: string[], options: ExportOptions): Promise<MockProduct[]> {
     // In production, fetch products from database with filters
     console.log('Fetching products for export:', productIds, options)
     
@@ -503,11 +540,11 @@ export class ProductImportService {
     }))
   }
 
-  private static async exportToCSV(products: any[], fields: string[]): Promise<Blob> {
+  private static async exportToCSV(products: MockProduct[], fields: string[]): Promise<Blob> {
     const headers = fields.join(',')
     const rows = products.map(product => 
       fields.map(field => {
-        const value = product[field]
+        const value = (product as Record<string, unknown>)[field]
         return typeof value === 'string' && value.includes(',') ? `"${value}"` : value
       }).join(',')
     )
@@ -516,9 +553,9 @@ export class ProductImportService {
     return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   }
 
-  private static async exportToJSON(products: any[], fields: string[]): Promise<Blob> {
+  private static async exportToJSON(products: MockProduct[], fields: string[]): Promise<Blob> {
     const filteredProducts = products.map(product => {
-      const filtered: any = {}
+      const filtered: Record<string, unknown> = {}
       fields.forEach(field => {
         if (product[field] !== undefined) {
           filtered[field] = product[field]
@@ -531,7 +568,7 @@ export class ProductImportService {
     return new Blob([jsonContent], { type: 'application/json;charset=utf-8;' })
   }
 
-  private static async exportToExcel(products: any[], fields: string[]): Promise<Blob> {
+  private static async exportToExcel(products: MockProduct[], fields: string[]): Promise<Blob> {
     // In production, use a library like xlsx to create Excel files
     console.log('Excel export not implemented in demo')
     
@@ -583,7 +620,8 @@ export class ProductImportService {
 
   // Get import/export analytics
   static async getImportExportAnalytics(timeframe: '7d' | '30d' | '90d' = '30d') {
-    // Mock analytics data
+    // Mock analytics data - in production, filter by timeframe
+    console.log(`Getting import/export analytics for timeframe: ${timeframe}`)
     return {
       totalImports: 15,
       totalProducts: 1247,

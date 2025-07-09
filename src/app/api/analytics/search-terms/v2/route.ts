@@ -87,7 +87,13 @@ export async function GET(request: NextRequest) {
     const [rows] = await bigquery.query(options)
     
     // Format the response
-    const formattedData = rows.map((row: any) => ({
+    const formattedData = rows.map((row: {
+      keyword: string;
+      searchFrequencyRank: number;
+      estimatedSearchVolume: number;
+      top3ClickShare?: number;
+      [key: string]: unknown;
+    }) => ({
       keyword: row.keyword,
       searchFrequencyRank: row.searchFrequencyRank,
       estimatedSearchVolume: row.estimatedSearchVolume,

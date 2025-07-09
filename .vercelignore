@@ -1,0 +1,20 @@
+# Vercel ignore file
+# Large temporary files and directories
+tmp/
+*.log
+backfill-monitor.log
+backfill.log
+failed_batch_*.json
+.backfill-state.json
+
+# Development files
+.env*
+google-service-key.json
+tsconfig.tsbuildinfo
+
+# Scripts directory (contains large data files)
+scripts/
+
+# Python cache
+__pycache__/
+*.py[cod]

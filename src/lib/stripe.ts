@@ -159,7 +159,10 @@ export const cancelStripeSubscription = async (subscriptionId: string) => {
   return await stripe.subscriptions.cancel(subscriptionId)
 }
 
-export const updateStripeSubscription = async (subscriptionId: string, params: any) => {
+export const updateStripeSubscription = async (
+  subscriptionId: string, 
+  params: Stripe.SubscriptionUpdateParams
+) => {
   return await stripe.subscriptions.update(subscriptionId, params)
 }
 
@@ -176,10 +179,10 @@ export const getStripeInvoice = async (invoiceId: string) => {
 
 export const getStripeUpcomingInvoice = async (customerId: string) => {
   try {
-    return await stripe.invoices.retrieveUpcoming({
+    return await stripe.invoices.createPreview({
       customer: customerId,
     })
-  } catch (error) {
+  } catch {
     // No upcoming invoice
     return null
   }

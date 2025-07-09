@@ -90,7 +90,7 @@ export async function verifyPasswordResetToken(token: string): Promise<{ email: 
   return { email: resetToken.email, valid: true }
 }
 
-export async function usePasswordResetToken(token: string): Promise<boolean> {
+export async function markPasswordResetTokenAsUsed(token: string): Promise<boolean> {
   try {
     await prisma.passwordResetToken.update({
       where: { token },

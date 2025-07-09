@@ -1,16 +1,16 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { UserRole } from '@/generated/prisma'
+import { UserRole, SubscriptionTier } from '@/types/auth'
 
 // Role hierarchy: ADMIN > ANALYST > USER
-export const ROLE_HIERARCHY = {
+export const ROLE_HIERARCHY: Record<UserRole, number> = {
   ADMIN: 3,
   ANALYST: 2,
   USER: 1,
 }
 
 // Subscription tier hierarchy: enterprise > pro > free
-export const TIER_HIERARCHY = {
+export const TIER_HIERARCHY: Record<SubscriptionTier, number> = {
   enterprise: 3,
   pro: 2,
   free: 1,
@@ -89,9 +89,9 @@ export async function requireSubscriptionTier(
     }
   }
 
-  const userTierLevel = TIER_HIERARCHY[userTier as keyof typeof TIER_HIERARCHY] || 0
+  const userTierLevel = TIER_HIERARCHY[userTier as SubscriptionTier] || 0
   const hasAccess = requiredTiers.some(tier => {
-    const requiredLevel = TIER_HIERARCHY[tier as keyof typeof TIER_HIERARCHY] || 0
+    const requiredLevel = TIER_HIERARCHY[tier as SubscriptionTier] || 0
     return userTierLevel >= requiredLevel
   })
 
@@ -182,7 +182,12 @@ export async function checkFeatureAccess(feature: string): Promise<Authorization
 }
 
 // Usage limits for different tiers
-export const USAGE_LIMITS = {
+export const USAGE_LIMITS: Record<SubscriptionTier, {
+  productAnalyses: number;
+  aiQueries: number;
+  savedProducts: number;
+  exportLimit: number;
+}> = {
   free: {
     productAnalyses: 5,
     aiQueries: 0,
@@ -217,7 +222,7 @@ export async function checkUsageLimit(
     }
   }
 
-  const userTier = session.user.subscriptionTier as keyof typeof USAGE_LIMITS
+  const userTier = session.user.subscriptionTier as SubscriptionTier
   const limits = USAGE_LIMITS[userTier] || USAGE_LIMITS.free
   const limit = limits[feature]
 
@@ -239,7 +244,12 @@ export async function checkUsageLimit(
 
 // Helper function for client-side components
 export function getSubscriptionTierInfo(tier: string) {
-  const tierInfo = {
+  const tierInfo: Record<SubscriptionTier, {
+    name: string;
+    color: string;
+    features: string[];
+    limitations: string[];
+  }> = {
     free: {
       name: 'Free',
       color: 'gray',
@@ -260,5 +270,5 @@ export function getSubscriptionTierInfo(tier: string) {
     }
   }
 
-  return tierInfo[tier as keyof typeof tierInfo] || tierInfo.free
+  return tierInfo[tier as SubscriptionTier] || tierInfo.free
 }

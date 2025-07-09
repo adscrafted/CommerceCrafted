@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
-import { verifyPasswordResetToken, usePasswordResetToken } from '@/lib/tokens'
+import { verifyPasswordResetToken, markPasswordResetTokenAsUsed } from '@/lib/tokens'
 import { prisma } from '@/lib/prisma'
 
 const resetPasswordSchema = z.object({
@@ -9,9 +9,6 @@ const resetPasswordSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 })
 
-const verifyTokenSchema = z.object({
-  token: z.string().min(1, 'Reset token is required'),
-})
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,7 +34,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Mark token as used
-    await usePasswordResetToken(token)
+    await markPasswordResetTokenAsUsed(token)
 
     return NextResponse.json({
       message: 'Password reset successfully'

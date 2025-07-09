@@ -1,17 +1,15 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import Image from 'next/image'
 import { 
   Target,
   Users,
   Award,
   TrendingUp,
-  Lightbulb,
-  Globe
+  Lightbulb
 } from 'lucide-react'
-import Link from 'next/link'
 
 export default function AboutPage() {
   const teamMembers = [
@@ -54,7 +52,7 @@ export default function AboutPage() {
     {
       icon: TrendingUp,
       title: "Innovation First",
-      description: "We're constantly pushing the boundaries of what's possible with AI-powered market research and business intelligence."
+      description: "We&apos;re constantly pushing the boundaries of what&apos;s possible with AI-powered market research and business intelligence."
     }
   ]
 
@@ -65,7 +63,7 @@ export default function AboutPage() {
       <div className="bg-gradient-to-b from-blue-50 to-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-6">
-            We're Building the Future of Business Idea Discovery
+            We&apos;re Building the Future of Business Idea Discovery
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
             IdeaBrowser was founded with a simple mission: to help entrepreneurs discover and validate profitable business opportunities through comprehensive research and AI-powered insights.
@@ -86,14 +84,16 @@ export default function AboutPage() {
                 Traditional business idea research was scattered, time-consuming, and often incomplete. Entrepreneurs were making critical decisions based on incomplete information, leading to failure rates that could have been avoided.
               </p>
               <p>
-                That's when we decided to build IdeaBrowser – a comprehensive platform that combines human expertise with AI-powered research to provide entrepreneurs with the insights they need to succeed.
+                That&apos;s when we decided to build IdeaBrowser – a comprehensive platform that combines human expertise with AI-powered research to provide entrepreneurs with the insights they need to succeed.
               </p>
             </div>
           </div>
           <div className="lg:pl-8">
-            <img 
+            <Image 
               src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=400&fit=crop" 
               alt="Team collaboration"
+              width={600}
+              height={400}
               className="rounded-lg shadow-lg"
             />
           </div>
@@ -149,9 +149,11 @@ export default function AboutPage() {
           {teamMembers.map((member, index) => (
             <Card key={index} className="text-center border-0 shadow-md">
               <CardContent className="p-8">
-                <img 
+                <Image 
                   src={member.image}
                   alt={member.name}
+                  width={96}
+                  height={96}
                   className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
                 />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">

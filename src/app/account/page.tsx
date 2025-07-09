@@ -11,25 +11,19 @@ import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { 
   User,
-  Mail,
   Shield,
   Bell,
   CreditCard,
   Download,
   Trash2,
   Crown,
-  Calendar,
-  Activity,
-  Settings,
   Eye,
   EyeOff,
-  Check,
   AlertTriangle,
   Package,
   BarChart3,
   Star
 } from 'lucide-react'
-import Link from 'next/link'
 
 interface UserProfile {
   name: string

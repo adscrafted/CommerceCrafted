@@ -305,7 +305,8 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       modelsAvailable: models.data.length
     })
-  } catch (error) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_error) {
     return NextResponse.json(
       { 
         status: 'unhealthy',

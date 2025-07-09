@@ -765,7 +765,7 @@ export interface PaginatedResponse<T> {
 export interface APIError {
   code: string
   message: string
-  details?: any
+  details?: Record<string, unknown> | string | null
   timestamp: string
   requestId?: string
 }

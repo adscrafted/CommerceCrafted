@@ -28,6 +28,7 @@ import {
   Rocket
 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { MembershipGate } from '@/components/MembershipGate'
 
 interface ProductPageProps {
@@ -382,9 +383,11 @@ export default function ProductPage({ params }: ProductPageProps) {
             <div className="text-center">
               <div className="relative inline-block">
                 <div className="w-80 h-80 relative">
-                  <img 
+                  <Image 
                     src={dailyProductData.mainImage}
                     alt={dailyProductData.title}
+                    width={320}
+                    height={320}
                     className="rounded-lg shadow-2xl w-full h-full object-cover"
                   />
                   <div className="absolute -top-4 -right-4 bg-yellow-400 text-black rounded-full p-3">

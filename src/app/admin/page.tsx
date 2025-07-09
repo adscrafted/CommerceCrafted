@@ -6,27 +6,17 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import Link from 'next/link'
 import {
   Plus,
   RefreshCw,
-  Calendar,
-  Globe,
-  TrendingUp,
-  DollarSign,
-  Package,
   CheckCircle,
   Clock,
   AlertCircle,
   Search,
   Trash2,
   Edit,
-  Eye,
-  BarChart3,
-  ExternalLink,
-  MessageSquare,
-  Users,
-  Activity
+  Eye
 } from 'lucide-react'
 
 interface NicheQueueItem {
@@ -69,9 +59,7 @@ export default function AdminNicheQueue() {
   const [searchTerm, setSearchTerm] = useState('')
   const [newNicheName, setNewNicheName] = useState('')
   const [newAsins, setNewAsins] = useState('')
-  const [refreshing, setRefreshing] = useState(false)
   const [selectedDate, setSelectedDate] = useState('')
-  const [editingNiche, setEditingNiche] = useState<NicheQueueItem | null>(null)
 
   // Mock niche queue data
   const [nicheQueue, setNicheQueue] = useState<NicheQueueItem[]>([
@@ -218,12 +206,6 @@ export default function AdminNicheQueue() {
     setSelectedDate('')
   }
 
-  const handleRefresh = async () => {
-    setRefreshing(true)
-    // Simulate API refresh
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    setRefreshing(false)
-  }
 
   const handleDelete = (id: string) => {
     setNicheQueue(nicheQueue.filter(item => item.id !== id))
@@ -261,14 +243,6 @@ export default function AdminNicheQueue() {
     item.asins.some(asin => asin.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
-  // Stats
-  const stats = {
-    total: nicheQueue.length,
-    completed: nicheQueue.filter(p => p.status === 'completed').length,
-    analyzing: nicheQueue.filter(p => p.status === 'analyzing').length,
-    pending: nicheQueue.filter(p => p.status === 'pending').length,
-    scheduled: nicheQueue.filter(p => p.status === 'scheduled').length
-  }
 
   return (
     <div className="space-y-8">
@@ -281,10 +255,10 @@ export default function AdminNicheQueue() {
           </p>
         </div>
         <Button asChild>
-          <a href="/admin/niche/new">
+          <Link href="/admin/niche/new">
             <Plus className="h-4 w-4 mr-2" />
             New Analysis
-          </a>
+          </Link>
         </Button>
       </div>
 
@@ -454,9 +428,9 @@ export default function AdminNicheQueue() {
                         )}
                         {niche.status === 'completed' && (
                           <Button size="sm" variant="outline" asChild>
-                            <a href={`/products/${niche.asins[0]}`}>
+                            <Link href={`/products/${niche.asins[0]}`}>
                               <Eye className="h-4 w-4" />
-                            </a>
+                            </Link>
                           </Button>
                         )}
                         <Button
@@ -464,9 +438,9 @@ export default function AdminNicheQueue() {
                           variant="outline"
                           asChild
                         >
-                          <a href={`/admin/niche/${niche.id}`}>
+                          <Link href={`/admin/niche/${niche.id}`}>
                             <Edit className="h-4 w-4" />
-                          </a>
+                          </Link>
                         </Button>
                         <Button
                           size="sm"

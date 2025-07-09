@@ -1,8 +1,9 @@
 import { notFound, redirect } from 'next/navigation'
 import { NicheAnalysisForm } from '@/components/admin/NicheAnalysisForm'
+import { NicheAnalysisData, NicheAnalysisFormData, NicheAnalysisPageProps } from '@/types/niche'
 
 // Mock data - replace with actual database fetch
-const getNicheAnalysis = async (id: string) => {
+const getNicheAnalysis = async (id: string): Promise<NicheAnalysisData | null> => {
   // This would be replaced with actual database query
   if (id === 'example-niche-1') {
     return {
@@ -33,14 +34,15 @@ const getNicheAnalysis = async (id: string) => {
   return null
 }
 
-export default async function NicheAnalysisPage({ params }: { params: { id: string } }) {
-  const niche = await getNicheAnalysis(params.id)
+export default async function NicheAnalysisPage({ params }: NicheAnalysisPageProps) {
+  const { id } = await params
+  const niche = await getNicheAnalysis(id)
   
   if (!niche) {
     notFound()
   }
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: NicheAnalysisFormData) => {
     'use server'
     // Implement save logic here
     console.log('Saving niche analysis:', data)
@@ -50,7 +52,7 @@ export default async function NicheAnalysisPage({ params }: { params: { id: stri
   const handleReprocess = async () => {
     'use server'
     // Implement reprocess logic here
-    console.log('Reprocessing niche:', params.id)
+    console.log('Reprocessing niche:', id)
   }
 
   return (
