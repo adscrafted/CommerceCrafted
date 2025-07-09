@@ -51,20 +51,128 @@ export const mockProductData = {
       {
         name: 'Night Shift Worker',
         age: '25-40',
+        gender: '60% Male, 40% Female',
+        income: '$45,000-$75,000',
+        location: 'Urban/Suburban areas',
+        occupation: 'Healthcare, Security, Manufacturing, Emergency Services',
+        lifestyle: 'Works 10pm-6am shifts, struggles with daytime sleep, health-conscious due to irregular schedule',
         pain: 'Difficulty sleeping during the day',
-        motivation: 'Block out light and noise while sleeping'
+        deepPainPoints: [
+          'Light penetration through regular eye masks disrupts REM sleep',
+          'Partner activities and household noise during sleep hours',
+          'Difficulty maintaining consistent sleep schedule on days off',
+          'Headaches from poor quality sleep affecting work performance'
+        ],
+        motivation: 'Block out light and noise while sleeping',
+        goals: [
+          'Achieve 7-8 hours of uninterrupted daytime sleep',
+          'Maintain energy levels throughout night shifts',
+          'Improve overall health and reduce shift work disorder symptoms',
+          'Find portable solution for sleeping between double shifts'
+        ],
+        shoppingBehavior: {
+          researchStyle: 'Reads detailed reviews from other shift workers',
+          decisionFactors: ['Comfort for side sleepers', 'Complete light blocking', 'Durability for daily use'],
+          pricePoint: 'Willing to pay premium ($30-50) for quality',
+          purchaseTime: 'Shops online during night shift breaks',
+          brandLoyalty: 'Medium - will switch for better features'
+        },
+        psychographics: {
+          values: ['Health', 'Work-life balance', 'Practical solutions'],
+          interests: ['Sleep optimization', 'Fitness', 'Meal prep'],
+          personality: 'Pragmatic, health-conscious, routine-oriented',
+          mediaConsumption: ['Health podcasts', 'Shift work forums', 'YouTube sleep tips']
+        },
+        buyingJourney: {
+          awareness: 'Searches "sleep masks for day sleepers" after colleague recommendation',
+          consideration: 'Compares 5-10 products over 2 weeks',
+          decision: 'Buys after finding reviews from verified shift workers',
+          retention: 'Likely to buy extras for travel and recommend to coworkers'
+        }
       },
       {
         name: 'Meditation Enthusiast',
         age: '30-55',
+        gender: '70% Female, 30% Male',
+        income: '$60,000-$120,000',
+        location: 'Suburban/Urban, West Coast and Northeast concentration',
+        occupation: 'Professional services, Tech, Education, Entrepreneurs',
+        lifestyle: 'Practices daily meditation, yoga practitioner, mindfulness advocate, wellness-focused',
         pain: 'Distractions during meditation',
-        motivation: 'Enhanced focus with guided audio'
+        deepPainPoints: [
+          'Ambient noise breaks concentration during deep meditation',
+          'Difficulty finding quiet time in busy household',
+          'Eye strain from trying to meditate with eyes closed in bright rooms',
+          'Wireless earbuds fall out during lying meditation poses'
+        ],
+        motivation: 'Enhanced focus with guided audio',
+        goals: [
+          'Deepen meditation practice to 45-60 minute sessions',
+          'Create portable meditation sanctuary anywhere',
+          'Integrate more sound healing and binaural beats',
+          'Achieve consistent daily practice regardless of environment'
+        ],
+        shoppingBehavior: {
+          researchStyle: 'Seeks recommendations from meditation teachers and communities',
+          decisionFactors: ['Audio quality for meditation music', 'Comfort for extended wear', 'Eco-friendly materials'],
+          pricePoint: 'Premium buyer ($40-80) for mindfulness tools',
+          purchaseTime: 'Deliberate purchase after research',
+          brandLoyalty: 'High - values brands aligned with wellness values'
+        },
+        psychographics: {
+          values: ['Mindfulness', 'Personal growth', 'Sustainability', 'Holistic health'],
+          interests: ['Yoga', 'Breathwork', 'Sound healing', 'Retreats'],
+          personality: 'Introspective, growth-oriented, environmentally conscious',
+          mediaConsumption: ['Meditation apps', 'Wellness podcasts', 'Mindfulness blogs']
+        },
+        buyingJourney: {
+          awareness: 'Discovers through meditation app partnership or yoga studio',
+          consideration: 'Researches materials, reads spiritual community reviews',
+          decision: 'Purchases after confirming audio quality meets standards',
+          retention: 'Becomes brand advocate, gifts to meditation circle'
+        }
       },
       {
         name: 'Frequent Traveler',
         age: '28-45',
+        gender: '55% Male, 45% Female',
+        income: '$75,000-$150,000+',
+        location: 'Major metropolitan areas, travel hubs',
+        occupation: 'Sales, Consulting, Executive, Digital Nomad',
+        lifestyle: 'Travels 15+ days/month, elite status on airlines, minimalist packer, productivity-focused',
         pain: 'Poor sleep on planes and in hotels',
-        motivation: 'Portable comfort and entertainment'
+        deepPainPoints: [
+          'Jet lag compounded by poor sleep quality during flights',
+          'Hotel room noise and unfamiliar environments disrupt sleep',
+          'Bulky noise-canceling headphones take up precious luggage space',
+          'Need entertainment during long flights without disturbing others'
+        ],
+        motivation: 'Portable comfort and entertainment',
+        goals: [
+          'Arrive at destination well-rested and productive',
+          'Maintain sleep schedule across time zones',
+          'Maximize productivity during travel downtime',
+          'Pack light while having all comfort essentials'
+        ],
+        shoppingBehavior: {
+          researchStyle: 'Quick decision maker, values peer recommendations',
+          decisionFactors: ['Portability', 'Battery life', 'Multi-functionality'],
+          pricePoint: 'Value-conscious but pays for convenience ($30-60)',
+          purchaseTime: 'Impulse buy at airport or quick online order',
+          brandLoyalty: 'Low - constantly seeking better travel solutions'
+        },
+        psychographics: {
+          values: ['Efficiency', 'Experiences', 'Professional success', 'Convenience'],
+          interests: ['Travel hacking', 'Productivity', 'Technology', 'Global cuisine'],
+          personality: 'Ambitious, adaptable, tech-savvy, time-conscious',
+          mediaConsumption: ['Travel blogs', 'Business podcasts', 'Productivity apps']
+        },
+        buyingJourney: {
+          awareness: 'Sees fellow traveler using it or travel blogger review',
+          consideration: 'Quick research on battery life and packability',
+          decision: 'Orders for next trip or buys at airport',
+          retention: 'Replaces every 6-12 months due to heavy use'
+        }
       }
     ],
     socialSignals: {

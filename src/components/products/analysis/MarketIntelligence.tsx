@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -16,7 +16,11 @@ import {
   Users,
   UserCheck,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  Eye,
+  BarChart3,
+  Lightbulb,
+  MessageSquare
 } from 'lucide-react'
 
 interface MarketIntelligenceProps {
@@ -139,14 +143,41 @@ interface MarketIntelligenceProps {
       customerAvatars: Array<{
         name: string
         age: string
+        gender: string
+        income: string
+        location: string
+        occupation: string
+        lifestyle: string
         pain: string
+        deepPainPoints: string[]
         motivation: string
+        goals: string[]
+        shoppingBehavior: {
+          researchStyle: string
+          decisionFactors: string[]
+          pricePoint: string
+          purchaseTime: string
+          brandLoyalty: string
+        }
+        psychographics: {
+          values: string[]
+          interests: string[]
+          personality: string
+          mediaConsumption: string[]
+        }
+        buyingJourney: {
+          awareness: string
+          consideration: string
+          decision: string
+          retention: string
+        }
       }>
     }
   }
 }
 
 export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
+  const [activeTab, setActiveTab] = useState('overview')
   const getEmotionColor = (impact: string) => {
     switch (impact) {
       case 'high': return 'text-red-600 bg-red-50 border-red-200'
@@ -169,310 +200,515 @@ export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
 
   return (
     <div className="space-y-6">
-      {/* Key Insights Scorecards */}
-      <div className="grid md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{data.reviewAnalysisData.sentimentScore}★</div>
-              <div className="text-sm text-gray-600 mt-1">Sentiment Score</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{(data.reviewAnalysisData.totalReviews / 1000).toFixed(1)}K</div>
-              <div className="text-sm text-gray-600 mt-1">Reviews Analyzed</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{data.reviewAnalysisData.voiceOfCustomer.featureRequests.length}</div>
-              <div className="text-sm text-gray-600 mt-1">Feature Requests</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">{data.reviewAnalysisData.commonThemes.opportunities.length}</div>
-              <div className="text-sm text-gray-600 mt-1">Opportunities</div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Tab Navigation */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        {[
+          { id: 'overview', label: 'Overview', icon: Eye },
+          { id: 'voice', label: 'Voice of Customer', icon: Megaphone },
+          { id: 'emotions', label: 'Emotional Triggers', icon: Heart },
+          { id: 'personas', label: 'Customer Personas', icon: Users },
+          { id: 'opportunities', label: 'Opportunities', icon: Lightbulb }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            <span>{tab.label}</span>
+          </button>
+        ))}
       </div>
 
-      {/* Voice of Customer Dashboard */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Megaphone className="h-5 w-5 text-orange-600" />
-            <span>Voice of Customer</span>
-          </CardTitle>
-          <CardDescription>
-            Direct insights from customer feedback and reviews
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Feature Requests */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-              <Package className="h-4 w-4 mr-2" />
-              Most Requested Features
-            </h4>
-            <div className="grid md:grid-cols-2 gap-4">
-              {data.reviewAnalysisData.voiceOfCustomer.featureRequests.map((request, index) => (
-                <div key={index} className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50">
-                  <div className="flex items-start justify-between mb-2">
-                    <h5 className="font-medium text-gray-900">{request.feature}</h5>
-                    <Badge className="text-xs">{request.mentions} mentions</Badge>
-                  </div>
-                  <div className="text-sm text-gray-600 mb-2">
-                    Sentiment: <span className="font-medium text-blue-600">{request.sentiment}</span>
-                  </div>
-                  <div className="text-xs text-gray-500 italic">
-                    <div className="line-clamp-2">&ldquo;{request.examples[0]}&rdquo;</div>
-                  </div>
+      {/* Overview Tab */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* Key Insights Scorecards */}
+          <div className="grid md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{data.reviewAnalysisData.sentimentScore}★</div>
+                  <div className="text-sm text-gray-600 mt-1">Sentiment Score</div>
                 </div>
-              ))}
-            </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{(data.reviewAnalysisData.totalReviews / 1000).toFixed(1)}K</div>
+                  <div className="text-sm text-gray-600 mt-1">Reviews Analyzed</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">{data.reviewAnalysisData.voiceOfCustomer.featureRequests.length}</div>
+                  <div className="text-sm text-gray-600 mt-1">Feature Requests</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">{data.reviewAnalysisData.commonThemes.opportunities.length}</div>
+                  <div className="text-sm text-gray-600 mt-1">Opportunities</div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Use Cases */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-              <Target className="h-4 w-4 mr-2" />
-              Primary Use Cases
-            </h4>
-            <div className="space-y-3">
-              {data.reviewAnalysisData.voiceOfCustomer.useCases.map((useCase, index) => (
-                <div key={index} className="flex items-center space-x-4 p-3 border rounded-lg">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                      <span className="text-lg font-bold text-purple-600">{useCase.percentage}%</span>
-                    </div>
-                  </div>
-                  <div className="flex-grow">
-                    <h5 className="font-medium text-gray-900">{useCase.scenario}</h5>
-                    <p className="text-sm text-gray-600">{useCase.description}</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {useCase.keywords.map((keyword, i) => (
-                        <Badge key={i} variant="outline" className="text-xs">
-                          {keyword}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+          {/* Common Themes Overview */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <MessageSquare className="h-5 w-5 text-blue-600" />
+                <span>Common Themes</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium text-green-600 mb-2">Positive Themes</h4>
+                  <ul className="space-y-1">
+                    {data.reviewAnalysisData.commonThemes.positive.map((theme, index) => (
+                      <li key={index} className="text-sm text-gray-700 flex items-start">
+                        <span className="text-green-500 mr-2">•</span>
+                        {theme}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Purchase Motivations */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-              <Brain className="h-4 w-4 mr-2" />
-              Purchase Motivations
-            </h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {data.reviewAnalysisData.voiceOfCustomer.purchaseMotivations.map((motivation, index) => (
-                <div key={index} className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-indigo-600 mb-1">{motivation.percentage}%</div>
-                  <div className="text-sm font-medium text-gray-900">{motivation.motivation}</div>
-                  <div className="text-xs text-gray-600 mt-1">{motivation.description}</div>
+                <div>
+                  <h4 className="text-sm font-medium text-red-600 mb-2">Negative Themes</h4>
+                  <ul className="space-y-1">
+                    {data.reviewAnalysisData.commonThemes.negative.map((theme, index) => (
+                      <li key={index} className="text-sm text-gray-700 flex items-start">
+                        <span className="text-red-500 mr-2">•</span>
+                        {theme}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Emotional Triggers Analysis */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Heart className="h-5 w-5 text-red-500" />
-            <span>Emotional Triggers Analysis</span>
-          </CardTitle>
-          <CardDescription>
-            Deep psychological drivers that influence purchase decisions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Positive Triggers */}
-            <div>
-              <h4 className="text-sm font-medium text-green-600 mb-4 flex items-center">
-                <ThumbsUp className="h-4 w-4 mr-2" />
-                Positive Emotional Triggers
-              </h4>
-              <div className="space-y-3">
-                {data.reviewAnalysisData.emotionalTriggers.positive.map((trigger, index) => (
-                  <div key={index} className={`p-4 rounded-lg border ${getEmotionColor(trigger.impact)}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-medium">{trigger.trigger}</h5>
-                      <Badge variant="secondary" className="text-xs">
-                        {trigger.frequency} mentions
-                      </Badge>
-                    </div>
-                    <div className="text-sm opacity-90 mb-2">
-                      Impact: <span className="font-medium capitalize">{trigger.impact}</span>
-                    </div>
-                    <div className="text-xs italic space-y-1">
-                      {trigger.examples.slice(0, 2).map((example, i) => (
-                        <div key={i} className="flex items-start">
-                          <span className="mr-1">•</span>
-                          <span>&ldquo;{example}&rdquo;</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Negative Triggers */}
-            <div>
-              <h4 className="text-sm font-medium text-red-600 mb-4 flex items-center">
-                <ThumbsDown className="h-4 w-4 mr-2" />
-                Negative Emotional Triggers
-              </h4>
-              <div className="space-y-3">
-                {data.reviewAnalysisData.emotionalTriggers.negative.map((trigger, index) => (
-                  <div key={index} className={`p-4 rounded-lg border ${getEmotionColor(trigger.impact)}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-medium">{trigger.trigger}</h5>
-                      <Badge variant="destructive" className="text-xs">
-                        {trigger.frequency} mentions
-                      </Badge>
-                    </div>
-                    <div className="text-sm opacity-90 mb-2">
-                      Impact: <span className="font-medium capitalize">{trigger.impact}</span>
-                    </div>
-                    <div className="text-xs italic space-y-1">
-                      {trigger.examples.slice(0, 2).map((example, i) => (
-                        <div key={i} className="flex items-start">
-                          <span className="mr-1">•</span>
-                          <span>&ldquo;{example}&rdquo;</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Customer Avatars */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Users className="h-5 w-5 text-purple-600" />
-            <span>Customer Avatars</span>
-          </CardTitle>
-          <CardDescription>
-            Key customer segments driving demand for this product
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-3 gap-6">
-            {data.demandData.customerAvatars.map((avatar, index) => (
-              <div key={index} className="p-6 border rounded-lg bg-gradient-to-br from-blue-50 to-purple-50">
-                <div className="text-center mb-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mx-auto mb-3 flex items-center justify-center">
-                    <UserCheck className="h-8 w-8 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900">{avatar.name}</h3>
-                  <p className="text-sm text-gray-600">{avatar.age}</p>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-sm font-medium text-red-600 mb-1">Pain Point:</div>
-                    <div className="text-sm text-gray-700">{avatar.pain}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-green-600 mb-1">Motivation:</div>
-                    <div className="text-sm text-gray-700">{avatar.motivation}</div>
-                  </div>
+                <div>
+                  <h4 className="text-sm font-medium text-orange-600 mb-2">Opportunities</h4>
+                  <ul className="space-y-1">
+                    {data.reviewAnalysisData.commonThemes.opportunities.map((opportunity, index) => (
+                      <li key={index} className="text-sm text-gray-700 flex items-start">
+                        <span className="text-orange-500 mr-2">•</span>
+                        {opportunity}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-      {/* Market Opportunities */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <TrendingUp className="h-5 w-5 text-green-600" />
-            <span>Market Opportunities</span>
-          </CardTitle>
-          <CardDescription>
-            Untapped segments and expansion opportunities
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Untapped Segments */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Untapped Market Segments</h4>
-            <div className="grid md:grid-cols-3 gap-4">
-              {data.reviewAnalysisData.marketOpportunities.untappedSegments.map((segment, index) => (
-                <div key={index} className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h5 className="font-medium text-gray-900">{segment.segment}</h5>
-                    <div className="flex space-x-1">
-                      <Badge variant="outline" className="text-xs">
-                        Size: {segment.size}
-                      </Badge>
-                      <Badge className="text-xs">
-                        Fit: {segment.fit}
-                      </Badge>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600">{segment.strategy}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Product Extensions */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Product Extension Opportunities</h4>
-            <div className="space-y-3">
-              {data.reviewAnalysisData.marketOpportunities.productExtensions.map((extension, index) => (
-                <div key={index} className="flex items-center space-x-4 p-4 border rounded-lg">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                      <DollarSign className="h-6 w-6 text-green-600" />
-                    </div>
-                  </div>
-                  <div className="flex-grow">
-                    <div className="flex items-center justify-between mb-1">
-                      <h5 className="font-medium text-gray-900">{extension.idea}</h5>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-green-600">{extension.marketSize}</span>
-                        <Badge variant={extension.difficulty === 'Low' ? 'secondary' : extension.difficulty === 'Medium' ? 'default' : 'destructive'} className="text-xs">
-                          {extension.difficulty} difficulty
-                        </Badge>
+      {/* Voice of Customer Tab */}
+      {activeTab === 'voice' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Megaphone className="h-5 w-5 text-orange-600" />
+                <span>Voice of Customer Analysis</span>
+              </CardTitle>
+              <CardDescription>
+                Direct insights from customer feedback and reviews
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Feature Requests */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <Package className="h-4 w-4 mr-2" />
+                  Most Requested Features
+                </h4>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {data.reviewAnalysisData.voiceOfCustomer.featureRequests.map((request, index) => (
+                    <div key={index} className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50">
+                      <div className="flex items-start justify-between mb-2">
+                        <h5 className="font-medium text-gray-900">{request.feature}</h5>
+                        <Badge className="text-xs">{request.mentions} mentions</Badge>
+                      </div>
+                      <div className="text-sm text-gray-600 mb-2">
+                        Sentiment: <span className="font-medium text-blue-600">{request.sentiment}</span>
+                      </div>
+                      <div className="text-xs text-gray-500 italic">
+                        <div className="line-clamp-2">&ldquo;{request.examples[0]}&rdquo;</div>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600">{extension.description}</p>
+                  ))}
+                </div>
+              </div>
+
+              {/* Use Cases */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <Target className="h-4 w-4 mr-2" />
+                  Primary Use Cases
+                </h4>
+                <div className="space-y-3">
+                  {data.reviewAnalysisData.voiceOfCustomer.useCases.map((useCase, index) => (
+                    <div key={index} className="flex items-center space-x-4 p-3 border rounded-lg">
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                          <span className="text-lg font-bold text-purple-600">{useCase.percentage}%</span>
+                        </div>
+                      </div>
+                      <div className="flex-grow">
+                        <h5 className="font-medium text-gray-900">{useCase.scenario}</h5>
+                        <p className="text-sm text-gray-600">{useCase.description}</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {useCase.keywords.map((keyword, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">
+                              {keyword}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Purchase Motivations */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <Brain className="h-4 w-4 mr-2" />
+                  Purchase Motivations
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {data.reviewAnalysisData.voiceOfCustomer.purchaseMotivations.map((motivation, index) => (
+                    <div key={index} className="text-center p-4 border rounded-lg">
+                      <div className="text-2xl font-bold text-indigo-600 mb-1">{motivation.percentage}%</div>
+                      <div className="text-sm font-medium text-gray-900">{motivation.motivation}</div>
+                      <div className="text-xs text-gray-600 mt-1">{motivation.description}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Emotional Triggers Tab */}
+      {activeTab === 'emotions' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Heart className="h-5 w-5 text-red-500" />
+                <span>Emotional Triggers Analysis</span>
+              </CardTitle>
+              <CardDescription>
+                Deep psychological drivers that influence purchase decisions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Positive Triggers */}
+                <div>
+                  <h4 className="text-sm font-medium text-green-600 mb-4 flex items-center">
+                    <ThumbsUp className="h-4 w-4 mr-2" />
+                    Positive Emotional Triggers
+                  </h4>
+                  <div className="space-y-3">
+                    {data.reviewAnalysisData.emotionalTriggers.positive.map((trigger, index) => (
+                      <div key={index} className={`p-4 rounded-lg border ${getEmotionColor(trigger.impact)}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <h5 className="font-medium">{trigger.trigger}</h5>
+                          <Badge variant="secondary" className="text-xs">
+                            {trigger.frequency} mentions
+                          </Badge>
+                        </div>
+                        <div className="text-sm opacity-90 mb-2">
+                          Impact: <span className="font-medium capitalize">{trigger.impact}</span>
+                        </div>
+                        <div className="text-xs italic space-y-1">
+                          {trigger.examples.slice(0, 2).map((example, i) => (
+                            <div key={i} className="flex items-start">
+                              <span className="mr-1">•</span>
+                              <span>&ldquo;{example}&rdquo;</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+
+                {/* Negative Triggers */}
+                <div>
+                  <h4 className="text-sm font-medium text-red-600 mb-4 flex items-center">
+                    <ThumbsDown className="h-4 w-4 mr-2" />
+                    Negative Emotional Triggers
+                  </h4>
+                  <div className="space-y-3">
+                    {data.reviewAnalysisData.emotionalTriggers.negative.map((trigger, index) => (
+                      <div key={index} className={`p-4 rounded-lg border ${getEmotionColor(trigger.impact)}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <h5 className="font-medium">{trigger.trigger}</h5>
+                          <Badge variant="destructive" className="text-xs">
+                            {trigger.frequency} mentions
+                          </Badge>
+                        </div>
+                        <div className="text-sm opacity-90 mb-2">
+                          Impact: <span className="font-medium capitalize">{trigger.impact}</span>
+                        </div>
+                        <div className="text-xs italic space-y-1">
+                          {trigger.examples.slice(0, 2).map((example, i) => (
+                            <div key={i} className="flex items-start">
+                              <span className="mr-1">•</span>
+                              <span>&ldquo;{example}&rdquo;</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Customer Personas Tab */}
+      {activeTab === 'personas' && (
+        <div className="space-y-6">
+          {data.demandData.customerAvatars.map((avatar, index) => (
+            <Card key={index} className="overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+                      <UserCheck className="h-8 w-8 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold">{avatar.name}</h3>
+                      <p className="text-purple-100">{avatar.age} • {avatar.gender}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-purple-100">Income Range</div>
+                    <div className="font-semibold">{avatar.income}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <CardContent className="p-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Demographics & Lifestyle */}
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Demographics & Lifestyle</h4>
+                      <div className="space-y-2 text-sm">
+                        <div><span className="font-medium text-gray-600">Location:</span> {avatar.location}</div>
+                        <div><span className="font-medium text-gray-600">Occupation:</span> {avatar.occupation}</div>
+                        <div><span className="font-medium text-gray-600">Lifestyle:</span> {avatar.lifestyle}</div>
+                      </div>
+                    </div>
+
+                    {/* Pain Points */}
+                    <div>
+                      <h4 className="font-semibold text-red-600 mb-2">Pain Points</h4>
+                      <div className="bg-red-50 p-3 rounded-lg mb-2">
+                        <p className="text-sm font-medium text-red-900">{avatar.pain}</p>
+                      </div>
+                      <ul className="space-y-1">
+                        {avatar.deepPainPoints.map((point, i) => (
+                          <li key={i} className="text-sm text-gray-700 flex items-start">
+                            <span className="text-red-500 mr-2">•</span>
+                            <span>{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Goals */}
+                    <div>
+                      <h4 className="font-semibold text-green-600 mb-2">Goals & Motivations</h4>
+                      <div className="bg-green-50 p-3 rounded-lg mb-2">
+                        <p className="text-sm font-medium text-green-900">{avatar.motivation}</p>
+                      </div>
+                      <ul className="space-y-1">
+                        {avatar.goals.map((goal, i) => (
+                          <li key={i} className="text-sm text-gray-700 flex items-start">
+                            <span className="text-green-500 mr-2">✓</span>
+                            <span>{goal}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Psychographics & Behavior */}
+                  <div className="space-y-4">
+                    {/* Psychographics */}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Psychographics</h4>
+                      <div className="space-y-3 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-600">Personality:</span>
+                          <p className="text-gray-700 mt-1">{avatar.psychographics.personality}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-600">Core Values:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {avatar.psychographics.values.map((value, i) => (
+                              <Badge key={i} variant="secondary" className="text-xs">
+                                {value}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-600">Interests:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {avatar.psychographics.interests.map((interest, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">
+                                {interest}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-600">Media Consumption:</span>
+                          <p className="text-gray-700 mt-1">{avatar.psychographics.mediaConsumption.join(', ')}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Shopping Behavior */}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Shopping Behavior</h4>
+                      <div className="bg-blue-50 p-4 rounded-lg space-y-2 text-sm">
+                        <div><span className="font-medium">Research Style:</span> {avatar.shoppingBehavior.researchStyle}</div>
+                        <div><span className="font-medium">Price Sensitivity:</span> {avatar.shoppingBehavior.pricePoint}</div>
+                        <div><span className="font-medium">Purchase Timing:</span> {avatar.shoppingBehavior.purchaseTime}</div>
+                        <div><span className="font-medium">Brand Loyalty:</span> {avatar.shoppingBehavior.brandLoyalty}</div>
+                        <div>
+                          <span className="font-medium">Key Decision Factors:</span>
+                          <ul className="mt-1 ml-4">
+                            {avatar.shoppingBehavior.decisionFactors.map((factor, i) => (
+                              <li key={i} className="text-gray-700">• {factor}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Buying Journey */}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Customer Journey</h4>
+                      <div className="space-y-2">
+                        <div className="border-l-4 border-blue-500 pl-3">
+                          <div className="text-xs font-medium text-blue-600 uppercase">Awareness</div>
+                          <p className="text-sm text-gray-700">{avatar.buyingJourney.awareness}</p>
+                        </div>
+                        <div className="border-l-4 border-purple-500 pl-3">
+                          <div className="text-xs font-medium text-purple-600 uppercase">Consideration</div>
+                          <p className="text-sm text-gray-700">{avatar.buyingJourney.consideration}</p>
+                        </div>
+                        <div className="border-l-4 border-green-500 pl-3">
+                          <div className="text-xs font-medium text-green-600 uppercase">Decision</div>
+                          <p className="text-sm text-gray-700">{avatar.buyingJourney.decision}</p>
+                        </div>
+                        <div className="border-l-4 border-orange-500 pl-3">
+                          <div className="text-xs font-medium text-orange-600 uppercase">Retention</div>
+                          <p className="text-sm text-gray-700">{avatar.buyingJourney.retention}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Opportunities Tab */}
+      {activeTab === 'opportunities' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <TrendingUp className="h-5 w-5 text-green-600" />
+                <span>Market Opportunities</span>
+              </CardTitle>
+              <CardDescription>
+                Untapped segments and expansion opportunities
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Untapped Segments */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Untapped Market Segments</h4>
+                <div className="grid md:grid-cols-3 gap-4">
+                  {data.reviewAnalysisData.marketOpportunities.untappedSegments.map((segment, index) => (
+                    <div key={index} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <h5 className="font-medium text-gray-900">{segment.segment}</h5>
+                        <div className="flex space-x-1">
+                          <Badge variant="outline" className="text-xs">
+                            Size: {segment.size}
+                          </Badge>
+                          <Badge className="text-xs">
+                            Fit: {segment.fit}
+                          </Badge>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600">{segment.strategy}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Product Extensions */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Product Extension Opportunities</h4>
+                <div className="space-y-3">
+                  {data.reviewAnalysisData.marketOpportunities.productExtensions.map((extension, index) => (
+                    <div key={index} className="flex items-center space-x-4 p-4 border rounded-lg">
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                          <DollarSign className="h-6 w-6 text-green-600" />
+                        </div>
+                      </div>
+                      <div className="flex-grow">
+                        <div className="flex items-center justify-between mb-1">
+                          <h5 className="font-medium text-gray-900">{extension.idea}</h5>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium text-green-600">{extension.marketSize}</span>
+                            <Badge variant={extension.difficulty === 'Low' ? 'secondary' : extension.difficulty === 'Medium' ? 'default' : 'destructive'} className="text-xs">
+                              {extension.difficulty} difficulty
+                            </Badge>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-600">{extension.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

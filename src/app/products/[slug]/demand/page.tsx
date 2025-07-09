@@ -118,33 +118,6 @@ export default function DemandPage({ params }: DemandPageProps) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Key Insights */}
-        <Card className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50">
-          <CardHeader>
-            <CardTitle>Key Demand Insights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-green-600">High</div>
-                <div className="text-sm text-gray-600">Market Demand</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-blue-600">Growing</div>
-                <div className="text-sm text-gray-600">Search Trend</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-purple-600">Strong</div>
-                <div className="text-sm text-gray-600">Social Buzz</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-orange-600">Q4 Peak</div>
-                <div className="text-sm text-gray-600">Seasonality</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Demand Analysis Component */}
         <DemandAnalysis data={productData} />
       </div>

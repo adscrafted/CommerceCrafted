@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -19,7 +19,11 @@ import {
   TrendingDown,
   ChevronUp,
   ChevronDown,
-  Package
+  Package,
+  Eye,
+  Users,
+  Globe,
+  Calendar
 } from 'lucide-react'
 import { ResponsiveContainer, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from 'recharts'
 
@@ -103,11 +107,40 @@ interface DemandAnalysisProps {
 }
 
 export default function DemandAnalysis({ data }: DemandAnalysisProps) {
+  const [activeTab, setActiveTab] = useState('overview')
+  
   return (
     <div className="space-y-6">
-      {/* 1. Keyword Market Revenue - The foundation of demand */}
-      {data.demandData.keywordMetrics && (
-      <Card>
+      {/* Tab Navigation */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        {[
+          { id: 'overview', label: 'Keyword Depth', icon: Search },
+          { id: 'market', label: 'Market Analysis', icon: BarChart3 },
+          { id: 'trends', label: 'Trends & Seasonality', icon: TrendingUp },
+          { id: 'social', label: 'Social Signals', icon: Users },
+          { id: 'pricing', label: 'Pricing Trends', icon: DollarSign }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            <span>{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Keyword Depth Tab */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* 1. Keyword Market Depth Analysis */}
+          {data.demandData.keywordMetrics && (
+            <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Search className="h-5 w-5 text-blue-600" />
@@ -231,92 +264,20 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+          )}
+        </div>
       )}
 
-      {/* 2. Market Overview & Trends */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Market Overview */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
-              <span>Market Overview</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">
-                  {data.demandData.monthlySearchVolume.toLocaleString()}
-                </div>
-                <div className="text-sm text-gray-600">Monthly Searches</div>
-                <div className="text-xs text-green-600 font-medium mt-1">
-                  {data.demandData.searchTrend} YoY
-                </div>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">
-                  ${(data.demandData.marketSize / 1000000000).toFixed(1)}B
-                </div>
-                <div className="text-sm text-gray-600">Market Size</div>
-                <div className="text-xs text-green-600 font-medium mt-1">
-                  {data.demandData.marketGrowth} Growth
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">
-                  {data.demandData.conversionRate}%
-                </div>
-                <div className="text-sm text-gray-600">Conversion Rate</div>
-              </div>
-              <div className="text-center p-4 bg-orange-50 rounded-lg">
-                <div className="text-2xl font-bold text-orange-600">
-                  {data.demandData.clickShare}%
-                </div>
-                <div className="text-sm text-gray-600">Click Share</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Google Trends Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Activity className="h-5 w-5 text-green-600" />
-              <span>Search Trend (12 Months)</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 w-full">
-              <div className="flex items-end justify-between h-full space-x-1">
-                {data.demandData.googleTrends.map((point: any, index: number) => (
-                  <div key={index} className="flex flex-col items-center flex-1">
-                    <div 
-                      className="bg-gradient-to-t from-green-500 to-green-400 rounded-t w-full mb-2"
-                      style={{ height: `${(point.value / 100) * 200}px` }}
-                    ></div>
-                    <div className="text-xs text-gray-600 transform -rotate-45">
-                      {point.month}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 3. Demand Velocity & Growth Indicators */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Demand Velocity */}
-        {data.demandData.demandVelocity && (
-        <Card>
+      {/* Market Analysis Tab */}
+      {activeTab === 'market' && (
+        <div className="space-y-6">
+          {/* Demand Velocity & Market Maturity */}
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Demand Velocity */}
+            {data.demandData.demandVelocity && (
+            <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Zap className="h-5 w-5 text-yellow-600" />
@@ -370,50 +331,67 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
             </div>
           </CardContent>
         </Card>
-        )}
+            )}
 
-        {/* Trending Keywords */}
-        {data.demandData.trendingKeywords && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-green-600" />
-              <span>Rising Keywords</span>
-            </CardTitle>
-            <CardDescription>
-              Fastest growing search terms in this niche
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {data.demandData.trendingKeywords.slice(0, 4).map((keyword, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-gradient-to-r from-green-50 to-emerald-50">
-                  <div className="flex-grow">
-                    <h5 className="font-medium text-gray-900 text-sm">{keyword.keyword}</h5>
-                    <div className="flex items-center space-x-3 mt-1 text-xs text-gray-600">
-                      <span>#{keyword.oldRank} → #{keyword.newRank}</span>
-                      <Badge variant="secondary" className="text-xs">{keyword.growth}</Badge>
+            {/* Market Maturity Analysis */}
+            {data.demandData.categoryPenetration && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Target className="h-5 w-5 text-purple-600" />
+                  <span>Market Maturity Analysis</span>
+                </CardTitle>
+                <CardDescription>
+                  Category penetration and growth opportunities
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {(data.demandData.categoryPenetration.nicheSize * 100).toFixed(1)}%
+                      </div>
+                      <div className="text-sm text-gray-600">Niche Size</div>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">
+                        {data.demandData.categoryPenetration.whiteSpaceOpportunity}
+                      </div>
+                      <div className="text-sm text-gray-600">Opportunity Score</div>
                     </div>
                   </div>
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        )}
-      </div>
 
-      {/* 4. Sales Performance & Category Analysis */}
-      {data.demandData.salesRankHistory && (
-      <Card>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <span className="text-sm text-gray-600">Market Phase</span>
+                      <Badge variant="secondary">{data.demandData.categoryPenetration.marketMaturity}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <span className="text-sm text-gray-600">Saturation</span>
+                      <Badge variant="outline">{data.demandData.categoryPenetration.saturationLevel}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <span className="text-sm text-gray-600">Niche Growth</span>
+                      <span className="font-medium text-green-600">{data.demandData.categoryPenetration.nicheGrowth}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            )}
+          </div>
+
+          {/* Sales Performance & Category Analysis */}
+          {data.demandData.salesRankHistory && (
+            <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Package className="h-5 w-5 text-orange-600" />
             <span>Sales Rank Performance</span>
           </CardTitle>
           <CardDescription>
-            Best Sellers Rank (BSR) trend showing demand momentum
+            Data source: Amazon Best Sellers Rank tracking for competitor products
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -448,187 +426,572 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
             </ResponsiveContainer>
           </div>
         </CardContent>
-      </Card>
+            </Card>
+          )}
+        </div>
       )}
 
-      {/* 5. Market Maturity & Pricing Strategy */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Category Penetration */}
-        {data.demandData.categoryPenetration && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Target className="h-5 w-5 text-purple-600" />
-              <span>Market Maturity Analysis</span>
-            </CardTitle>
-            <CardDescription>
-              Category penetration and growth opportunities
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {(data.demandData.categoryPenetration.nicheSize * 100).toFixed(1)}%
+      {/* Trends & Seasonality Tab */}
+      {activeTab === 'trends' && (
+        <div className="space-y-6">
+          {/* Google Trends Search Interest */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Activity className="h-5 w-5 text-green-600" />
+                <span>Search Trend (12 Months)</span>
+              </CardTitle>
+              <CardDescription>
+                Data source: Google Trends search interest over time
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={data.demandData.googleTrends} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="searchTrendGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value: any) => [`${value}`, 'Search Interest']}
+                      labelFormatter={(label) => `Month: ${label}`}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#10B981" 
+                      fillOpacity={1} 
+                      fill="url(#searchTrendGradient)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Seasonality Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Calendar className="h-5 w-5 text-indigo-600" />
+                <span>Seasonal Demand Patterns</span>
+              </CardTitle>
+              <CardDescription>
+                Data source: Aggregated search volume trends by month
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={Object.entries(data.demandData.seasonality).map(([month, value]) => ({ month: month.charAt(0).toUpperCase() + month.slice(1), value }))} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="seasonalityGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366F1" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#6366F1" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value: any) => [`${value}`, 'Demand Index']}
+                      labelFormatter={(label) => `Month: ${label}`}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#6366F1" 
+                      fillOpacity={1} 
+                      fill="url(#seasonalityGradient)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Trending Keywords moved here */}
+          {data.demandData.trendingKeywords && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  <span>Rising Keywords</span>
+                </CardTitle>
+                <CardDescription>
+                  Data source: Top search terms with highest growth velocity in the niche
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {data.demandData.trendingKeywords.slice(0, 4).map((keyword, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-gradient-to-r from-green-50 to-emerald-50">
+                      <div className="flex-grow">
+                        <h5 className="font-medium text-gray-900 text-sm">{keyword.keyword}</h5>
+                        <div className="flex items-center space-x-3 mt-1 text-xs text-gray-600">
+                          <span>#{keyword.oldRank} → #{keyword.newRank}</span>
+                          <Badge variant="secondary" className="text-xs">{keyword.growth}</Badge>
+                        </div>
+                      </div>
+                      <TrendingUp className="h-4 w-4 text-green-600" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Social Signals Tab */}
+      {activeTab === 'social' && (
+        <div className="space-y-6">
+          {/* TikTok */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <div className="text-2xl">📱</div>
+                <span>TikTok</span>
+                {data.reviewAnalysisData?.socialMediaInsights?.platforms?.[0]?.trending && (
+                  <Badge variant="destructive" className="ml-2">Trending</Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                {data.demandData.socialSignals.tiktok.posts.toLocaleString()} posts • {(data.demandData.socialSignals.tiktok.views / 1000000).toFixed(1)}M views • {data.demandData.socialSignals.tiktok.engagement} engagement
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Top Content Types</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-pink-50 rounded-lg">
+                      <span className="text-sm font-medium">Sleep routine videos</span>
+                      <span className="text-sm text-gray-600">1.2M views</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-pink-50 rounded-lg">
+                      <span className="text-sm font-medium">ASMR sleep content</span>
+                      <span className="text-sm text-gray-600">890K views</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-pink-50 rounded-lg">
+                      <span className="text-sm font-medium">Travel sleep hacks</span>
+                      <span className="text-sm text-gray-600">670K views</span>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600">Niche Size</div>
                 </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">
-                    {data.demandData.categoryPenetration.whiteSpaceOpportunity}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">Popular Hashtags</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline">#sleepmaskhack</Badge>
+                    <Badge variant="outline">#bluetoothsleepphone</Badge>
+                    <Badge variant="outline">#sleepbetter</Badge>
                   </div>
-                  <div className="text-sm text-gray-600">Opportunity Score</div>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600 italic">
+                    "This sleep mask changed my life! No more tangled earbuds while trying to sleep 😴"
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">- Example user comment</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <span className="text-sm text-gray-600">Market Phase</span>
-                  <Badge variant="secondary">{data.demandData.categoryPenetration.marketMaturity}</Badge>
+          {/* Instagram */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <div className="text-2xl">📸</div>
+                <span>Instagram</span>
+              </CardTitle>
+              <CardDescription>
+                {data.demandData.socialSignals.instagram.posts.toLocaleString()} posts • {data.demandData.socialSignals.instagram.engagement} engagement • Medium influencer reach
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Content Categories</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <div className="text-sm font-medium">Lifestyle posts</div>
+                      <div className="text-xs text-gray-600 mt-1">38%</div>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <div className="text-sm font-medium">Travel photos</div>
+                      <div className="text-xs text-gray-600 mt-1">32%</div>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <div className="text-sm font-medium">Wellness content</div>
+                      <div className="text-xs text-gray-600 mt-1">30%</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <span className="text-sm text-gray-600">Saturation</span>
-                  <Badge variant="outline">{data.demandData.categoryPenetration.saturationLevel}</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <span className="text-sm text-gray-600">Niche Growth</span>
-                  <span className="font-medium text-green-600">{data.demandData.categoryPenetration.nicheGrowth}</span>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">@wellness.journey:</span> "My nighttime routine essential! Perfect for meditation and blocking out my partner's snoring 🎧💤 #sleepwellness #bluetoothsleep"
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">2.3K likes • 145 comments</p>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        )}
+            </CardContent>
+          </Card>
 
-        {/* Price Elasticity */}
-        {data.demandData.priceElasticity && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <ShoppingCart className="h-5 w-5 text-indigo-600" />
-              <span>Price Sensitivity Analysis</span>
-            </CardTitle>
-            <CardDescription>
-              Optimal pricing based on demand elasticity
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                <div className="text-3xl font-bold text-indigo-600">
-                  ${data.demandData.priceElasticity.optimalPrice}
+          {/* YouTube */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <div className="text-2xl">📺</div>
+                <span>YouTube</span>
+              </CardTitle>
+              <CardDescription>
+                {data.demandData.socialSignals.youtube.videos} videos • {data.demandData.socialSignals.youtube.avgViews.toLocaleString()} average views
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Video Categories</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                      <span className="text-sm font-medium">Product Reviews</span>
+                      <span className="text-sm text-gray-600">45% of videos</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                      <span className="text-sm font-medium">Sleep Music Channels</span>
+                      <span className="text-sm text-gray-600">30% of videos</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                      <span className="text-sm font-medium">Unboxing Videos</span>
+                      <span className="text-sm text-gray-600">25% of videos</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-sm text-gray-600">Sweet Spot Price</div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {data.demandData.priceElasticity.sensitivityScore} sensitivity
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-900">
+                    "Bluetooth Sleep Mask Review - 6 Months Later!"
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    "I've been using this for half a year now, and here's my honest opinion..."
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">85K views • Tech Sleep Reviews</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Price vs Volume</h4>
-                <div className="h-32">
+          {/* Reddit */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <div className="text-2xl">💬</div>
+                <span>Reddit</span>
+              </CardTitle>
+              <CardDescription>
+                {data.demandData.socialSignals.reddit.discussions} discussions • {data.demandData.socialSignals.reddit.sentiment} sentiment
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Top Subreddits</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary">/r/sleep</Badge>
+                    <Badge variant="secondary">/r/BuyItForLife</Badge>
+                    <Badge variant="secondary">/r/insomnia</Badge>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Common Discussion Topics</h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-start">
+                      <span className="text-orange-500 mr-2">•</span>
+                      <span className="text-sm text-gray-700">Durability questions and long-term reviews</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-orange-500 mr-2">•</span>
+                      <span className="text-sm text-gray-700">Comparisons with regular headphones for sleep</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-orange-500 mr-2">•</span>
+                      <span className="text-sm text-gray-700">Use cases for meditation and relaxation</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-900">
+                    "[Question] Anyone tried bluetooth sleep masks for side sleeping?"
+                  </p>
+                  <p className="text-sm text-gray-600 mt-2">
+                    "I'm a side sleeper and regular earbuds hurt. Looking for recommendations..."
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">r/sleep • 234 upvotes • 45 comments</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Emerging Trends */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Sparkles className="h-5 w-5 text-purple-600" />
+                <span>Emerging Social Trends</span>
+              </CardTitle>
+              <CardDescription>
+                Growing trends and opportunities in social media
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-medium text-gray-900">Sleep Tourism</h5>
+                    <Badge variant="outline" className="text-green-600">+145% growth</Badge>
+                  </div>
+                  <p className="text-sm text-gray-600">Hotels and resorts offering sleep-focused packages</p>
+                  <p className="text-xs text-blue-600 mt-2">Opportunity: Partner with luxury hotels for branded amenities</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-medium text-gray-900">Biohacking Sleep</h5>
+                    <Badge variant="outline" className="text-green-600">+89% growth</Badge>
+                  </div>
+                  <p className="text-sm text-gray-600">Optimizing sleep with technology and data</p>
+                  <p className="text-xs text-blue-600 mt-2">Opportunity: Add sleep tracking features and app integration</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-medium text-gray-900">Mindful Mornings</h5>
+                    <Badge variant="outline" className="text-green-600">+67% growth</Badge>
+                  </div>
+                  <p className="text-sm text-gray-600">Morning meditation and gratitude practices</p>
+                  <p className="text-xs text-blue-600 mt-2">Opportunity: Create morning meditation content library</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Pricing Trends Tab */}
+      {activeTab === 'pricing' && (
+        <div className="space-y-6">
+          {/* Competitor Price Tracking */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                <span>Competitor Price Tracking</span>
+              </CardTitle>
+              <CardDescription>
+                Data source: Daily price monitoring of top 10 competitors
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Current Market Pricing Stats */}
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">$22.99</div>
+                    <div className="text-sm text-gray-600">Market Average</div>
+                  </div>
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">$19.99</div>
+                    <div className="text-sm text-gray-600">Lowest Price</div>
+                  </div>
+                  <div className="text-center p-3 bg-purple-50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">$29.99</div>
+                    <div className="text-sm text-gray-600">Highest Price</div>
+                  </div>
+                  <div className="text-center p-3 bg-orange-50 rounded-lg">
+                    <div className="text-2xl font-bold text-orange-600">±$3.45</div>
+                    <div className="text-sm text-gray-600">Price Volatility</div>
+                  </div>
+                </div>
+
+                {/* Price Trend Chart */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">90-Day Price Trends</h4>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart 
+                        data={[
+                          { date: 'Jul', avg: 24.99, min: 21.99, max: 29.99 },
+                          { date: 'Aug', avg: 23.99, min: 20.99, max: 28.99 },
+                          { date: 'Sep', avg: 22.99, min: 19.99, max: 29.99 },
+                        ]} 
+                        margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis tickFormatter={(value) => `$${value}`} />
+                        <Tooltip formatter={(value: any) => `$${value}`} />
+                        <Line type="monotone" dataKey="avg" stroke="#3B82F6" strokeWidth={2} name="Average" />
+                        <Line type="monotone" dataKey="min" stroke="#10B981" strokeDasharray="5 5" name="Minimum" />
+                        <Line type="monotone" dataKey="max" stroke="#8B5CF6" strokeDasharray="5 5" name="Maximum" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Top Competitors */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Top Competitors by Market Share</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <span className="font-medium">MUSICOZY</span>
+                        <span className="text-sm text-gray-600 ml-2">42% market share</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold">$26.99</span>
+                        <span className="text-xs text-red-600 ml-2">↑ $2.00</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <span className="font-medium">Perytong</span>
+                        <span className="text-sm text-gray-600 ml-2">28% market share</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold">$24.99</span>
+                        <span className="text-xs text-green-600 ml-2">↓ $1.00</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <span className="font-medium">CozyPhones</span>
+                        <span className="text-sm text-gray-600 ml-2">18% market share</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold">$22.99</span>
+                        <span className="text-xs text-gray-600 ml-2">→ $0.00</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Price vs BSR Analysis */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <ShoppingCart className="h-5 w-5 text-indigo-600" />
+                <span>Price vs Best Sellers Rank</span>
+              </CardTitle>
+              <CardDescription>
+                Data source: Correlation analysis between pricing and Amazon BSR
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data.demandData.priceElasticity.priceVsVolume} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                    <AreaChart 
+                      data={[
+                        { price: 15, bsr: 8500, volume: 1200 },
+                        { price: 20, bsr: 4200, volume: 2800 },
+                        { price: 25, bsr: 2100, volume: 3500 },
+                        { price: 30, bsr: 3800, volume: 2200 },
+                        { price: 35, bsr: 6200, volume: 1100 },
+                      ]} 
+                      margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                    >
+                      <defs>
+                        <linearGradient id="bsrGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366F1" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#6366F1" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="price" tickFormatter={(value) => `$${value}`} />
-                      <YAxis hide />
+                      <YAxis reversed label={{ value: 'BSR (lower is better)', angle: -90, position: 'insideLeft' }} />
                       <Tooltip 
-                        formatter={(value: any) => [`${value.toLocaleString()} units`, 'Volume']}
+                        formatter={(value: any, name: string) => [
+                          name === 'bsr' ? `#${value.toLocaleString()}` : value.toLocaleString(),
+                          name === 'bsr' ? 'BSR' : 'Est. Volume'
+                        ]}
                         labelFormatter={(label) => `Price: $${label}`}
                       />
                       <Area 
                         type="monotone" 
-                        dataKey="estimatedVolume" 
+                        dataKey="bsr" 
                         stroke="#6366F1" 
-                        fill="#6366F1" 
-                        fillOpacity={0.3}
+                        fillOpacity={1} 
+                        fill="url(#bsrGradient)" 
                       />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
+                
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-2">Key Insights</h4>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">•</span>
+                      <span>Optimal price range for best BSR performance: $22-$26</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">•</span>
+                      <span>Price elasticity shows 15% volume drop above $30</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">•</span>
+                      <span>Budget segment (&lt;$20) shows high volume but lower margins</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="p-2 bg-gray-50 rounded">
-                  <div className="text-xs text-gray-600">Budget</div>
-                  <div className="text-sm font-medium">{data.demandData.priceElasticity.segmentDemand.budget.percentage}%</div>
-                  <div className="text-xs text-gray-500">{data.demandData.priceElasticity.segmentDemand.budget.range}</div>
-                </div>
-                <div className="p-2 bg-blue-50 rounded">
-                  <div className="text-xs text-gray-600">Mid-range</div>
-                  <div className="text-sm font-medium">{data.demandData.priceElasticity.segmentDemand.mid.percentage}%</div>
-                  <div className="text-xs text-gray-500">{data.demandData.priceElasticity.segmentDemand.mid.range}</div>
-                </div>
-                <div className="p-2 bg-purple-50 rounded">
-                  <div className="text-xs text-gray-600">Premium</div>
-                  <div className="text-sm font-medium">{data.demandData.priceElasticity.segmentDemand.premium.percentage}%</div>
-                  <div className="text-xs text-gray-500">{data.demandData.priceElasticity.segmentDemand.premium.range}</div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        )}
-      </div>
-
-      {/* 6. Social Proof & Market Validation */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Sparkles className="h-5 w-5 text-pink-600" />
-            <span>Social Media Validation</span>
-          </CardTitle>
-          <CardDescription>
-            Consumer interest and engagement across social platforms
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-pink-50 to-red-50">
-              <div className="text-3xl mb-2">📱</div>
-              <div className="font-semibold text-gray-900">TikTok</div>
-              <div className="text-sm text-gray-600 mt-2">
-                <div>{data.demandData.socialSignals.tiktok.posts.toLocaleString()} posts</div>
-                <div>{(data.demandData.socialSignals.tiktok.views / 1000000).toFixed(1)}M views</div>
-                <div className="text-xs text-green-600 font-medium">
-                  {data.demandData.socialSignals.tiktok.engagement} engagement
+          {/* Price Positioning Strategy */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Target className="h-5 w-5 text-purple-600" />
+                <span>Market Price Positioning</span>
+              </CardTitle>
+              <CardDescription>
+                Where competitors position themselves in the market
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h5 className="font-medium text-gray-900 mb-2">Budget Segment</h5>
+                    <div className="text-2xl font-bold text-gray-600">$15-$20</div>
+                    <div className="text-sm text-gray-600 mt-1">23% of market</div>
+                    <div className="text-xs text-gray-500 mt-2">High volume, low margin</div>
+                  </div>
+                  <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-300">
+                    <h5 className="font-medium text-gray-900 mb-2">Mid-Range</h5>
+                    <div className="text-2xl font-bold text-blue-600">$20-$30</div>
+                    <div className="text-sm text-gray-600 mt-1">58% of market</div>
+                    <div className="text-xs text-blue-600 mt-2">Sweet spot for demand</div>
+                  </div>
+                  <div className="p-4 bg-purple-50 rounded-lg">
+                    <h5 className="font-medium text-gray-900 mb-2">Premium</h5>
+                    <div className="text-2xl font-bold text-purple-600">$30+</div>
+                    <div className="text-sm text-gray-600 mt-1">19% of market</div>
+                    <div className="text-xs text-gray-500 mt-2">High margin, low volume</div>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-purple-50 to-pink-50">
-              <div className="text-3xl mb-2">📸</div>
-              <div className="font-semibold text-gray-900">Instagram</div>
-              <div className="text-sm text-gray-600 mt-2">
-                <div>{data.demandData.socialSignals.instagram.posts.toLocaleString()} posts</div>
-                <div className="text-xs text-green-600 font-medium">
-                  {data.demandData.socialSignals.instagram.engagement} engagement
-                </div>
-              </div>
-            </div>
-            
-            <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-red-50 to-orange-50">
-              <div className="text-3xl mb-2">📺</div>
-              <div className="font-semibold text-gray-900">YouTube</div>
-              <div className="text-sm text-gray-600 mt-2">
-                <div>{data.demandData.socialSignals.youtube.videos} videos</div>
-                <div>{data.demandData.socialSignals.youtube.avgViews.toLocaleString()} avg views</div>
-              </div>
-            </div>
-            
-            <div className="text-center p-4 border rounded-lg bg-gradient-to-br from-orange-50 to-yellow-50">
-              <div className="text-3xl mb-2">💬</div>
-              <div className="font-semibold text-gray-900">Reddit</div>
-              <div className="text-sm text-gray-600 mt-2">
-                <div>{data.demandData.socialSignals.reddit.discussions} discussions</div>
-                <div className="text-xs text-green-600 font-medium capitalize">
-                  {data.demandData.socialSignals.reddit.sentiment} sentiment
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
