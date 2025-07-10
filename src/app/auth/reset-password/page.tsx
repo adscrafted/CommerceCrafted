@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useAuthActions } from '@/lib/supabase/hooks'
 import {
   KeyRound,
   Lock,
@@ -26,36 +27,15 @@ function ResetPasswordComponent() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [isValidToken, setIsValidToken] = useState<boolean | null>(null)
+  const [isValidToken, setIsValidToken] = useState<boolean | null>(true) // Assume valid initially
   const [isSuccess, setIsSuccess] = useState(false)
   
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get('token')
+  const { updatePassword } = useAuthActions()
 
-  useEffect(() => {
-    const verifyToken = async () => {
-      if (!token) {
-        setIsValidToken(false)
-        setError('No reset token provided')
-        return
-      }
-
-      try {
-        const response = await fetch(`/api/auth/reset-password?token=${token}`)
-        const data = await response.json()
-        setIsValidToken(data.valid)
-        if (!data.valid) {
-          setError(data.message || 'Invalid or expired reset token')
-        }
-      } catch {
-        setIsValidToken(false)
-        setError('Failed to verify reset token')
-      }
-    }
-
-    verifyToken()
-  }, [token])
+  // For Supabase, we don't need to verify token separately - just try to update password
+  // The token verification is handled by Supabase automatically
 
   const validateForm = () => {
     if (password.length < 6) {
@@ -80,27 +60,20 @@ function ResetPasswordComponent() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token,
-          password,
-        }),
-      })
+      const result = await updatePassword(password)
 
-      const data = await response.json()
-
-      if (response.ok) {
+      if (result.error) {
+        setError(result.error)
+        // If token is invalid, show invalid token state
+        if (result.error.includes('invalid') || result.error.includes('expired')) {
+          setIsValidToken(false)
+        }
+      } else {
         setIsSuccess(true)
         // Redirect to signin after 3 seconds
         setTimeout(() => {
           router.push('/auth/signin?message=Password reset successfully. Please sign in.')
         }, 3000)
-      } else {
-        setError(data.error || 'Failed to reset password')
       }
     } catch {
       setError('An error occurred. Please try again.')

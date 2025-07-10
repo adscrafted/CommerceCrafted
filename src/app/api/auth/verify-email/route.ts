@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyEmailToken } from '@/lib/tokens'
 import { emailService } from '@/lib/email'
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,10 +25,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user details for welcome email
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { name: true, email: true }
-    })
+    const { data: user } = await supabase
+      .from('users')
+      .select('name, email')
+      .eq('email', email)
+      .single()
 
     // Send welcome email
     if (user) {
@@ -74,10 +75,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user details for welcome email
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { name: true, email: true }
-    })
+    const { data: user } = await supabase
+      .from('users')
+      .select('name, email')
+      .eq('email', email)
+      .single()
 
     // Send welcome email
     if (user) {

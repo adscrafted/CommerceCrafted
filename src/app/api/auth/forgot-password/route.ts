@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createPasswordResetToken } from '@/lib/tokens'
 import { emailService } from '@/lib/email'
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -14,14 +14,15 @@ export async function POST(request: NextRequest) {
     const { email } = forgotPasswordSchema.parse(body)
 
     // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { name: true, email: true, isActive: true }
-    })
+    const { data: user } = await supabase
+      .from('users')
+      .select('name, email, is_active')
+      .eq('email', email)
+      .maybeSingle()
 
     // Always return success to prevent email enumeration
     // but only send email if user actually exists
-    if (user && user.isActive) {
+    if (user && user.is_active) {
       try {
         const resetToken = await createPasswordResetToken(email)
         if (resetToken) {

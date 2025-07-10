@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/lib/supabase/auth-context'
 import { usePathname } from 'next/navigation'
 import { analytics, identifyUser, trackPageView, VercelAnalytics } from '@/lib/analytics'
 
@@ -10,26 +10,26 @@ interface AnalyticsProviderProps {
 }
 
 export default function AnalyticsProvider({ children }: AnalyticsProviderProps) {
-  const { data: session } = useSession()
+  const { user } = useAuth()
   const pathname = usePathname()
 
   // Identify user when session changes
   useEffect(() => {
-    if (session?.user) {
+    if (user) {
       identifyUser({
-        userId: session.user.id,
-        email: session.user.email || undefined,
-        name: session.user.name || undefined,
-        subscriptionTier: session.user.subscriptionTier,
+        userId: user.id,
+        email: user.email || undefined,
+        name: user.name || undefined,
+        subscriptionTier: user.subscriptionTier || 'free',
         lastActive: new Date(),
       })
     }
-  }, [session])
+  }, [user])
 
   // Track page views
   useEffect(() => {
-    trackPageView(pathname, session?.user?.id)
-  }, [pathname, session?.user?.id])
+    trackPageView(pathname, user?.id)
+  }, [pathname, user?.id])
 
   return (
     <>

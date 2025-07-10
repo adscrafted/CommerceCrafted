@@ -1,7 +1,7 @@
 // Data Pipeline for Processing Amazon Reports
 import { getAmazonSearchTermsService } from './amazon-search-terms-service'
 import { getBigQueryService } from './bigquery-service'
-import { prisma } from './prisma'
+import { supabase } from '@/lib/supabase'
 import fs from 'fs/promises'
 import { createReadStream, createWriteStream } from 'fs'
 import axios from 'axios'
@@ -36,10 +36,11 @@ export class ReportDataPipeline {
 
     try {
       // 1. Get report from database
-      const report = await prisma.amazonReport.findUnique({
-        where: { id: reportId },
-        include: { user: true }
-      })
+      const { data: report } = await supabase
+        .from('amazon_reports')
+        .select('*, user:users(*)')
+        .eq('id', reportId)
+        .single()
 
       if (!report || report.status !== 'COMPLETED') {
         throw new Error('Report not found or not completed')
@@ -48,8 +49,8 @@ export class ReportDataPipeline {
       // 2. Download report from Amazon
       console.log('Downloading report from Amazon...')
       const { downloadPath, recordCount } = await this.downloadAndExtractReport(
-        report.reportDocumentId!,
-        report.amazonReportId
+        report.report_document_id!,
+        report.amazon_report_id
       )
 
       // 3. Transform to BigQuery format
@@ -69,17 +70,14 @@ export class ReportDataPipeline {
       await this.cleanup([downloadPath, ndjsonPath])
 
       // 7. Update report metadata
-      await prisma.amazonReport.update({
-        where: { id: reportId },
-        data: {
-          reportData: {
-            create: {
-              data: { processedAt: new Date() },
-              recordCount: recordCount
-            }
-          }
-        }
-      })
+      // TODO: Convert to Supabase - update report_data table
+      await supabase
+        .from('report_data')
+        .insert({
+          report_id: reportId,
+          data: { processedAt: new Date() },
+          record_count: recordCount
+        })
 
       console.log(`Pipeline completed for report ${reportId}`)
 
@@ -87,12 +85,12 @@ export class ReportDataPipeline {
       console.error('Pipeline error:', error)
       
       // Update report with error
-      await prisma.amazonReport.update({
-        where: { id: reportId },
-        data: {
+      await supabase
+        .from('amazon_reports')
+        .update({
           error: `Pipeline failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-        }
-      })
+        })
+        .eq('id', reportId)
       
       throw error
     }
@@ -158,9 +156,9 @@ export class ReportDataPipeline {
       outputPath,
       {
         reportId: report.id,
-        marketplaceId: report.marketplaceId,
-        weekStartDate: report.startDate.toISOString().split('T')[0],
-        weekEndDate: report.endDate.toISOString().split('T')[0]
+        marketplaceId: report.marketplace_id,
+        weekStartDate: new Date(report.start_date).toISOString().split('T')[0],
+        weekEndDate: new Date(report.end_date).toISOString().split('T')[0]
       }
     )
 

@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect, Suspense } from 'react'
-import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useAuthActions, useAuthState } from '@/lib/supabase/hooks'
 import {
   LogIn,
   Mail,
@@ -32,6 +32,8 @@ function SignInComponent() {
   const [planPrice, setPlanPrice] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { signIn, signInWithGoogle } = useAuthActions()
+  const { user, isAuthenticated } = useAuthState()
 
   useEffect(() => {
     const urlMessage = searchParams.get('message')
@@ -48,33 +50,31 @@ function SignInComponent() {
     }
   }, [searchParams])
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (selectedPlan && planPrice) {
+        router.push(`/billing?plan=${selectedPlan}&price=${planPrice}`)
+      } else if (user.role === 'ADMIN') {
+        router.push('/admin')
+      } else {
+        router.push('/dashboard')
+      }
+    }
+  }, [isAuthenticated, user, selectedPlan, planPrice, router])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
 
     try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      })
+      const result = await signIn(email, password)
 
-      if (result?.error) {
-        setError('Invalid email or password')
-      } else if (result?.ok) {
-        // Get session to check user role and handle plan selection
-        const session = await getSession()
-        
-        if (selectedPlan && planPrice) {
-          // Redirect to billing page with selected plan
-          router.push(`/billing?plan=${selectedPlan}&price=${planPrice}`)
-        } else if (session?.user?.role === 'ADMIN') {
-          router.push('/admin')
-        } else {
-          router.push('/dashboard')
-        }
+      if (result.error) {
+        setError(result.error)
       }
+      // Success is handled by the auth context and redirect useEffect
     } catch {
       setError('An error occurred. Please try again.')
     } finally {
@@ -84,11 +84,16 @@ function SignInComponent() {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
+    setError('')
+    
     try {
-      const callbackUrl = selectedPlan && planPrice 
-        ? `/billing?plan=${selectedPlan}&price=${planPrice}`
-        : '/dashboard'
-      await signIn('google', { callbackUrl })
+      const result = await signInWithGoogle()
+      
+      if (result.error) {
+        setError(result.error)
+        setIsLoading(false)
+      }
+      // Success is handled by the auth context and redirect useEffect
     } catch {
       setError('Failed to sign in with Google')
       setIsLoading(false)

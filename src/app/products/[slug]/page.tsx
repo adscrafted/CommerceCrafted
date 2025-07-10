@@ -1,6 +1,9 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
+import { useAuth } from '@/lib/supabase/auth-context'
 import { useRouter } from 'next/navigation'
 import React, { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -78,7 +81,8 @@ const AnalysisScoreCard = ({
   description, 
   href, 
   gradient,
-  metrics 
+  metrics,
+  isLocked = false
 }: {
   title: string
   score: number
@@ -87,6 +91,7 @@ const AnalysisScoreCard = ({
   href: string
   gradient: string
   metrics?: { label: string; value: string }[]
+  isLocked?: boolean
 }) => {
   const getScoreColor = (score: number) => {
     if (score >= 85) return 'text-green-600'
@@ -102,60 +107,71 @@ const AnalysisScoreCard = ({
     return 'Poor'
   }
 
-  return (
-    <Link href={href} className="h-full">
-      <Card className={`h-full hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-blue-200 ${gradient}`}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-white rounded-lg shadow-sm">
-                <Icon className="h-6 w-6 text-gray-700" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">{title}</CardTitle>
-                <CardDescription className="text-sm">{description}</CardDescription>
-              </div>
+  const cardContent = (
+    <Card className={`h-full transition-all duration-300 border-2 ${isLocked ? 'cursor-default' : 'hover:shadow-lg cursor-pointer hover:border-blue-200'} ${gradient}`}>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-white rounded-lg shadow-sm">
+              <Icon className="h-6 w-6 text-gray-700" />
             </div>
-            <div className="text-center">
-              <div className={`text-3xl font-bold ${getScoreColor(score)}`}>
-                {score}
-              </div>
-              <div className="text-xs text-gray-600">{getScoreLabel(score)}</div>
+            <div>
+              <CardTitle className="text-lg">{title}</CardTitle>
+              <CardDescription className="text-sm">{description}</CardDescription>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <Progress value={score} className="h-2" />
-            {metrics && (
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                {metrics.map((metric, index) => (
-                  <div key={index} className="text-center p-2 bg-white/50 rounded">
-                    <div className="text-xs text-gray-600">{metric.label}</div>
-                    <div className="text-sm font-semibold text-gray-900">{metric.value}</div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="text-center">
+            <div className={`text-3xl font-bold ${getScoreColor(score)}`}>
+              {score}
+            </div>
+            <div className="text-xs text-gray-600">{getScoreLabel(score)}</div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <Progress value={score} className="h-2" />
+          {metrics && (
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              {metrics.map((metric, index) => (
+                <div key={index} className="text-center p-2 bg-white/50 rounded">
+                  <div className="text-xs text-gray-600">{metric.label}</div>
+                  <div className="text-sm font-semibold text-gray-900">{metric.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {!isLocked && (
             <div className="flex items-center justify-end text-sm text-blue-600 font-medium">
               View Analysis
               <ChevronRight className="h-4 w-4 ml-1" />
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  if (isLocked) {
+    return cardContent
+  }
+
+  return (
+    <Link href={href} className="h-full">
+      {cardContent}
     </Link>
   )
 }
 
 export default function ProductPage({ params }: ProductPageProps) {
-  const { data: session, status } = useSession()
+  const { user, session, loading: authLoading } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [slug, setSlug] = useState<string>('')
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
+  const [showDebugUnlocked, setShowDebugUnlocked] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -221,7 +237,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     }
   }
 
-  if (loading || status === 'loading') {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -229,12 +245,11 @@ export default function ProductPage({ params }: ProductPageProps) {
     )
   }
 
-  if (status === 'unauthenticated' || !session) {
-    return <MembershipGate productTitle={dailyProductData.title} productImage={dailyProductData.mainImage} />
-  }
-
-  const userTier = session.user?.subscriptionTier || 'free'
-  if (userTier === 'free') {
+  // Determine if user has access
+  const hasAccess = showDebugUnlocked || (user && session && (user.subscriptionTier !== 'free'))
+  
+  // Show membership gate for completely unauthorized users
+  if (!showDebugUnlocked && (!user || !session)) {
     return <MembershipGate productTitle={dailyProductData.title} productImage={dailyProductData.mainImage} />
   }
 
@@ -341,6 +356,18 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Debug Button */}
+      <div className="fixed top-4 right-4 z-50">
+        <Button
+          onClick={() => setShowDebugUnlocked(!showDebugUnlocked)}
+          variant="outline"
+          size="sm"
+          className="bg-white shadow-lg"
+        >
+          {showDebugUnlocked ? 'Show Locked' : 'Debug Unlocked'}
+        </Button>
+      </div>
+
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -511,7 +538,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
           {/* Regular Analysis Cards */}
           {analysisCards.map((card, index) => (
-            <AnalysisScoreCard key={index} {...card} />
+            <AnalysisScoreCard key={index} {...card} isLocked={!hasAccess} />
           ))}
         </div>
       </div>

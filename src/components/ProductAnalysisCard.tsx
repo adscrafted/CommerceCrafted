@@ -3,12 +3,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Star, TrendingUp, DollarSign, Eye } from 'lucide-react'
-import { MockProduct } from '@/lib/mockData'
+import { Product } from '@/types/product'
 import Link from 'next/link'
 import Image from 'next/image'
 
 interface ProductAnalysisCardProps {
-  product: MockProduct
+  product: Product
 }
 
 export function ProductAnalysisCard({ product }: ProductAnalysisCardProps) {
@@ -35,7 +35,7 @@ export function ProductAnalysisCard({ product }: ProductAnalysisCardProps) {
     <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
       <div className="aspect-square bg-gray-50 overflow-hidden">
         <Image
-          src={product.imageUrls[0]}
+          src={product.imageUrls || '/placeholder-product.jpg'}
           alt={product.title}
           width={300}
           height={300}
@@ -53,14 +53,14 @@ export function ProductAnalysisCard({ product }: ProductAnalysisCardProps) {
               <Star
                 key={star}
                 className={`h-3 w-3 ${
-                  star <= Math.floor(product.rating)
+                  star <= Math.floor(product.rating || 0)
                     ? 'fill-yellow-400 text-yellow-400'
                     : 'text-gray-300'
                 }`}
               />
             ))}
             <span className="text-xs text-gray-600 ml-1">
-              ({product.reviewCount.toLocaleString()})
+              ({(product.reviewCount || 0).toLocaleString()})
             </span>
           </div>
         </div>
@@ -71,7 +71,7 @@ export function ProductAnalysisCard({ product }: ProductAnalysisCardProps) {
         
         <div className="flex items-center justify-between">
           <span className="text-lg font-bold text-green-600">
-            ${product.price}
+            ${product.price || 'N/A'}
           </span>
           <Badge variant="secondary" className="text-xs">
             {product.brand}
@@ -84,12 +84,12 @@ export function ProductAnalysisCard({ product }: ProductAnalysisCardProps) {
           <>
             {/* Overall Opportunity Score */}
             <div className="text-center">
-              <div className={`text-2xl font-bold ${getScoreColor(product.analysis.opportunityScore)}`}>
-                {product.analysis.opportunityScore}/10
+              <div className={`text-2xl font-bold ${getScoreColor(product.analysis.opportunityScore / 10)}`}>
+                {(product.analysis.opportunityScore / 10).toFixed(1)}/10
               </div>
               <div className="text-xs text-gray-600">Opportunity Score</div>
-              <div className={`text-xs font-medium ${getScoreColor(product.analysis.opportunityScore)}`}>
-                {getScoreLabel(product.analysis.opportunityScore)}
+              <div className={`text-xs font-medium ${getScoreColor(product.analysis.opportunityScore / 10)}`}>
+                {getScoreLabel(product.analysis.opportunityScore / 10)}
               </div>
             </div>
 
@@ -98,12 +98,12 @@ export function ProductAnalysisCard({ product }: ProductAnalysisCardProps) {
               <div>
                 <div className="flex justify-between text-xs mb-1">
                   <span>Demand</span>
-                  <span className={getScoreColor(product.analysis.demandScore)}>
-                    {product.analysis.demandScore}/10
+                  <span className={getScoreColor(product.analysis.demandScore / 10)}>
+                    {(product.analysis.demandScore / 10).toFixed(1)}/10
                   </span>
                 </div>
                 <Progress 
-                  value={product.analysis.demandScore * 10} 
+                  value={product.analysis.demandScore} 
                   className="h-1.5"
                 />
               </div>
@@ -111,12 +111,12 @@ export function ProductAnalysisCard({ product }: ProductAnalysisCardProps) {
               <div>
                 <div className="flex justify-between text-xs mb-1">
                   <span>Competition</span>
-                  <span className={getScoreColor(product.analysis.competitionScore)}>
-                    {product.analysis.competitionScore}/10
+                  <span className={getScoreColor(product.analysis.competitionScore / 10)}>
+                    {(product.analysis.competitionScore / 10).toFixed(1)}/10
                   </span>
                 </div>
                 <Progress 
-                  value={product.analysis.competitionScore * 10}
+                  value={product.analysis.competitionScore}
                   className="h-1.5"
                 />
               </div>
@@ -124,12 +124,12 @@ export function ProductAnalysisCard({ product }: ProductAnalysisCardProps) {
               <div>
                 <div className="flex justify-between text-xs mb-1">
                   <span>Feasibility</span>
-                  <span className={getScoreColor(product.analysis.feasibilityScore)}>
-                    {product.analysis.feasibilityScore}/10
+                  <span className={getScoreColor(product.analysis.feasibilityScore / 10)}>
+                    {(product.analysis.feasibilityScore / 10).toFixed(1)}/10
                   </span>
                 </div>
                 <Progress 
-                  value={product.analysis.feasibilityScore * 10}
+                  value={product.analysis.feasibilityScore}
                   className="h-1.5"
                 />
               </div>
@@ -140,14 +140,14 @@ export function ProductAnalysisCard({ product }: ProductAnalysisCardProps) {
               <div className="text-center p-2 bg-gray-50 rounded">
                 <DollarSign className="h-3 w-3 mx-auto mb-1 text-green-600" />
                 <div className="font-semibold">
-                  ${(product.analysis.financialAnalysis.estimatedRevenue / 1000).toFixed(0)}K
+                  ${(product.analysis.financialAnalysis.projectedMonthlyRevenue / 1000).toFixed(0)}K
                 </div>
                 <div className="text-gray-600">Est. Revenue</div>
               </div>
               <div className="text-center p-2 bg-gray-50 rounded">
                 <TrendingUp className="h-3 w-3 mx-auto mb-1 text-blue-600" />
                 <div className="font-semibold">
-                  {product.analysis.financialAnalysis.profitMargin}%
+                  {(product.analysis.financialAnalysis.estimatedProfitMargin * 100).toFixed(0)}%
                 </div>
                 <div className="text-gray-600">Profit Margin</div>
               </div>
@@ -156,7 +156,7 @@ export function ProductAnalysisCard({ product }: ProductAnalysisCardProps) {
         )}
 
         {/* Action Button */}
-        <Link href={`/products/${product.id}`} className="block">
+        <Link href={`/products/${product.asin}`} className="block">
           <Button className="w-full" variant="outline">
             <Eye className="h-4 w-4 mr-2" />
             View Analysis

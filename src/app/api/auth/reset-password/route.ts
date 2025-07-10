@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { verifyPasswordResetToken, markPasswordResetTokenAsUsed } from '@/lib/tokens'
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
@@ -28,10 +28,9 @@ export async function POST(request: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 12)
 
     // Update user password
-    await prisma.user.update({
-      where: { email },
-      data: { passwordHash }
-    })
+    // TODO: Convert to Supabase
+    // await supabase.from('users').update({ password_hash: passwordHash }).eq('email', email)
+    throw new Error('Password reset not implemented with Supabase yet')
 
     // Mark token as used
     await markPasswordResetTokenAsUsed(token)

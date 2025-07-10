@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -60,161 +60,105 @@ export default function AdminNicheQueue() {
   const [newNicheName, setNewNicheName] = useState('')
   const [newAsins, setNewAsins] = useState('')
   const [selectedDate, setSelectedDate] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [nicheQueue, setNicheQueue] = useState<NicheQueueItem[]>([])
 
-  // Mock niche queue data
-  const [nicheQueue, setNicheQueue] = useState<NicheQueueItem[]>([
-    {
-      id: '1',
-      nicheName: 'Bluetooth Sleep Masks',
-      asins: ['B08MVBRNKV', 'B07SHBQY7Z', 'B07KC5DWCC', 'B08GC7ML5B', 'B08R6QZ2XJ'],
-      status: 'completed',
-      addedDate: '2025-07-03',
-      scheduledDate: '2025-07-04',
-      category: 'Health & Personal Care',
-      totalProducts: 5,
-      avgBsr: 2341,
-      avgPrice: 29.99,
-      avgRating: 4.3,
-      totalReviews: 35678,
-      totalMonthlyRevenue: 520000,
-      opportunityScore: 87,
-      competitionLevel: 'Medium',
-      processTime: '2h 15min',
-      analystAssigned: 'AI Agent',
-      nicheKeywords: ['bluetooth sleep mask', 'sleep headphones', 'wireless sleep mask'],
-      marketSize: 15000000,
-      aiAnalysis: {
-        whyThisProduct: 'The Bluetooth Sleep Mask niche represents an exceptional opportunity due to the convergence of three growing trends: the $15B sleep wellness market, the $50B wearable technology sector, and the increasing demand for multi-functional products. This niche addresses a clear pain point for millions of people who struggle with sleep quality while wanting to maintain connectivity to audio content.',
-        keyHighlights: [
-          'Growing sleep wellness market valued at $15B with 8% annual growth',
-          'Convergence of audio technology and sleep aid markets',
-          'High customer satisfaction rates (4.3+ average rating)',
-          'Multiple use cases: travel, meditation, shift work, insomnia',
-          'Premium pricing tolerance in health & wellness category'
-        ],
-        demandAnalysis: 'Strong and growing demand driven by increased awareness of sleep health, remote work trends, and travel recovery. Search volume shows consistent 15% YoY growth with peak seasonality during Q4 (holiday travel) and Q1 (wellness resolutions).',
-        competitionAnalysis: 'Moderate competition with 127 active competitors, but significant differentiation opportunities exist. Top 5 players control only 60% market share, leaving room for innovation in areas like battery life, comfort materials, and smart features.',
-        keywordAnalysis: 'Primary keyword "bluetooth sleep mask" has 45K monthly searches with moderate competition. Long-tail opportunities in "sleep headphones for side sleepers" and "travel sleep mask bluetooth" show strong conversion potential.',
-        financialAnalysis: 'Strong unit economics with average selling prices of $29.99 and healthy 45-55% gross margins. Customer lifetime value estimated at $85 with repeat purchase rates of 23% within 12 months.',
-        listingOptimization: {
-          title: 'Bluetooth Sleep Mask with Ultra-Thin Speakers - Wireless Sleep Headphones for Side Sleepers, 3D Contoured Eye Mask for Sleeping, Travel, Meditation',
-          bulletPoints: [
-            'ULTRA-THIN SPEAKERS FOR SIDE SLEEPERS: Revolutionary 0.25-inch speakers provide crystal-clear audio without pressure points',
-            '100% BLACKOUT & 3D CONTOURED DESIGN: Advanced ergonomic shape blocks all light while allowing natural eye movement',
-            'PREMIUM BLUETOOTH 5.2 TECHNOLOGY: 10-hour battery life with stable 45-foot range connection',
-            'ADJUSTABLE & WASHABLE: One-size-fits-all design with removable speakers for easy machine washing',
-            'PERFECT FOR: Side sleepers, travelers, meditation, shift workers, and anyone seeking better sleep quality'
-          ],
-          description: 'Transform your sleep experience with our revolutionary Bluetooth Sleep Mask that combines the best of sleep science and audio technology...'
-        }
+  // Load niches from database
+  useEffect(() => {
+    fetchNiches()
+  }, [])
+
+  const fetchNiches = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/admin/niches')
+      if (!response.ok) {
+        throw new Error('Failed to fetch niches')
       }
-    },
-    {
-      id: '2',
-      nicheName: 'Laptop Cooling Stands',
-      asins: ['B09XYZABC1', 'B08N5WL7ZD', 'B07PJV3JPR', 'B08NWDMTVD'],
-      status: 'analyzing',
-      addedDate: '2025-07-04',
-      scheduledDate: '2025-07-05',
-      category: 'Office Products',
-      totalProducts: 4,
-      avgBsr: 892,
-      avgPrice: 45.99,
-      avgRating: 4.5,
-      totalReviews: 22456,
-      totalMonthlyRevenue: 890000,
-      opportunityScore: 0,
-      competitionLevel: 'High',
-      processTime: '0',
-      analystAssigned: 'AI Agent',
-      nicheKeywords: ['laptop stand', 'laptop cooling', 'ergonomic laptop stand'],
-      marketSize: 28000000
-    },
-    {
-      id: '3',
-      nicheName: 'Waterproof Fitness Trackers',
-      asins: ['B07QRST123', 'B08P5T6VJD', 'B09HGZ3YWB', 'B08VDR5TZH', 'B09BVLXFZB'],
-      status: 'scheduled',
-      addedDate: '2025-07-04',
-      scheduledDate: '2025-07-06',
-      category: 'Sports & Outdoors',
-      totalProducts: 5,
-      avgBsr: 5432,
-      avgPrice: 39.99,
-      avgRating: 4.1,
-      totalReviews: 18900,
-      totalMonthlyRevenue: 350000,
-      opportunityScore: 0,
-      competitionLevel: 'Low',
-      processTime: '0',
-      analystAssigned: 'AI Agent',
-      nicheKeywords: ['fitness tracker', 'waterproof watch', 'heart rate monitor'],
-      marketSize: 45000000
-    },
-    {
-      id: '4',
-      nicheName: 'Smart Security Cameras',
-      asins: ['B08DEFG456', 'B086DKVGCW', 'B08R59YH7W', 'B07X6C9RMF'],
-      status: 'pending',
-      addedDate: '2025-07-02',
-      scheduledDate: '2025-07-07',
-      category: 'Electronics',
-      totalProducts: 4,
-      avgBsr: 1567,
-      avgPrice: 129.99,
-      avgRating: 4.4,
-      totalReviews: 42000,
-      totalMonthlyRevenue: 2800000,
-      opportunityScore: 0,
-      competitionLevel: 'Very High',
-      processTime: '0',
-      analystAssigned: 'AI Agent',
-      nicheKeywords: ['security camera', 'smart home security', 'wireless camera'],
-      marketSize: 120000000
+      const niches = await response.json()
+      setNicheQueue(niches)
+    } catch (error) {
+      console.error('Error fetching niches:', error)
+    } finally {
+      setLoading(false)
     }
-  ])
+  }
 
-  const handleAddNiche = () => {
+  const handleAddNiche = async () => {
     if (!newNicheName || !newAsins || !selectedDate) return
 
     const asinList = newAsins.split(',').map(asin => asin.trim()).filter(asin => asin.length > 0)
     if (asinList.length === 0) return
 
-    const newNiche: NicheQueueItem = {
-      id: Date.now().toString(),
-      nicheName: newNicheName,
-      asins: asinList,
-      status: 'pending',
-      addedDate: new Date().toISOString().split('T')[0],
-      scheduledDate: selectedDate,
-      category: 'Pending',
-      totalProducts: asinList.length,
-      avgBsr: 0,
-      avgPrice: 0,
-      avgRating: 0,
-      totalReviews: 0,
-      totalMonthlyRevenue: 0,
-      competitionLevel: 'Unknown',
-      analystAssigned: 'AI Agent',
-      nicheKeywords: [],
-      marketSize: 0
+    try {
+      const response = await fetch('/api/admin/niches', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          nicheName: newNicheName,
+          asins: newAsins,
+          scheduledDate: selectedDate
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create niche')
+      }
+
+      const newNiche = await response.json()
+      setNicheQueue([...nicheQueue, newNiche])
+      setNewNicheName('')
+      setNewAsins('')
+      setSelectedDate('')
+    } catch (error) {
+      console.error('Error creating niche:', error)
+      alert('Failed to create niche. Please try again.')
     }
-
-    setNicheQueue([...nicheQueue, newNiche])
-    setNewNicheName('')
-    setNewAsins('')
-    setSelectedDate('')
   }
 
 
-  const handleDelete = (id: string) => {
-    setNicheQueue(nicheQueue.filter(item => item.id !== id))
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch(`/api/admin/niches/${id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete niche')
+      }
+
+      setNicheQueue(nicheQueue.filter(item => item.id !== id))
+    } catch (error) {
+      console.error('Error deleting niche:', error)
+      alert('Failed to delete niche. Please try again.')
+    }
   }
 
-  const handleAnalyzeNow = (id: string) => {
-    setNicheQueue(nicheQueue.map(item => 
-      item.id === id ? { ...item, status: 'analyzing' } : item
-    ))
+  const handleAnalyzeNow = async (id: string) => {
+    try {
+      const response = await fetch(`/api/admin/niches/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: 'analyzing'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update niche status')
+      }
+
+      setNicheQueue(nicheQueue.map(item => 
+        item.id === id ? { ...item, status: 'analyzing' } : item
+      ))
+    } catch (error) {
+      console.error('Error updating niche status:', error)
+      alert('Failed to update niche status. Please try again.')
+    }
   }
 
 
@@ -243,6 +187,21 @@ export default function AdminNicheQueue() {
     item.asins.some(asin => asin.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Niche Queue Management</h1>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">

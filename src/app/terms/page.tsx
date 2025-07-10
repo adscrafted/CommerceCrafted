@@ -237,13 +237,9 @@ export default function TermsPage() {
           <p className="text-sm text-gray-600 mb-4">
             By using CommerceCrafted, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
           </p>
-          <div className="flex items-center justify-center space-x-4">
+          <div className="flex items-center justify-center">
             <a href="/privacy" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
               Privacy Policy
-            </a>
-            <span className="text-gray-400">•</span>
-            <a href="/contact" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-              Contact Support
             </a>
           </div>
         </div>

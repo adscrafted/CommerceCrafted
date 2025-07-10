@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/lib/supabase/auth-context'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, TrendingUp } from 'lucide-react'
@@ -20,7 +20,7 @@ interface DemandPageProps {
 const productData = mockProductData
 
 export default function DemandPage({ params }: DemandPageProps) {
-  const { data: session, status } = useSession()
+  const { user, session, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [slug, setSlug] = useState<string>('')
 
@@ -34,7 +34,7 @@ export default function DemandPage({ params }: DemandPageProps) {
     loadData()
   }, [params])
 
-  if (loading || status === 'loading') {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -42,11 +42,11 @@ export default function DemandPage({ params }: DemandPageProps) {
     )
   }
 
-  if (status === 'unauthenticated' || !session) {
+  if (!user || !session) {
     return <MembershipGate productTitle={productData.title} productImage={productData.mainImage} />
   }
 
-  const userTier = session.user?.subscriptionTier || 'free'
+  const userTier = user.subscriptionTier || 'free'
   if (userTier === 'free') {
     return <MembershipGate productTitle={productData.title} productImage={productData.mainImage} />
   }

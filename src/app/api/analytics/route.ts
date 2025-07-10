@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,17 +15,15 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Store analytics event in database
-    await prisma.analyticsEvent.create({
-      data: {
-        event,
-        properties: properties ? JSON.stringify(properties) : null,
-        userId,
-        timestamp: new Date(timestamp),
-        userAgent,
-        url,
-        referrer,
-        ipAddress: getClientIP(request),
-      },
+    await supabase.from('analytics_events').insert({
+      event,
+      properties: properties ? JSON.stringify(properties) : null,
+      user_id: userId,
+      timestamp: new Date(timestamp).toISOString(),
+      user_agent: userAgent,
+      url,
+      referrer,
+      ip_address: getClientIP(request),
     })
 
     return NextResponse.json({ success: true })

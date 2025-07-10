@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useAuthActions } from '@/lib/supabase/hooks'
 import {
   KeyRound,
   Mail,
@@ -22,6 +23,7 @@ export default function ForgotPasswordPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const { resetPassword } = useAuthActions()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,21 +32,13 @@ export default function ForgotPasswordPage() {
     setMessage('')
 
     try {
-      const response = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      })
+      const result = await resetPassword(email)
 
-      const data = await response.json()
-
-      if (response.ok) {
-        setMessage(data.message)
-        setIsSubmitted(true)
+      if (result.error) {
+        setError(result.error)
       } else {
-        setError(data.error || 'Failed to send reset email')
+        setMessage('Password reset instructions have been sent to your email.')
+        setIsSubmitted(true)
       }
     } catch {
       setError('An error occurred. Please try again.')

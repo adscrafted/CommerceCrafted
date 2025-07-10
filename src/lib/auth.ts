@@ -1,8 +1,7 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
-import { PrismaAdapter } from "@next-auth/prisma-adapter"
-import { prisma } from "@/lib/prisma"
+import { supabase } from "@/lib/supabase"
 import bcrypt from "bcryptjs"
 import { UserRole, SubscriptionTier } from "@/types/auth"
 
@@ -41,7 +40,6 @@ declare module "next-auth/jwt" {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
   },
@@ -61,19 +59,19 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
-          }
-        })
+        const { data: user, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', credentials.email)
+          .single()
 
-        if (!user || !user.passwordHash) {
+        if (error || !user || !user.password_hash) {
           return null
         }
 
         const isPasswordValid = await bcrypt.compare(
           credentials.password,
-          user.passwordHash
+          user.password_hash
         )
 
         if (!isPasswordValid) {
@@ -81,24 +79,24 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Check if account is active
-        if (!user.isActive) {
+        if (!user.is_active) {
           return null
         }
 
         // Update last login time
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLoginAt: new Date() }
-        })
+        await supabase
+          .from('users')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('id', user.id)
 
         return {
           id: user.id,
           email: user.email,
           name: user.name || "",
           role: user.role as UserRole,
-          subscriptionTier: user.subscriptionTier as SubscriptionTier,
-          subscriptionExpiresAt: user.subscriptionExpiresAt || undefined,
-          emailVerified: user.emailVerified,
+          subscriptionTier: user.subscription_tier as SubscriptionTier,
+          subscriptionExpiresAt: user.subscription_expires_at ? new Date(user.subscription_expires_at) : undefined,
+          emailVerified: user.email_verified ? new Date(user.email_verified) : undefined,
         }
       }
     })
@@ -115,23 +113,17 @@ export const authOptions: NextAuthOptions = {
       
       // Refresh user data on each request to check for updates
       if (token.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id },
-          select: {
-            id: true,
-            role: true,
-            subscriptionTier: true,
-            subscriptionExpiresAt: true,
-            emailVerified: true,
-            isActive: true,
-          }
-        })
+        const { data: dbUser, error } = await supabase
+          .from('users')
+          .select('id, role, subscription_tier, subscription_expires_at, email_verified, is_active')
+          .eq('id', token.id)
+          .single()
         
-        if (dbUser && dbUser.isActive) {
+        if (!error && dbUser && dbUser.is_active) {
           token.role = dbUser.role
-          token.subscriptionTier = dbUser.subscriptionTier
-          token.subscriptionExpiresAt = dbUser.subscriptionExpiresAt
-          token.emailVerified = dbUser.emailVerified
+          token.subscriptionTier = dbUser.subscription_tier
+          token.subscriptionExpiresAt = dbUser.subscription_expires_at ? new Date(dbUser.subscription_expires_at) : undefined
+          token.emailVerified = dbUser.email_verified ? new Date(dbUser.email_verified) : undefined
         } else {
           // User is no longer active, invalidate token
           return null
@@ -153,21 +145,23 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
         try {
-          const existingUser = await prisma.user.findUnique({
-            where: { email: user.email! }
-          })
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', user.email!)
+            .single()
 
           if (!existingUser) {
             // Create new user for Google OAuth
-            await prisma.user.create({
-              data: {
+            await supabase
+              .from('users')
+              .insert({
                 email: user.email!,
                 name: user.name || "",
                 role: "USER" as UserRole,
-                subscriptionTier: "free" as SubscriptionTier,
-                emailSubscribed: true,
-              }
-            })
+                subscription_tier: "free" as SubscriptionTier,
+                email_subscribed: true,
+              })
           }
           return true
         } catch (error) {

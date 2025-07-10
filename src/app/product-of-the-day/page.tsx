@@ -1,6 +1,9 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
+import { useAuth } from '@/lib/supabase/auth-context'
 import { useRouter } from 'next/navigation'
 import React, { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +29,7 @@ import {
   ArrowUp,
   ArrowRight,
   ChevronRight,
+  ChevronLeft,
   Rocket,
   Package,
   Calendar,
@@ -41,9 +45,127 @@ import { MembershipGate } from '@/components/MembershipGate'
 import { generateProductSlug } from '@/lib/utils/slug'
 
 
+// Score card component with debug mode support
+const AnalysisScoreCard = ({ 
+  title, 
+  score, 
+  icon: Icon, 
+  description, 
+  href, 
+  gradient,
+  metrics,
+  showDebugUnlocked = false
+}: {
+  title: string
+  score: number
+  icon: any
+  description: string
+  href: string
+  gradient: string
+  metrics?: { label: string; value: string }[]
+  showDebugUnlocked?: boolean
+}) => {
+  const getScoreColor = (score: number) => {
+    if (score >= 85) return 'text-green-600'
+    if (score >= 70) return 'text-yellow-600'
+    return 'text-red-600'
+  }
+
+  const getScoreLabel = (score: number) => {
+    if (score >= 90) return 'Excellent'
+    if (score >= 80) return 'Very Good'
+    if (score >= 70) return 'Good'
+    if (score >= 60) return 'Fair'
+    return 'Poor'
+  }
+
+  if (showDebugUnlocked) {
+    // Show full content without membership gate (debug mode)
+    return (
+      <Card className={`h-full transition-all duration-300 border-2 ${gradient}`}>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-white rounded-lg shadow-sm">
+                <Icon className="h-6 w-6 text-gray-700" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">{title}</CardTitle>
+                <CardDescription className="text-sm">{description}</CardDescription>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className={`text-3xl font-bold ${getScoreColor(score)}`}>
+                {score}
+              </div>
+              <div className="text-xs text-gray-600">{getScoreLabel(score)}</div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Progress value={score} className="h-2 mb-3" />
+          {metrics && (
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {metrics.map((metric, index) => (
+                <div key={index}>
+                  <span className="text-gray-600">{metric.label}:</span> <span className="font-medium">{metric.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+            <div className="text-sm text-green-800 font-medium">✓ Full Analysis Available</div>
+            <div className="text-xs text-green-600 mt-1">Complete insights and recommendations included</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Regular locked version (shows membership gate)
+  return (
+    <Link href={href} className="h-full">
+      <Card className={`h-full hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-blue-200 ${gradient}`}>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-white rounded-lg shadow-sm">
+                <Icon className="h-6 w-6 text-gray-700" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">{title}</CardTitle>
+                <CardDescription className="text-sm">{description}</CardDescription>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className={`text-3xl font-bold ${getScoreColor(score)}`}>
+                {score}
+              </div>
+              <div className="text-xs text-gray-600">{getScoreLabel(score)}</div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Progress value={score} className="h-2 mb-3" />
+          {metrics && (
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {metrics.map((metric, index) => (
+                <div key={index}>
+                  <span className="text-gray-600">{metric.label}:</span> <span className="font-medium">{metric.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </Link>
+  )
+}
+
 // Mock daily feature data - in production this would come from the API
 const getDailyFeature = () => {
-  const today = new Date()
+  // Use a fixed date for SSR consistency
+  const today = new Date('2025-07-10')
   const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24)
   
   // Rotate through products based on day of year
@@ -76,8 +198,9 @@ const getDailyFeature = () => {
       marketAnalysis: {
         size: 450000000,
         growth: 127,
-        trend: 'Accelerating growth',
-        seasonality: 'Peaks in January (New Year) and November (holidays)'
+        trends: ['Sleep wellness growth', 'Remote work trend', 'Audio technology boom'],
+        seasonality: 'medium',
+        marketMaturity: 'growing'
       },
       competitorAnalysis: {
         topCompetitors: ['MUSICOZY', 'Perytong', 'TOPOINT'],
@@ -102,95 +225,22 @@ const getDailyFeature = () => {
   }
 }
 
-// Score card component
-const AnalysisScoreCard = ({ 
-  title, 
-  score, 
-  icon: Icon, 
-  description, 
-  href, 
-  gradient,
-  metrics 
-}: {
-  title: string
-  score: number
-  icon: any
-  description: string
-  href: string
-  gradient: string
-  metrics?: { label: string; value: string }[]
-}) => {
-  const getScoreColor = (score: number) => {
-    if (score >= 85) return 'text-green-600'
-    if (score >= 70) return 'text-yellow-600'
-    return 'text-red-600'
-  }
-
-  const getScoreLabel = (score: number) => {
-    if (score >= 90) return 'Excellent'
-    if (score >= 80) return 'Very Good'
-    if (score >= 70) return 'Good'
-    if (score >= 60) return 'Fair'
-    return 'Poor'
-  }
-
-  return (
-    <Link href={href} className="h-full">
-      <Card className={`h-full hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-blue-200 ${gradient}`}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-white rounded-lg shadow-sm">
-                <Icon className="h-6 w-6 text-gray-700" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">{title}</CardTitle>
-                <CardDescription className="text-sm">{description}</CardDescription>
-              </div>
-            </div>
-            <div className="text-center">
-              <div className={`text-3xl font-bold ${getScoreColor(score)}`}>
-                {score}
-              </div>
-              <div className="text-xs text-gray-600">{getScoreLabel(score)}</div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <Progress value={score} className="h-2" />
-            {metrics && (
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                {metrics.map((metric, index) => (
-                  <div key={index} className="text-center p-2 bg-white/50 rounded">
-                    <div className="text-xs text-gray-600">{metric.label}</div>
-                    <div className="text-sm font-semibold text-gray-900">{metric.value}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex items-center justify-end text-sm text-blue-600 font-medium">
-              View Analysis
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  )
-}
 
 export default function ProductOfTheDayPage() {
-  const { data: session, status } = useSession()
+  const { user, session, loading: authLoading } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
+  const [showDebugUnlocked, setShowDebugUnlocked] = useState(false)
 
   const dailyFeature = getDailyFeature()
   const product = dailyFeature.product
   const slug = generateProductSlug(product.title, product.asin)
+  
+  // Use consistent date formatting for SSR
+  const dateString = 'July 10, 2025'
 
   useEffect(() => {
     setTimeout(() => setLoading(false), 500)
@@ -250,7 +300,7 @@ export default function ProductOfTheDayPage() {
     }
   }
 
-  if (loading || status === 'loading') {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -258,15 +308,9 @@ export default function ProductOfTheDayPage() {
     )
   }
 
-  if (status === 'unauthenticated' || !session) {
-    return <MembershipGate productTitle={product.title} productImage={product.images[0]} />
-  }
+  // Product of the day is free for everyone as a preview
 
-  const userTier = session.user?.subscriptionTier || 'free'
-  if (userTier === 'free') {
-    return <MembershipGate productTitle={product.title} productImage={product.images[0]} />
-  }
-
+  // Create analysis cards matching the product detail page format
   const analysisCards = [
     {
       title: 'Market Intelligence',
@@ -370,368 +414,273 @@ export default function ProductOfTheDayPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
+      {/* Debug Button */}
+      <div className="fixed top-4 right-4 z-50">
+        <Button
+          onClick={() => setShowDebugUnlocked(!showDebugUnlocked)}
+          variant="outline"
+          size="sm"
+          className="bg-white shadow-lg"
+        >
+          {showDebugUnlocked ? 'Show Locked' : 'Debug Unlocked'}
+        </Button>
+      </div>
+
+      {/* Header with Navigation */}
+      <div className="bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div className="flex items-center space-x-4 mb-4">
-                <Badge className="bg-white/20 text-white border-white/30">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                </Badge>
-                <Badge className="bg-green-500/20 text-green-100 border-green-300/30">
-                  Product of the Day
-                </Badge>
+          <div className="text-center">
+            <h1 className="text-5xl font-bold text-blue-600 mb-8">Product of the Day</h1>
+            
+            {/* Navigation */}
+            <div className="flex items-center justify-center space-x-8">
+              <Link href="/products/smart-bluetooth-sleep-mask-with-built-in-speakers" className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
+                <ChevronLeft className="h-4 w-4" />
+                <span>Previous</span>
+              </Link>
+              
+              <div className="flex items-center space-x-2 text-gray-600">
+                <Calendar className="h-4 w-4" />
+                <span>{dateString}</span>
               </div>
-              <h1 className="text-4xl font-bold mb-2">{product.title}</h1>
-              <p className="text-xl text-blue-100 max-w-3xl">
-                {product.whyThisProduct}
-              </p>
+              
+              <Link href="/next-product" className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
+                <span>Next Product</span>
+                <ChevronRight className="h-4 w-4" />
+              </Link>
             </div>
-            <div className="text-center bg-white/10 backdrop-blur rounded-lg p-6">
-              <div className="text-5xl font-bold mb-2">{product.opportunityScore}</div>
-              <div className="text-sm text-blue-100">Opportunity Score</div>
-            </div>
-          </div>
-          
-          {/* Action Buttons */}
-          <div className="flex gap-4">
-            <Button 
-              onClick={handleSaveAnalysis}
-              variant="secondary"
-              className="bg-white text-blue-600 hover:bg-gray-100"
-              disabled={isSaved}
-            >
-              {isSaved ? (
-                <>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Saved to Account
-                </>
-              ) : (
-                <>
-                  <Heart className="h-4 w-4 mr-2" />
-                  Save Analysis
-                </>
-              )}
-            </Button>
-            <Button 
-              onClick={handleShareReport}
-              variant="secondary"
-              className="bg-white/10 text-white hover:bg-white/20 border border-white/30"
-              disabled={isSharing}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              {isSharing ? 'Sharing...' : 'Share Report'}
-            </Button>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Product Overview Card */}
-        <Card className="mb-8 overflow-hidden">
-          <CardContent className="p-8">
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Product Image and Basic Info */}
-              <div>
-                <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-6">
-                  <Image
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div>
+              <div className="flex items-center space-x-2 mb-4">
+                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                  Daily Amazon Opportunity
+                </Badge>
+                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                  Free Preview
+                </Badge>
+              </div>
+              <h1 className="text-4xl font-bold mb-4">{product.title}</h1>
+              <p className="text-xl mb-6 text-blue-100">{product.whyThisProduct}</p>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <Button 
+                  onClick={handleSaveAnalysis}
+                  disabled={isSaved}
+                  className="bg-white text-blue-600 hover:bg-gray-100"
+                >
+                  <Heart className={`h-4 w-4 mr-2 ${isSaved ? 'fill-current text-red-500' : ''}`} />
+                  {isSaved ? 'Saved!' : 'Save Analysis'}
+                </Button>
+                <Button 
+                  onClick={handleShareReport}
+                  disabled={isSharing}
+                  variant="outline" 
+                  className="bg-white/10 border-white text-white hover:bg-white/20"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  {isSharing ? 'Sharing...' : 'Share Report'}
+                </Button>
+              </div>
+            </div>
+            
+            {/* Product Image */}
+            <div className="text-center">
+              <div className="relative inline-block">
+                <div className="w-80 h-80 relative">
+                  <Image 
                     src={product.images[0]}
                     alt={product.title}
-                    width={400}
-                    height={400}
-                    className="w-full h-full object-contain p-8"
+                    width={320}
+                    height={320}
+                    className="rounded-lg shadow-2xl w-full h-full object-cover"
                   />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-600">Category</div>
-                    <div className="font-semibold">{product.category}</div>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-600">Brand</div>
-                    <div className="font-semibold">{product.brand}</div>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-600">Price</div>
-                    <div className="font-semibold text-lg">${product.price.toFixed(2)}</div>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-600">BSR</div>
-                    <div className="font-semibold">#{product.bsr.toLocaleString()}</div>
-                  </div>
-                </div>
-              </div>
-              {/* Key Metrics and Highlights */}
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-2xl font-bold mb-4">Product Performance</h3>
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">Monthly Revenue</span>
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                      </div>
-                      <div className="text-2xl font-bold text-green-600">
-                        ${product.financialProjection.monthlyRevenue.toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">Monthly Sales</span>
-                        <Package className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <div className="text-2xl font-bold text-blue-600">
-                        {product.financialProjection.monthlyUnits.toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">Net Profit</span>
-                        <DollarSign className="h-4 w-4 text-purple-600" />
-                      </div>
-                      <div className="text-2xl font-bold text-purple-600">
-                        ${product.financialProjection.netProfit.toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">ROI</span>
-                        <ArrowUpRight className="h-4 w-4 text-orange-600" />
-                      </div>
-                      <div className="text-2xl font-bold text-orange-600">
-                        {product.financialProjection.roi}%
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-3">Key Success Factors</h4>
-                  <ul className="space-y-3">
-                    {product.highlights.map((highlight, index) => (
-                      <li key={index} className="flex items-start gap-3">
-                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <CheckCircle className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <span className="text-gray-700">{highlight}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Zap className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h5 className="font-semibold text-gray-900 mb-1">Quick Win Opportunity</h5>
-                      <p className="text-sm text-gray-700">
-                        This product offers a rare combination of high demand ({product.demandScore}/100) 
-                        and manageable competition ({product.competitionScore}/100), making it ideal for 
-                        new sellers looking to establish a foothold in the market.
-                      </p>
-                    </div>
+                  <div className="absolute -top-4 -right-4 bg-yellow-400 text-black rounded-full p-3">
+                    <Crown className="h-6 w-6" />
                   </div>
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Analysis Scores Grid */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Comprehensive Analysis</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {analysisCards.map((card, index) => (
-              <AnalysisScoreCard key={index} {...card} />
-            ))}
           </div>
         </div>
-
-        {/* Market Analysis Section */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl">Market Analysis</CardTitle>
-            <CardDescription>Comprehensive market intelligence and opportunity assessment</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="bg-gray-50 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <Globe className="h-5 w-5 text-blue-600" />
-                    Market Size
-                  </h4>
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">
-                  ${(product.marketAnalysis.size / 1000000000).toFixed(1)}B
-                </div>
-                <p className="text-sm text-gray-600">
-                  Total addressable market with {product.marketAnalysis.trend}
-                </p>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                    Growth Rate
-                  </h4>
-                </div>
-                <div className="text-3xl font-bold text-green-600 mb-2">
-                  +{product.marketAnalysis.growth}%
-                </div>
-                <p className="text-sm text-gray-600">
-                  Year-over-year growth with seasonal peaks in {product.marketAnalysis.seasonality}
-                </p>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <Users className="h-5 w-5 text-purple-600" />
-                    Market Maturity
-                  </h4>
-                </div>
-                <div className="text-3xl font-bold text-purple-600 mb-2">
-                  Growing
-                </div>
-                <p className="text-sm text-gray-600">
-                  Early-stage market with room for new entrants
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Competition Analysis Section */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl">Competition Landscape</CardTitle>
-            <CardDescription>Understanding the competitive environment and positioning opportunities</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold mb-4">Market Position</h4>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm text-gray-600">Competition Level</span>
-                      <span className="text-sm font-medium">{product.competitorAnalysis.marketShare}</span>
-                    </div>
-                    <Progress value={product.competitionScore} className="h-2" />
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-700">
-                      {product.competitorAnalysis.differentiation}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-4">Top Competitors</h4>
-                <div className="space-y-3">
-                  {product.competitorAnalysis.topCompetitors.map((competitor, index) => (
-                    <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
-                      <span className="font-medium">{competitor}</span>
-                      <Badge variant="outline">Active</Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Financial Projections Section */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl">Financial Projections</CardTitle>
-            <CardDescription>Revenue, profit, and ROI calculations based on market data</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <DollarSign className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                <div className="text-sm text-gray-600">Monthly Revenue</div>
-                <div className="text-2xl font-bold text-gray-900">
-                  ${product.financialProjection.monthlyRevenue.toLocaleString()}
-                </div>
-              </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <Package className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                <div className="text-sm text-gray-600">Monthly Units</div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {product.financialProjection.monthlyUnits.toLocaleString()}
-                </div>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <BarChart3 className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                <div className="text-sm text-gray-600">Net Profit</div>
-                <div className="text-2xl font-bold text-gray-900">
-                  ${product.financialProjection.netProfit.toLocaleString()}
-                </div>
-              </div>
-              <div className="text-center p-4 bg-orange-50 rounded-lg">
-                <ArrowUpRight className="h-8 w-8 text-orange-600 mx-auto mb-2" />
-                <div className="text-sm text-gray-600">ROI</div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {product.financialProjection.roi}%
-                </div>
-              </div>
-            </div>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <Zap className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h5 className="font-semibold text-gray-900 mb-1">Profitability Timeline</h5>
-                  <p className="text-sm text-gray-700">
-                    Based on current market conditions, you can expect to reach profitability within 
-                    3-4 months with an initial investment of ${product.launchBudget.toLocaleString()}.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* CTA Section */}
-        <div className="text-center py-8">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">Ready to Launch This Product?</h3>
-          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            Get instant access to our complete product research toolkit, including supplier contacts, 
-            keyword strategies, and step-by-step launch guides.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Link href={`/products/${slug}`}>
-              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                View Full Analysis
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/pricing">
-              <Button size="lg" variant="outline">
-                Upgrade to Pro
-                <Crown className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Scroll to Top Button */}
-        {showScrollTop && (
-          <button
-            onClick={scrollToTop}
-            className="fixed bottom-8 right-8 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
-            aria-label="Scroll to top"
-          >
-            <ArrowUp className="h-5 w-5" />
-          </button>
-        )}
       </div>
+
+      {/* Quick Stats Bar */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold text-blue-600">
+                ${product.financialProjection.monthlyRevenue.toLocaleString()}
+              </div>
+              <div className="text-sm text-gray-600">Est. Monthly Revenue</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-purple-600">
+                ${product.price}
+              </div>
+              <div className="text-sm text-gray-600">Avg. Selling Price</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-orange-600">
+                {product.competitorAnalysis.topCompetitors.length || 3}
+              </div>
+              <div className="text-sm text-gray-600">Total Competitors</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Analysis Score Cards - Conditional Display */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Complete Product Analysis</h2>
+          <p className="text-gray-600">
+            {showDebugUnlocked 
+              ? "Full analysis available to all users as part of our daily product showcase"
+              : "Click any analysis below to explore detailed insights and recommendations"
+            }
+          </p>
+        </div>
+        
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Analysis Summary Card - Takes 2 slots */}
+          <div className="md:col-span-2">
+            <Card className="h-full hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-200 bg-gradient-to-br from-indigo-50 to-indigo-100">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-3 bg-white rounded-lg shadow-sm">
+                      <BarChart3 className="h-6 w-6 text-gray-700" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Analysis Summary</CardTitle>
+                      <CardDescription className="text-sm">Key insights and opportunities</CardDescription>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-3xl font-bold text-indigo-600`}>
+                      {product.opportunityScore}
+                    </div>
+                    <div className="text-xs text-gray-600">Overall Score</div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <Progress value={product.opportunityScore} className="h-2" />
+                  <div className="grid md:grid-cols-2 gap-6 mt-4">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Strengths</h3>
+                      <ul className="space-y-1">
+                        <li className="text-sm text-gray-700 flex items-start space-x-2">
+                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          <span>High demand with 45K monthly searches</span>
+                        </li>
+                        <li className="text-sm text-gray-700 flex items-start space-x-2">
+                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          <span>Growing market (+{product.marketAnalysis.growth}% YoY)</span>
+                        </li>
+                        <li className="text-sm text-gray-700 flex items-start space-x-2">
+                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          <span>Strong profit margins ({product.profitMargin}%)</span>
+                        </li>
+                        <li className="text-sm text-gray-700 flex items-start space-x-2">
+                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          <span>Low competition in premium segment</span>
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Opportunities</h3>
+                      <ul className="space-y-1">
+                        <li className="text-sm text-gray-700 flex items-start space-x-2">
+                          <ArrowRight className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                          <span>Underserved premium segment</span>
+                        </li>
+                        <li className="text-sm text-gray-700 flex items-start space-x-2">
+                          <ArrowRight className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                          <span>Weak competitor listings</span>
+                        </li>
+                        <li className="text-sm text-gray-700 flex items-start space-x-2">
+                          <ArrowRight className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                          <span>High keyword opportunities</span>
+                        </li>
+                        <li className="text-sm text-gray-700 flex items-start space-x-2">
+                          <ArrowRight className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                          <span>Expandable product line potential</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Regular Analysis Cards */}
+          {analysisCards.map((card, index) => (
+            <AnalysisScoreCard key={index} {...card} showDebugUnlocked={showDebugUnlocked} />
+          ))}
+        </div>
+      </div>
+
+      {/* Large CTA Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="mb-8">
+            <Award className="h-16 w-16 mx-auto mb-4 text-yellow-400" />
+            <h2 className="text-4xl font-bold mb-4">
+              Love This Analysis? Get More Every Day.
+            </h2>
+            <p className="text-xl text-blue-100 max-w-2xl mx-auto">
+              This is just a taste of what's possible. Join thousands of successful Amazon sellers who rely on our comprehensive product research to find their next winning opportunity.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 mb-10">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-yellow-400 mb-2">1000+</div>
+              <div className="text-blue-200">Products Analyzed</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-yellow-400 mb-2">40+ hrs</div>
+              <div className="text-blue-200">Research Per Product</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-yellow-400 mb-2">365</div>
+              <div className="text-blue-200">Days Per Year</div>
+            </div>
+          </div>
+
+          <div>
+            <Link href="/pricing">
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-4">
+                Unlock Full Access
+                <ArrowRight className="ml-2 h-6 w-6" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </button>
+      )}
     </div>
   )
 }

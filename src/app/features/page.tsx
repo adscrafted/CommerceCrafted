@@ -1,178 +1,256 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { 
+  BarChart3, 
+  TrendingUp, 
+  Target, 
+  Search, 
+  DollarSign, 
+  FileText, 
+  Rocket, 
+  MessageSquare,
   Database,
-  Search,
+  Calendar,
   Brain,
-  BarChart3,
-  Users,
   Shield,
   Zap,
-  Target,
-  TrendingUp,
-  FileText,
-  MessageSquare,
-  CheckCircle
+  Users,
+  Globe,
+  Package,
+  ChartBar,
+  Calculator,
+  Lightbulb,
+  CheckCircle,
+  ArrowRight
 } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
+interface Feature {
+  title: string
+  description: string
+  icon: any
+  badge?: string
+  highlights?: string[]
+  gradient?: string
+}
+
+const analysisFeatures: Feature[] = [
+  {
+    title: 'Opportunity Scoring',
+    description: 'Our proprietary algorithm evaluates products across 8 key dimensions to identify the best opportunities.',
+    icon: BarChart3,
+    gradient: 'bg-gradient-to-br from-indigo-50 to-indigo-100',
+    highlights: [
+      'Composite score combining all 8 analysis dimensions',
+      'Risk-adjusted opportunity rating',
+      'Market timing and entry barrier assessment',
+      'Success probability based on historical data'
+    ]
+  },
+  {
+    title: 'Market Intelligence',
+    description: 'Deep dive into customer reviews, sentiment analysis, and unmet needs to find product improvement ideas.',
+    icon: MessageSquare,
+    gradient: 'bg-gradient-to-br from-yellow-50 to-yellow-100',
+    highlights: [
+      'Analysis of 1000+ customer reviews',
+      'Pain point and opportunity identification',
+      'Customer avatar development',
+      'Product differentiation insights'
+    ]
+  },
+  {
+    title: 'Demand Analysis',
+    description: 'Understand market size, growth trends, and customer segments with precision data.',
+    icon: ChartBar,
+    gradient: 'bg-gradient-to-br from-blue-50 to-blue-100',
+    highlights: [
+      'Total addressable market (TAM) calculation',
+      'Search volume and seasonal trends',
+      'Market growth rate analysis',
+      'Customer segment breakdown'
+    ]
+  },
+  {
+    title: 'Competition Analysis',
+    description: 'Evaluate competitor landscapes, pricing strategies, and market positioning opportunities.',
+    icon: Target,
+    gradient: 'bg-gradient-to-br from-red-50 to-red-100',
+    highlights: [
+      'Top 10 competitor deep-dive',
+      'Price positioning analysis',
+      'Market share estimates',
+      'Differentiation opportunities'
+    ]
+  },
+  {
+    title: 'Keyword Research',
+    description: 'Discover high-value keywords, PPC opportunities, and organic ranking potential.',
+    icon: Search,
+    gradient: 'bg-gradient-to-br from-green-50 to-green-100',
+    highlights: [
+      'Primary and long-tail keywords',
+      'PPC cost and budget analysis',
+      'Organic ranking difficulty',
+      'Competitor keyword gaps'
+    ]
+  },
+  {
+    title: 'Financial Projections',
+    description: 'Get detailed ROI calculations, profit margins, and cash flow projections for each product.',
+    icon: Calculator,
+    gradient: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
+    highlights: [
+      'Unit economics breakdown',
+      'Break-even analysis',
+      'Cash flow projections',
+      'ROI scenarios and benchmarks'
+    ]
+  },
+  {
+    title: 'Listing Optimization',
+    description: 'Receive AI-powered recommendations for titles, bullets, images, and A+ content.',
+    icon: FileText,
+    gradient: 'bg-gradient-to-br from-purple-50 to-purple-100',
+    highlights: [
+      'Optimized title formulas',
+      'Bullet point templates',
+      'Image strategy guide',
+      'A+ Content recommendations'
+    ]
+  },
+  {
+    title: 'Launch Strategy',
+    description: 'Get a complete 90-day launch roadmap with PPC campaigns, pricing, and promotion strategies.',
+    icon: Rocket,
+    gradient: 'bg-gradient-to-br from-orange-50 to-orange-100',
+    highlights: [
+      'Week-by-week launch calendar',
+      'PPC campaign structure',
+      'Pricing and promotion strategy',
+      'Inventory planning guidelines'
+    ]
+  }
+]
+
 export default function FeaturesPage() {
-  const features = [
-    {
-      icon: Database,
-      title: "Comprehensive Idea Database",
-      description: "Access 1000+ thoroughly researched business ideas across multiple industries, each with detailed market analysis and validation data.",
-      benefits: ["40+ hours of research per idea", "Market size and competition analysis", "Financial projections and ROI estimates", "Implementation roadmaps"]
-    },
-    {
-      icon: Brain,
-      title: "AI Research Agent",
-      description: "Get personalized market research and idea validation through our AI-powered research assistant that analyzes multiple data sources.",
-      benefits: ["24-hour turnaround for reports", "Multi-source data analysis", "Competitor intelligence", "Market trend identification"]
-    },
-    {
-      icon: Search,
-      title: "Advanced Search & Filtering",
-      description: "Find the perfect business opportunity with powerful search capabilities and smart filtering by industry, investment level, and skill requirements.",
-      benefits: ["Industry-specific filtering", "Investment range selection", "Skill requirement matching", "Opportunity scoring"]
-    },
-    {
-      icon: BarChart3,
-      title: "Market Trend Analysis",
-      description: "Stay ahead of the curve with real-time trend analysis and emerging opportunity identification across multiple markets.",
-      benefits: ["Real-time trend tracking", "Growth opportunity alerts", "Market timing insights", "Competitive landscape analysis"]
-    },
-    {
-      icon: FileText,
-      title: "Detailed Research Reports",
-      description: "Get comprehensive business analysis reports with market validation, competitive research, and actionable implementation strategies.",
-      benefits: ["Executive summaries", "Market validation data", "Competitive analysis", "Implementation timelines"]
-    },
-    {
-      icon: Users,
-      title: "Entrepreneur Community",
-      description: "Connect with like-minded entrepreneurs, share experiences, and get feedback on your business ideas from our private community.",
-      benefits: ["Private member community", "Peer feedback and support", "Networking opportunities", "Expert Q&A sessions"]
-    },
-    {
-      icon: Target,
-      title: "Opportunity Scoring",
-      description: "Every idea is scored based on market potential, competition level, required investment, and implementation difficulty.",
-      benefits: ["Standardized scoring system", "Risk assessment", "Investment requirements", "Success probability indicators"]
-    },
-    {
-      icon: TrendingUp,
-      title: "Growth Tracking",
-      description: "Monitor market growth, track emerging trends, and identify the next big opportunities before they become mainstream.",
-      benefits: ["Growth rate monitoring", "Early trend identification", "Market saturation analysis", "Timing recommendations"]
-    },
-    {
-      icon: MessageSquare,
-      title: "Expert Consultation",
-      description: "Get direct access to our research team for personalized advice and custom research requests on specific business ideas.",
-      benefits: ["1-on-1 expert sessions", "Custom research requests", "Implementation guidance", "Strategic planning support"]
-    }
-  ]
-
   return (
-    <div className="bg-white">
-
+    <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-b from-blue-50 to-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">
-            Everything You Need to Find Your Next Business Opportunity
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            From comprehensive market research to AI-powered validation, IdeaBrowser provides all the tools and insights you need to discover and validate profitable business ideas.
-          </p>
-          <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-            Explore All Features
-          </Button>
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <Badge className="mb-4">Daily Amazon Product Analysis</Badge>
+            <h1 className="text-5xl font-bold text-blue-600 mb-4">
+              Deep Product Research
+            </h1>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Every day at midnight, we release one thoroughly analyzed Amazon product opportunity. 
+              Each analysis represents 40+ hours of research condensed into actionable insights you can use immediately.
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Features Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-8">
-                <div className="flex items-center mb-4">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mr-4">
-                    <feature.icon className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900">{feature.title}</h3>
-                </div>
-                
-                <p className="text-gray-600 mb-6 leading-relaxed">
-                  {feature.description}
-                </p>
-                
-                <div className="space-y-2">
-                  {feature.benefits.map((benefit, benefitIndex) => (
-                    <div key={benefitIndex} className="flex items-center text-sm text-gray-700">
-                      <CheckCircle className="h-4 w-4 text-green-600 mr-2 flex-shrink-0" />
-                      <span>{benefit}</span>
+      {/* Main Features Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* 8-Dimensional Analysis */}
+        <div className="mb-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">8-Dimensional Product Analysis</h2>
+            <p className="text-lg text-gray-600">Deep insights across every critical success factor</p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {analysisFeatures.map((feature, index) => (
+              <Card 
+                key={index} 
+                className={`hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-200 ${feature.gradient || ''}`}
+              >
+                <CardHeader>
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 bg-white rounded-lg shadow-sm">
+                      <feature.icon className="h-6 w-6 text-gray-700" />
                     </div>
-                  ))}
+                    <div className="flex-1">
+                      <CardTitle className="text-xl mb-2">{feature.title}</CardTitle>
+                      <CardDescription className="text-base">{feature.description}</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {feature.highlights?.map((highlight, idx) => (
+                      <li key={idx} className="flex items-start">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm text-gray-700">{highlight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
+            
+            {/* CTA Card */}
+            <Card className="bg-gradient-to-br from-blue-600 to-purple-700 text-white border-0 hover:shadow-xl transition-all duration-300">
+              <CardHeader className="text-center">
+                <div className="p-4 bg-white/20 rounded-full inline-block mx-auto mb-4">
+                  <Lightbulb className="h-12 w-12 text-white" />
+                </div>
+                <CardTitle className="text-2xl mb-2">See It In Action</CardTitle>
+                <CardDescription className="text-white/90 text-base">
+                  Experience our comprehensive analysis with today's featured product
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <p className="text-white/80">
+                  Get a complete product analysis absolutely free. No credit card required.
+                </p>
+                <Link href="/product-of-the-day">
+                  <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 w-full">
+                    View Today's Product
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <div className="pt-2">
+                  <Link href="/pricing" className="text-white/80 hover:text-white underline text-sm">
+                    Or explore pricing plans →
+                  </Link>
                 </div>
               </CardContent>
             </Card>
-          ))}
+          </div>
         </div>
 
-        {/* Stats Section */}
-        <div className="mt-20 bg-blue-50 rounded-lg p-12">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Trusted by Entrepreneurs Worldwide
-            </h2>
-            <p className="text-lg text-gray-600">
-              Join thousands of successful entrepreneurs who use IdeaBrowser to find and validate their next big opportunity.
+
+        {/* Speed Features */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-700 rounded-2xl p-12 text-white mb-16">
+          <div className="max-w-4xl mx-auto text-center">
+            <Zap className="h-12 w-12 mx-auto mb-4" />
+            <h2 className="text-3xl font-bold mb-4">Lightning Fast Research</h2>
+            <p className="text-xl mb-8 text-blue-100">
+              What used to take weeks now takes minutes. Our platform is built for speed without sacrificing accuracy.
             </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-blue-600 mb-2">1000+</div>
-              <div className="text-gray-600">Researched Ideas</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-blue-600 mb-2">40+</div>
-              <div className="text-gray-600">Hours of Research Per Idea</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-blue-600 mb-2">50+</div>
-              <div className="text-gray-600">Industries Covered</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-blue-600 mb-2">24hrs</div>
-              <div className="text-gray-600">AI Research Turnaround</div>
+            <div className="grid md:grid-cols-3 gap-8">
+              <div>
+                <div className="text-4xl font-bold mb-2">40+ hrs</div>
+                <div className="text-blue-200">Saved per product research</div>
+              </div>
+              <div>
+                <div className="text-4xl font-bold mb-2">&lt; 30s</div>
+                <div className="text-blue-200">To analyze any product</div>
+              </div>
+              <div>
+                <div className="text-4xl font-bold mb-2">1000+</div>
+                <div className="text-blue-200">Pre-analyzed products</div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* CTA Section */}
-        <div className="mt-20 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Ready to Find Your Next Big Idea?
-          </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Start exploring our comprehensive database of business opportunities and let our AI research agent help validate your next venture.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-              Start Free Trial
-            </Button>
-            <Button size="lg" variant="outline">
-              View Pricing
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   )

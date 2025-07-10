@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 
 // GET list of user's reports
 export async function GET(request: NextRequest) {
@@ -29,31 +29,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get reports with pagination
-    const [reports, total] = await Promise.all([
-      prisma.amazonReport.findMany({
-        where,
-        select: {
-          id: true,
-          type: true,
-          status: true,
-          startDate: true,
-          endDate: true,
-          marketplaceId: true,
-          createdAt: true,
-          completedAt: true,
-          error: true,
-          reportData: {
-            select: {
-              recordCount: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit
-      }),
-      prisma.amazonReport.count({ where })
-    ])
+    // TODO: Convert to Supabase
+    // const { data: reports, count: total } = await supabase.from('amazon_reports').select('id, type, status, start_date, end_date, marketplace_id, created_at, completed_at, error, report_data:amazon_report_data(record_count)', { count: 'exact' }).match(where).order('created_at', { ascending: false }).range((page - 1) * limit, page * limit - 1)
+    const reports = []
+    const total = 0
 
     // Format response
     const formattedReports = reports.map(report => ({

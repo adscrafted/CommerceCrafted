@@ -47,11 +47,13 @@ export default function ListingOptimization({ data }: ListingOptimizationProps) 
       {/* Tab Navigation */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
         {[
-          { id: 'images', label: 'Images & Gallery', icon: Image },
-          { id: 'content', label: 'Title & Bullets', icon: Type },
+          { id: 'main-image', label: 'Main Image', icon: Image },
+          { id: 'secondary-images', label: 'Secondary Images', icon: Camera },
+          { id: 'title', label: 'Title', icon: Type },
+          { id: 'bullets', label: 'Bullet Points', icon: Edit3 },
           { id: 'aplus', label: 'A+ Content', icon: Sparkles },
-          { id: 'video', label: 'Video Strategy', icon: Video },
-          { id: 'performance', label: 'Performance & QA', icon: Gauge }
+          { id: 'video', label: 'Video', icon: Video },
+          { id: 'qa', label: 'Quality Assurance', icon: Shield }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -68,18 +70,18 @@ export default function ListingOptimization({ data }: ListingOptimizationProps) 
         ))}
       </div>
 
-      {/* Images & Gallery Tab */}
-      {activeTab === 'images' && (
+      {/* Main Image Tab */}
+      {activeTab === 'main-image' && (
         <div className="space-y-6">
           {/* Complete Image Gallery & Analysis */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Image className="h-5 w-5 text-purple-600" />
-                <span>Complete Image Gallery & Competitive Analysis</span>
+                <span>Main Image Analysis</span>
               </CardTitle>
               <CardDescription>
-                Interactive comparison of your images against top-performing competitors
+                Analysis of your main product image and competitive comparison
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -120,11 +122,81 @@ export default function ListingOptimization({ data }: ListingOptimizationProps) 
                   </div>
                 </div>
 
-                {/* Our Product Images */}
+                {/* Main Product Image */}
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-4">Your Product Images</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {listingData.completeImageAnalysis.imageGallery.ourProduct.images.map((image: any, index: number) => (
+                  <h3 className="font-semibold text-gray-900 mb-4">Main Product Image</h3>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {listingData.completeImageAnalysis.imageGallery.ourProduct.images.filter((img: any) => img.type === 'main').map((image: any, index: number) => (
+                      <div key={index} className="relative border rounded-lg overflow-hidden">
+                        <NextImage src={image.url} alt={image.caption} width={400} height={400} className="w-full h-96 object-cover" />
+                        <div className="absolute top-2 right-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {image.score}
+                          </Badge>
+                        </div>
+                        <div className="p-3">
+                          <div className="text-sm font-medium text-gray-700 capitalize">{image.type}</div>
+                          <div className="text-sm text-gray-500">{image.caption}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Competitor Main Images Comparison */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-4">Competitor Main Images</h3>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {listingData.completeImageAnalysis.imageGallery.competitors.map((competitor: any, index: number) => (
+                      <div key={index} className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium text-gray-900 text-sm">{competitor.name}</h4>
+                          <Badge className="bg-green-100 text-green-700 text-xs">
+                            {competitor.totalScore}
+                          </Badge>
+                        </div>
+                        {competitor.images.filter((img: any) => img.type === 'main').map((image: any, imgIndex: number) => (
+                          <div key={imgIndex} className="relative border rounded-lg overflow-hidden">
+                            <NextImage src={image.url} alt={`${competitor.name} ${image.type}`} width={300} height={300} className="w-full h-48 object-cover" />
+                            <div className="absolute top-2 right-2">
+                              <Badge variant="secondary" className="text-xs">
+                                {image.score}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      )}
+
+      {/* Secondary Images Tab */}
+      {activeTab === 'secondary-images' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Camera className="h-5 w-5 text-purple-600" />
+                <span>Secondary Images Analysis</span>
+              </CardTitle>
+              <CardDescription>
+                Analysis of your secondary product images and lifestyle shots
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Secondary Product Images */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-4">Secondary Product Images</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {listingData.completeImageAnalysis.imageGallery.ourProduct.images.filter((img: any) => img.type !== 'main').map((image: any, index: number) => (
                       <div key={index} className="relative border rounded-lg overflow-hidden">
                         <NextImage src={image.url} alt={image.caption} width={200} height={128} className="w-full h-32 object-cover" />
                         <div className="absolute top-2 right-2">
@@ -141,19 +213,19 @@ export default function ListingOptimization({ data }: ListingOptimizationProps) 
                   </div>
                 </div>
 
-                {/* Competitor Images Comparison */}
+                {/* Competitor Secondary Images */}
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-4">Competitor Analysis</h3>
+                  <h3 className="font-semibold text-gray-900 mb-4">Competitor Secondary Images</h3>
                   {listingData.completeImageAnalysis.imageGallery.competitors.map((competitor: any, index: number) => (
-                    <div key={index} className="mb-6 p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-4">
+                    <div key={index} className="mb-4 p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
                         <h4 className="font-medium text-gray-900">{competitor.name}</h4>
                         <Badge className="bg-green-100 text-green-700">
                           Score: {competitor.totalScore}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                        {competitor.images.map((image: any, imgIndex: number) => (
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                        {competitor.images.filter((img: any) => img.type !== 'main').map((image: any, imgIndex: number) => (
                           <div key={imgIndex} className="relative border rounded-lg overflow-hidden">
                             <NextImage src={image.url} alt={`${competitor.name} ${image.type}`} width={120} height={96} className="w-full h-24 object-cover" />
                             <div className="absolute top-1 right-1">
@@ -163,11 +235,6 @@ export default function ListingOptimization({ data }: ListingOptimizationProps) 
                             </div>
                             <div className="p-1">
                               <div className="text-xs font-medium text-gray-700 capitalize">{image.type}</div>
-                              {image.improvements && (
-                                <div className="text-xs text-blue-600 mt-1">
-                                  {image.improvements[0]}
-                                </div>
-                              )}
                             </div>
                           </div>
                         ))}
@@ -181,8 +248,8 @@ export default function ListingOptimization({ data }: ListingOptimizationProps) 
         </div>
       )}
 
-      {/* Title & Bullets Tab */}
-      {activeTab === 'content' && (
+      {/* Title Tab */}
+      {activeTab === 'title' && (
         <div className="space-y-6">
           {/* Advanced Title Optimization */}
           <Card>
@@ -303,6 +370,12 @@ export default function ListingOptimization({ data }: ListingOptimizationProps) 
             </CardContent>
           </Card>
 
+        </div>
+      )}
+
+      {/* Bullet Points Tab */}
+      {activeTab === 'bullets' && (
+        <div className="space-y-6">
           {/* Enhanced Bullet Point Workshop */}
           <Card>
             <CardHeader>
@@ -474,7 +547,7 @@ export default function ListingOptimization({ data }: ListingOptimizationProps) 
         </div>
       )}
 
-      {/* Video Strategy Tab */}
+      {/* Video Tab */}
       {activeTab === 'video' && (
         <div className="space-y-6">
           {/* Advanced Video Strategy */}
@@ -482,7 +555,7 @@ export default function ListingOptimization({ data }: ListingOptimizationProps) 
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Video className="h-5 w-5 text-red-600" />
-                <span>Advanced Video Strategy & Storyboards</span>
+                <span>Video Content Strategy</span>
               </CardTitle>
               <CardDescription>
                 Detailed production plans with ROI projections and shot lists
@@ -567,91 +640,9 @@ export default function ListingOptimization({ data }: ListingOptimizationProps) 
         </div>
       )}
 
-      {/* Performance & QA Tab */}
-      {activeTab === 'performance' && (
+      {/* Quality Assurance Tab */}
+      {activeTab === 'qa' && (
         <div className="space-y-6">
-          {/* Listing Performance Simulator */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Gauge className="h-5 w-5 text-blue-600" />
-                <span>Listing Performance Simulator</span>
-              </CardTitle>
-              <CardDescription>
-                Predict conversion improvements and prioritize optimizations by ROI
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Current Metrics */}
-                <div className="grid md:grid-cols-5 gap-4">
-                  {Object.entries(listingData.listingPerformanceSimulator.currentMetrics).map(([metric, value]: [string, any]) => (
-                    <div key={metric} className="p-4 border rounded-lg text-center">
-                      <div className="text-xl font-bold text-blue-600 mb-1">
-                        {typeof value === 'number' ? (metric.includes('Rate') ? `${value}%` : value.toFixed(1)) : value}
-                      </div>
-                      <div className="text-sm text-gray-600 capitalize">
-                        {metric.replace(/([A-Z])/g, ' $1').trim()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Priority Matrix */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-4">Optimization Priority Matrix</h3>
-                  <div className="space-y-3">
-                    {listingData.listingPerformanceSimulator.priorityMatrix.map((item: any, index: number) => (
-                      <div key={index} className="p-4 border rounded-lg flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                            item.priority === 1 ? 'bg-red-500' : 
-                            item.priority === 2 ? 'bg-orange-500' : 
-                            item.priority === 3 ? 'bg-yellow-500' :
-                            item.priority === 4 ? 'bg-blue-500' : 'bg-gray-500'
-                          }`}>
-                            {item.priority}
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-900">{item.optimization}</div>
-                            <div className="text-sm text-gray-600">
-                              Impact: <span className="font-medium">{item.impact}</span> | 
-                              Effort: <span className="font-medium">{item.effort}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-green-600">{item.roi}% ROI</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Gap Analysis */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-4">Competitor Gap Analysis</h3>
-                  <div className="space-y-3">
-                    {listingData.listingPerformanceSimulator.competitorGapAnalysis.map((gap: any, index: number) => (
-                      <div key={index} className="p-4 border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-gray-900">{gap.area}</span>
-                          <Badge variant={gap.gap > 15 ? 'destructive' : gap.gap > 10 ? 'secondary' : 'default'}>
-                            {gap.gap} point gap
-                          </Badge>
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <span>Your Score: <span className="font-medium">{gap.ourScore}</span></span>
-                          <span>Competitor Avg: <span className="font-medium">{gap.competitorAverage}</span></span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Quality Assurance & Compliance */}
           <Card>
             <CardHeader>

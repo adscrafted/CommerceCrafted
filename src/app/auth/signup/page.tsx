@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useAuthActions, useAuthState } from '@/lib/supabase/hooks'
 import {
   UserPlus,
   Mail,
@@ -37,6 +37,19 @@ export default function SignUpPage() {
   const [agreeToTerms, setAgreeToTerms] = useState(false)
   const [subscribeNewsletter, setSubscribeNewsletter] = useState(true)
   const router = useRouter()
+  const { signUp, signInWithGoogle } = useAuthActions()
+  const { user, isAuthenticated } = useAuthState()
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'ADMIN') {
+        router.push('/admin')
+      } else {
+        router.push('/dashboard')
+      }
+    }
+  }, [isAuthenticated, user, router])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -80,42 +93,13 @@ export default function SignUpPage() {
     setIsLoading(true)
 
     try {
-      // Create user account
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          subscribeNewsletter
-        }),
-      })
-
-      const data = await response.json()
+      const result = await signUp(formData.email, formData.password, formData.name)
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create account')
-      }
-
-      if (data.requiresVerification) {
+      if (result.error) {
+        setError(result.error)
+      } else {
         // Redirect to verification notice
         router.push('/auth/signin?message=Account created successfully! Please check your email to verify your account before signing in.')
-      } else {
-        // Automatically sign in after successful registration (fallback)
-        const signInResult = await signIn('credentials', {
-          email: formData.email,
-          password: formData.password,
-          redirect: false,
-        })
-
-        if (signInResult?.ok) {
-          router.push('/dashboard')
-        } else {
-          router.push('/auth/signin?message=Account created successfully. Please sign in.')
-        }
       }
     } catch (error: unknown) {
       setError(
@@ -130,8 +114,16 @@ export default function SignUpPage() {
 
   const handleGoogleSignUp = async () => {
     setIsLoading(true)
+    setError('')
+    
     try {
-      await signIn('google', { callbackUrl: '/dashboard' })
+      const result = await signInWithGoogle()
+      
+      if (result.error) {
+        setError(result.error)
+        setIsLoading(false)
+      }
+      // Success is handled by the auth context and redirect useEffect
     } catch {
       setError('Failed to sign up with Google')
       setIsLoading(false)

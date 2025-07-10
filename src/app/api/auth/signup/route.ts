@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 import { z } from 'zod'
 import { createEmailVerificationToken } from '@/lib/tokens'
 import { emailService } from '@/lib/email'
@@ -18,9 +18,11 @@ export async function POST(request: NextRequest) {
     const { name, email, password, subscribeNewsletter } = signupSchema.parse(body)
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    })
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle()
 
     if (existingUser) {
       return NextResponse.json(
@@ -33,38 +35,29 @@ export async function POST(request: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 12)
 
     // Create user (email not verified yet)
-    const user = await prisma.user.create({
-      data: {
+    const { data: user } = await supabase
+      .from('users')
+      .insert({
         name,
         email,
-        passwordHash,
+        password_hash: passwordHash,
         role: 'USER',
-        subscriptionTier: 'free',
-        emailSubscribed: subscribeNewsletter,
-        emailVerified: null, // Will be set when email is verified
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        subscriptionTier: true,
-        emailVerified: true,
-        createdAt: true,
-      }
-    })
+        subscription_tier: 'free',
+        email_subscribed: subscribeNewsletter,
+        email_verified: null, // Will be set when email is verified
+      })
+      .select('id, name, email, role, subscription_tier, email_verified, created_at')
+      .single()
 
     // Create newsletter subscription if opted in
     if (subscribeNewsletter) {
       try {
-        await prisma.newsletterSubscription.create({
-          data: {
-            email,
-            userId: user.id,
-            subscriptionType: 'daily_deals',
-            subscribeSource: 'signup',
-            unsubscribeToken: `unsubscribe_${user.id}_${Date.now()}`,
-          }
+        await supabase.from('newsletter_subscriptions').insert({
+          email,
+          user_id: user.id,
+          subscription_type: 'daily_deals',
+          subscribe_source: 'signup',
+          unsubscribe_token: `unsubscribe_${user.id}_${Date.now()}`,
         })
       } catch (error) {
         // Newsletter subscription is not critical, log but don't fail

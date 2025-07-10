@@ -23,19 +23,10 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold text-gray-100 mb-4">Product</h4>
             <ul className="space-y-2 text-sm text-gray-400">
+              <li><Link href="/features" className="hover:text-white">Features</Link></li>
               <li><Link href="/products" className="hover:text-white">Product Database</Link></li>
               <li><Link href="/trends" className="hover:text-white">Market Trends</Link></li>
               <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-gray-100 mb-4">Resources</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="/features" className="hover:text-white">Features</Link></li>
-              <li><Link href="/about" className="hover:text-white">About Us</Link></li>
-              <li><Link href="/frequently-asked-questions" className="hover:text-white">FAQ</Link></li>
-              <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
             </ul>
           </div>
 
@@ -44,7 +35,6 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-gray-400">
               <li><Link href="/terms" className="hover:text-white">Terms of Service</Link></li>
               <li><Link href="/privacy" className="hover:text-white">Privacy Policy</Link></li>
-              <li><Link href="/contact" className="hover:text-white">Support</Link></li>
               <li><Link href="/account" className="hover:text-white">Account</Link></li>
               <li>
                 <a href="mailto:support@commercecrafted.com" className="hover:text-white">
@@ -61,14 +51,11 @@ export default function Footer() {
             <div className="text-sm text-gray-400">
               © 2025 CommerceCrafted. All rights reserved.
             </div>
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center">
               <button className="text-sm text-gray-400 hover:text-white flex items-center">
                 <Globe className="h-4 w-4 mr-1" />
                 English
               </button>
-              <Link href="/api/health" className="text-sm text-gray-400 hover:text-white">
-                System Status
-              </Link>
             </div>
           </div>
         </div>

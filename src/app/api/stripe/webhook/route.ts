@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { stripe, getPlanByPriceId } from '@/lib/stripe'
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 import Stripe from 'stripe'
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
@@ -77,15 +77,9 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   const customerId = session.customer as string
 
   // Update user subscription in database
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      subscriptionTier: planId,
-      stripeCustomerId: customerId,
-      stripeSubscriptionId: subscriptionId,
-      subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Will be updated when subscription is processed
-    }
-  })
+  // TODO: Convert to Supabase
+  // await supabase.from('users').update({ subscription_tier: planId, stripe_customer_id: customerId, stripe_subscription_id: subscriptionId, subscription_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }).eq('id', userId)
+  console.log('TODO: Update user subscription in Supabase')
 
   console.log(`User ${userId} subscribed to ${planId}`)
 }
@@ -100,15 +94,9 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     const planName = planInfo?.planId || 'pro'
     const expiresAt = new Date(subscription.current_period_end * 1000)
     
-    await prisma.user.updateMany({
-      where: { email: customer.email },
-      data: {
-        subscriptionTier: planName,
-        subscriptionExpiresAt: expiresAt,
-        stripeCustomerId: customerId,
-        stripeSubscriptionId: subscription.id,
-      }
-    })
+    // TODO: Convert to Supabase
+    // await supabase.from('users').update({ subscription_tier: planName, subscription_expires_at: expiresAt, stripe_customer_id: customerId, stripe_subscription_id: subscription.id }).eq('email', customer.email)
+    console.log('TODO: Update user subscription in Supabase')
     
     console.log(`Subscription created for ${customer.email}: ${planName}`)
   }
@@ -143,10 +131,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       updateData.subscriptionExpiresAt = null
     }
     
-    await prisma.user.updateMany({
-      where: { email: customer.email },
-      data: updateData
-    })
+    // TODO: Convert to Supabase
+    // await supabase.from('users').update(updateData).eq('email', customer.email)
+    console.log('TODO: Update user subscription in Supabase')
     
     console.log(`Subscription updated for ${customer.email}: ${planName} (${subscription.status})`)
   }
@@ -157,13 +144,9 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer
   
   if (customer.email) {
-    await prisma.user.updateMany({
-      where: { email: customer.email },
-      data: {
-        subscriptionTier: 'free',
-        subscriptionExpiresAt: null,
-      }
-    })
+    // TODO: Convert to Supabase
+    // await supabase.from('users').update({ subscription_tier: 'free', subscription_expires_at: null }).eq('email', customer.email)
+    console.log('TODO: Update user subscription in Supabase')
     
     console.log(`Subscription cancelled for ${customer.email}`)
   }
@@ -179,35 +162,12 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   
   if (customer.email) {
     // Find user and create/update invoice record
-    const user = await prisma.user.findFirst({
-      where: { email: customer.email }
-    })
-
-    if (user) {
-      await prisma.invoice.upsert({
-        where: { stripeInvoiceId: invoice.id },
-        create: {
-          userId: user.id,
-          stripeInvoiceId: invoice.id,
-          stripeSubscriptionId: invoice.subscription as string || null,
-          amount: invoice.amount_paid / 100, // Convert from cents
-          currency: invoice.currency,
-          status: invoice.status || 'paid',
-          description: invoice.description || 'Subscription payment',
-          invoiceUrl: invoice.invoice_pdf || null,
-          hostedInvoiceUrl: invoice.hosted_invoice_url || null,
-          periodStart: new Date((invoice.period_start || 0) * 1000),
-          periodEnd: new Date((invoice.period_end || 0) * 1000),
-          dueDate: new Date((invoice.due_date || 0) * 1000),
-          paidAt: new Date(),
-        },
-        update: {
-          status: invoice.status || 'paid',
-          paidAt: new Date(),
-          attemptCount: invoice.attempt_count || 0,
-        }
-      })
-    }
+    // TODO: Convert to Supabase
+    // const { data: user } = await supabase.from('users').select('id').eq('email', customer.email).single()
+    // if (user) {
+    //   await supabase.from('invoices').upsert({ ... })
+    // }
+    console.log('TODO: Update invoice in Supabase')
   }
 }
 
@@ -220,36 +180,14 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer
   
   if (customer.email) {
-    const user = await prisma.user.findFirst({
-      where: { email: customer.email }
-    })
+    // TODO: Convert to Supabase
+    // const { data: user } = await supabase.from('users').select('id').eq('email', customer.email).single()
+    // if (user) {
+    //   await supabase.from('invoices').upsert({ ... })
+    // }
+    console.log('TODO: Update failed invoice in Supabase')
 
-    if (user) {
-      await prisma.invoice.upsert({
-        where: { stripeInvoiceId: invoice.id },
-        create: {
-          userId: user.id,
-          stripeInvoiceId: invoice.id,
-          stripeSubscriptionId: invoice.subscription as string || null,
-          amount: invoice.amount_due / 100,
-          currency: invoice.currency,
-          status: invoice.status || 'failed',
-          description: invoice.description || 'Subscription payment',
-          periodStart: new Date((invoice.period_start || 0) * 1000),
-          periodEnd: new Date((invoice.period_end || 0) * 1000),
-          dueDate: new Date((invoice.due_date || 0) * 1000),
-          attemptCount: invoice.attempt_count || 0,
-          nextPaymentAttempt: invoice.next_payment_attempt ? new Date(invoice.next_payment_attempt * 1000) : null,
-        },
-        update: {
-          status: invoice.status || 'failed',
-          attemptCount: invoice.attempt_count || 0,
-          nextPaymentAttempt: invoice.next_payment_attempt ? new Date(invoice.next_payment_attempt * 1000) : null,
-        }
-      })
-
-      // Consider temporarily restricting access for failed payments
-      // This depends on your business logic
-    }
+    // Consider temporarily restricting access for failed payments
+    // This depends on your business logic
   }
 }

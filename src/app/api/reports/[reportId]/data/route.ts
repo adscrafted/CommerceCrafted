@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 
 // GET report data
 export async function GET(
@@ -25,17 +25,9 @@ export async function GET(
     const search = searchParams.get('search') || ''
 
     // Verify user owns this report
-    const report = await prisma.amazonReport.findUnique({
-      where: { 
-        id: reportId,
-        userId: session.user.id
-      },
-      select: {
-        id: true,
-        type: true,
-        status: true
-      }
-    })
+    // TODO: Convert to Supabase
+    // const { data: report } = await supabase.from('amazon_reports').select('id, type, status').eq('id', reportId).eq('user_id', session.user.id).single()
+    const report = null
 
     if (!report) {
       return NextResponse.json(
@@ -65,18 +57,10 @@ export async function GET(
         })
       }
 
-      const [data, total] = await Promise.all([
-        prisma.searchTerm.findMany({
-          where,
-          skip: (page - 1) * limit,
-          take: limit,
-          orderBy: [
-            { searchVolume: 'asc' }, // Lower rank = higher volume
-            { relevanceScore: 'desc' }
-          ]
-        }),
-        prisma.searchTerm.count({ where })
-      ])
+      // TODO: Convert to Supabase
+      // const { data, count } = await supabase.from('search_terms').select('*', { count: 'exact' }).eq('report_id', reportId).range((page - 1) * limit, page * limit - 1)
+      const data = []
+      const total = 0
 
       return NextResponse.json({
         success: true,
@@ -90,13 +74,9 @@ export async function GET(
       })
     } else {
       // For other report types, get from report data
-      const reportData = await prisma.amazonReportData.findUnique({
-        where: { reportId: reportId },
-        select: {
-          data: true,
-          recordCount: true
-        }
-      })
+      // TODO: Convert to Supabase
+      // const { data: reportData } = await supabase.from('amazon_report_data').select('data, record_count').eq('report_id', reportId).single()
+      const reportData = null
 
       if (!reportData) {
         return NextResponse.json(

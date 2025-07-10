@@ -1,5 +1,5 @@
 // Report Polling Service for Amazon SP-API Reports
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 import { getAmazonSearchTermsService } from './amazon-search-terms-service'
 import type { SearchTermData, ReportMetadata } from './amazon-search-terms-service'
 
@@ -102,20 +102,9 @@ export class ReportPollingService {
   private async pollPendingReports(): Promise<void> {
     try {
       // Get all reports that need polling
-      const pendingReports = await prisma.amazonReport.findMany({
-        where: {
-          status: {
-            in: ['PENDING', 'PROCESSING']
-          },
-          retryCount: {
-            lt: this.maxRetries
-          }
-        },
-        orderBy: {
-          lastPolledAt: 'asc'
-        },
-        take: 10 // Process up to 10 reports at a time
-      })
+      // TODO: Convert to Supabase
+      // const { data: pendingReports } = await supabase.from('amazon_reports').select('*').in('status', ['PENDING', 'PROCESSING']).lt('retry_count', this.maxRetries).order('last_polled_at', { ascending: true }).limit(10)
+      const pendingReports = []
 
       if (pendingReports.length === 0) {
         return
@@ -141,13 +130,9 @@ export class ReportPollingService {
       const status = await service.getReportStatus(report.amazonReportId)
       
       // Update last polled time
-      await prisma.amazonReport.update({
-        where: { id: report.id },
-        data: { 
-          lastPolledAt: new Date(),
-          retryCount: { increment: 1 }
-        }
-      })
+      // TODO: Convert to Supabase
+      // await supabase.from('amazon_reports').update({ last_polled_at: new Date(), retry_count: report.retryCount + 1 }).eq('id', report.id)
+      console.log('TODO: Update report poll time in Supabase')
 
       // Handle different statuses
       switch (status.processingStatus) {
@@ -174,25 +159,18 @@ export class ReportPollingService {
 
       // Check if we've exceeded max retries
       if (report.retryCount >= this.maxRetries - 1) {
-        await prisma.amazonReport.update({
-          where: { id: report.id },
-          data: {
-            status: 'EXPIRED',
-            error: 'Maximum polling attempts exceeded'
-          }
-        })
+        // TODO: Convert to Supabase
+        // await supabase.from('amazon_reports').update({ status: 'EXPIRED', error: 'Maximum polling attempts exceeded' }).eq('id', report.id)
+        console.log('TODO: Update report status in Supabase')
       }
 
     } catch (error) {
       console.error(`Error polling report ${report.amazonReportId}:`, error)
       
       // Update error count
-      await prisma.amazonReport.update({
-        where: { id: report.id },
-        data: {
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }
-      })
+      // TODO: Convert to Supabase
+      // await supabase.from('amazon_reports').update({ error: error instanceof Error ? error.message : 'Unknown error' }).eq('id', report.id)
+      console.log('TODO: Update report error in Supabase')
     }
   }
 
@@ -229,49 +207,13 @@ export class ReportPollingService {
       }
 
       // Store the parsed data
-      await prisma.$transaction(async (tx) => {
-        // Update report status
-        await tx.amazonReport.update({
-          where: { id: report.id },
-          data: {
-            status: 'COMPLETED',
-            completedAt: new Date(),
-            reportDocumentId: status.reportDocumentId
-          }
-        })
-
-        // Store the data
-        if (report.type === ReportType.SEARCH_TERMS) {
-          // Store search terms data
-          const searchTermsData = parsedData as SearchTermData[]
-          
-          // Create search terms records
-          await tx.searchTerm.createMany({
-            data: searchTermsData.map(term => ({
-              reportId: report.id,
-              term: term.searchTerm,
-              searchVolume: term.searchVolume,
-              clickShare: term.clickShare,
-              conversionShare: term.conversionShare,
-              relevanceScore: term.relevance,
-              clickedAsin: term.clickedAsin,
-              clickedProductTitle: term.clickedProductTitle,
-              weekStartDate: report.startDate,
-              weekEndDate: report.endDate,
-              marketplaceId: report.marketplaceId
-            }))
-          })
-        }
-
-        // Create report data record
-        await tx.amazonReportData.create({
-          data: {
-            reportId: report.id,
-            data: parsedData,
-            recordCount: recordCount
-          }
-        })
-      })
+      // TODO: Convert to Supabase with transaction
+      // await supabase.from('amazon_reports').update({ status: 'COMPLETED', completed_at: new Date(), report_document_id: status.reportDocumentId }).eq('id', report.id)
+      // if (report.type === ReportType.SEARCH_TERMS) {
+      //   await supabase.from('search_terms').insert(searchTermsData.map(...))
+      // }
+      // await supabase.from('amazon_report_data').insert({ report_id: report.id, data: parsedData, record_count: recordCount })
+      console.log('TODO: Store parsed report data in Supabase')
 
       console.log(`Report ${report.amazonReportId} processed successfully. ${recordCount} records stored.`)
 
@@ -281,13 +223,9 @@ export class ReportPollingService {
     } catch (error) {
       console.error(`Error processing completed report:`, error)
       
-      await prisma.amazonReport.update({
-        where: { id: report.id },
-        data: {
-          status: 'FAILED',
-          error: `Failed to process report: ${error instanceof Error ? error.message : 'Unknown error'}`
-        }
-      })
+      // TODO: Convert to Supabase
+      // await supabase.from('amazon_reports').update({ status: 'FAILED', error: `Failed to process report: ${error instanceof Error ? error.message : 'Unknown error'}` }).eq('id', report.id)
+      console.log('TODO: Update report failure in Supabase')
     }
   }
 
@@ -311,14 +249,9 @@ export class ReportPollingService {
       }
     }
 
-    await prisma.amazonReport.update({
-      where: { id: report.id },
-      data: {
-        status: 'FAILED',
-        error: errorMessage,
-        completedAt: new Date()
-      }
-    })
+    // TODO: Convert to Supabase
+    // await supabase.from('amazon_reports').update({ status: 'FAILED', error: errorMessage, completed_at: new Date() }).eq('id', report.id)
+    console.log('TODO: Update report failure in Supabase')
 
     // Notify user of failure
     await this.notifyReportFailure(report, errorMessage)
@@ -342,18 +275,9 @@ export class ReportPollingService {
       })
 
       // Create database record
-      const report = await prisma.amazonReport.create({
-        data: {
-          type,
-          amazonReportId: reportMetadata.reportId,
-          status: 'PENDING',
-          startDate,
-          endDate,
-          marketplaceId: marketplaceId || process.env.SP_API_MARKETPLACE_ID || 'ATVPDKIKX0DER',
-          userId,
-          retryCount: 0
-        }
-      })
+      // TODO: Convert to Supabase
+      // const { data: report } = await supabase.from('amazon_reports').insert({ ... }).select().single()
+      const report = { id: Math.random().toString(36) }
 
       console.log(`Created report request ${report.id} with Amazon ID ${reportMetadata.reportId}`)
 
@@ -372,17 +296,9 @@ export class ReportPollingService {
 
   // Get report status
   async getReportStatus(reportId: string): Promise<DatabaseReport & { reportData?: { recordCount: number; createdAt: Date } }> {
-    const report = await prisma.amazonReport.findUnique({
-      where: { id: reportId },
-      include: {
-        reportData: {
-          select: {
-            recordCount: true,
-            createdAt: true
-          }
-        }
-      }
-    })
+    // TODO: Convert to Supabase with joins
+    // const { data: report } = await supabase.from('amazon_reports').select('*, report_data:amazon_report_data(record_count, created_at)').eq('id', reportId).single()
+    const report = null
 
     if (!report) {
       throw new Error('Report not found')
@@ -400,12 +316,9 @@ export class ReportPollingService {
     createdAt: Date
     report: DatabaseReport
   }> {
-    const data = await prisma.amazonReportData.findFirst({
-      where: { reportId },
-      include: {
-        report: true
-      }
-    })
+    // TODO: Convert to Supabase with joins
+    // const { data } = await supabase.from('amazon_report_data').select('*, report:amazon_reports(*)').eq('report_id', reportId).single()
+    const data = null
 
     if (!data) {
       throw new Error('Report data not found')

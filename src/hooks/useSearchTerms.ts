@@ -34,6 +34,7 @@ export interface TrendData {
     total_click_share: number
     total_conversion_share: number
   }>
+  marketplaceId?: string
 }
 
 export function useSearchTerms() {
@@ -47,8 +48,8 @@ export function useSearchTerms() {
         setLoading(true)
         console.log('🚀 Starting to fetch trends...')
         
-        // Fetch search terms from our public trends API
-        const response = await fetch('/api/trends?limit=100')
+        // Fetch search terms from our public trends API - reduced limit for performance
+        const response = await fetch('/api/trends?limit=50')
         console.log('📡 API Response status:', response.status)
         
         if (!response.ok) {
@@ -74,7 +75,8 @@ export function useSearchTerms() {
             clickShare: (asin.click_share || 0) * 100,
             conversionShare: (asin.conversion_share || 0) * 100
           })),
-          weeklyData: (term as any).weeklyData || [] // Include historical weekly data for trends
+          weeklyData: (term as any).weeklyData || [], // Include historical weekly data for trends
+          marketplaceId: term.marketplaceId || 'US' // Default to US if not specified
         }))
 
         // Sort by search frequency rank

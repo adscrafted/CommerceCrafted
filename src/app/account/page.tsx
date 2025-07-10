@@ -24,6 +24,7 @@ import {
   BarChart3,
   Star
 } from 'lucide-react'
+import ProtectedRoute from '@/components/auth/ProtectedRoute'
 
 interface UserProfile {
   name: string
@@ -85,13 +86,14 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Account Settings</h1>
-          <p className="text-gray-600">Manage your account preferences and settings</p>
-        </div>
+    <ProtectedRoute>
+      <div className="bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Page Header */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Account Settings</h1>
+            <p className="text-gray-600">Manage your account preferences and settings</p>
+          </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
@@ -564,5 +566,6 @@ export default function AccountPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   )
 }

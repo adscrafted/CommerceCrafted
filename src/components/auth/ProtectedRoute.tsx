@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/lib/supabase/auth-context'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -32,11 +32,11 @@ export default function ProtectedRoute({
   requireEmailVerification = false,
   fallback
 }: ProtectedRouteProps) {
-  const { data: session, status } = useSession()
+  const { user, session, loading } = useAuth()
   const router = useRouter()
 
   // Loading state
-  if (status === 'loading') {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -48,7 +48,7 @@ export default function ProtectedRoute({
   }
 
   // Authentication check
-  if (requireAuth && !session) {
+  if (requireAuth && !user) {
     if (fallback) return <>{fallback}</>
     
     return (
@@ -95,7 +95,7 @@ export default function ProtectedRoute({
   }
 
   // Email verification check
-  if (requireEmailVerification && session && !session.user.emailVerified) {
+  if (requireEmailVerification && user && !user.emailVerified) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
         <div className="max-w-md w-full">
@@ -137,8 +137,8 @@ export default function ProtectedRoute({
   }
 
   // Role check
-  if (requireRole && session) {
-    const userRole = session.user.role
+  if (requireRole && user) {
+    const userRole = user.role
     const requiredRoles = Array.isArray(requireRole) ? requireRole : [requireRole]
     
     const roleHierarchy: Record<string, number> = {
@@ -190,8 +190,8 @@ export default function ProtectedRoute({
   }
 
   // Subscription check
-  if (requireSubscription && session) {
-    const userTier = session.user.subscriptionTier
+  if (requireSubscription && user) {
+    const userTier = user.subscriptionTier
     const requiredTiers = Array.isArray(requireSubscription) ? requireSubscription : [requireSubscription]
     
     const tierHierarchy: Record<string, number> = {
@@ -201,7 +201,7 @@ export default function ProtectedRoute({
     }
     
     const userTierLevel = tierHierarchy[userTier] || 0
-    const hasAccess = requiredTiers.some(tier => {
+    let hasAccess = requiredTiers.some(tier => {
       const requiredLevel = tierHierarchy[tier] || 0
       return userTierLevel >= requiredLevel
     })
@@ -209,7 +209,7 @@ export default function ProtectedRoute({
     // Check subscription expiry for paid plans
     if (hasAccess && userTier !== 'free') {
       const now = new Date()
-      const expiresAt = session.user.subscriptionExpiresAt
+      const expiresAt = user.subscriptionExpiresAt
       
       if (expiresAt && new Date(expiresAt) < now) {
         hasAccess = false
@@ -217,8 +217,8 @@ export default function ProtectedRoute({
     }
 
     if (!hasAccess) {
-      const isExpired = userTier !== 'free' && session.user.subscriptionExpiresAt && 
-                      new Date(session.user.subscriptionExpiresAt) < new Date()
+      const isExpired = userTier !== 'free' && user.subscriptionExpiresAt && 
+                      new Date(user.subscriptionExpiresAt) < new Date()
       
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">

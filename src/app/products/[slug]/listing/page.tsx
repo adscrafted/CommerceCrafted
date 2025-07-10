@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/lib/supabase/auth-context'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, FileText } from 'lucide-react'
@@ -17,7 +17,7 @@ interface ListingPageProps {
 }
 
 export default function ListingPage({ params }: ListingPageProps) {
-  const { data: session, status } = useSession()
+  const { user, session, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [slug, setSlug] = useState<string>('')
 
@@ -31,7 +31,7 @@ export default function ListingPage({ params }: ListingPageProps) {
     loadData()
   }, [params])
 
-  if (loading || status === 'loading') {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -39,11 +39,11 @@ export default function ListingPage({ params }: ListingPageProps) {
     )
   }
 
-  if (status === 'unauthenticated' || !session) {
+  if (!user || !session) {
     return <MembershipGate productTitle={mockProductData.title} productImage={mockProductData.mainImage} />
   }
 
-  const userTier = session.user?.subscriptionTier || 'free'
+  const userTier = user.subscriptionTier || 'free'
   if (userTier === 'free') {
     return <MembershipGate productTitle={mockProductData.title} productImage={mockProductData.mainImage} />
   }
@@ -115,32 +115,6 @@ export default function ListingPage({ params }: ListingPageProps) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Key Insights */}
-        <Card className="mb-6 bg-gradient-to-r from-purple-50 to-pink-50">
-          <CardHeader>
-            <CardTitle>Key Listing Insights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-green-600">85%</div>
-                <div className="text-sm text-gray-600">Title Score</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-blue-600">78%</div>
-                <div className="text-sm text-gray-600">Image Score</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-purple-600">Ready</div>
-                <div className="text-sm text-gray-600">A+ Content</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-orange-600">3 Types</div>
-                <div className="text-sm text-gray-600">Video Strategy</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Listing Optimization Component */}
         <ListingOptimization data={mockProductData} />

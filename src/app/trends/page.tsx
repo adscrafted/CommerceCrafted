@@ -1,54 +1,59 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { 
   Search,
   Calendar,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  TrendingUp,
+  ArrowUp
 } from 'lucide-react'
-import Link from 'next/link'
 import { useSearchTerms, TrendData } from '@/hooks/useSearchTerms'
 import { useTrendingKeywords } from '@/hooks/useTrendingKeywords'
-import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts'
-import { TrendingUp, Sparkles, ArrowUp, ArrowDown } from 'lucide-react'
+import { useDebounce } from '@/hooks/useDebounce'
 
-// Marketplace flags mapping
-const marketplaceFlags: Record<string, string> = {
-  US: '🇺🇸',
-  DE: '🇩🇪',
-  UK: '🇬🇧',
-  CA: '🇨🇦',
-  FR: '🇫🇷',
-  ES: '🇪🇸',
-  IT: '🇮🇹',
-  MX: '🇲🇽',
-  JP: '🇯🇵',
-  AU: '🇦🇺',
-  AE: '🇦🇪',
-  SA: '🇸🇦'
-}
+// Import the simplified table row components
+import { SimpleTrendTableRow } from '@/components/trends/SimpleTrendTableRow'
+import { SimpleTrendingTableRow } from '@/components/trends/SimpleTrendingTableRow'
+
+// Marketplace configuration organized by region
+const marketplaces = [
+  // Americas
+  { code: 'US', flag: '🇺🇸', name: 'United States', region: 'Americas' },
+  { code: 'CA', flag: '🇨🇦', name: 'Canada', region: 'Americas' },
+  { code: 'MX', flag: '🇲🇽', name: 'Mexico', region: 'Americas' },
+  
+  // Europe
+  { code: 'UK', flag: '🇬🇧', name: 'United Kingdom', region: 'Europe' },
+  { code: 'DE', flag: '🇩🇪', name: 'Germany', region: 'Europe' },
+  { code: 'FR', flag: '🇫🇷', name: 'France', region: 'Europe' },
+  { code: 'IT', flag: '🇮🇹', name: 'Italy', region: 'Europe' },
+  { code: 'ES', flag: '🇪🇸', name: 'Spain', region: 'Europe' }
+]
 
 export default function TrendsPage() {
   const { trends, loading, error } = useSearchTerms()
   const { trendingKeywords, newKeywords, loading: trendingLoading, error: trendingError } = useTrendingKeywords()
   const [searchQuery, setSearchQuery] = useState('')
-  const [filteredTrends, setFilteredTrends] = useState<TrendData[]>([])
   const [selectedCountry, setSelectedCountry] = useState('US')
-  const [selectedView, setSelectedView] = useState<'ranking' | 'skyrocket' | 'newtrending'>('ranking')
+  const [selectedView, setSelectedView] = useState<'ranking' | 'skyrocket'>('ranking')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 50
+  const itemsPerPage = 25 // Reduced from 50 for better performance
+  
+  // Debounce search input
+  const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
   // Generate Amazon search URL for a keyword
-  const getAmazonSearchUrl = (keyword: string) => {
+  const getAmazonSearchUrl = useCallback((keyword: string) => {
     const encodedKeyword = encodeURIComponent(keyword)
     return `https://www.amazon.com/s?k=${encodedKeyword}&ref=nb_sb_noss`
-  }
+  }, [])
 
   // Get trend data for visualization using actual historical data
-  const getTrendData = (trend: TrendData) => {
+  const getTrendData = useCallback((trend: TrendData) => {
     // Use actual weekly data if available, otherwise fall back to current week only
     if (trend.weeklyData && trend.weeklyData.length > 0) {
       return trend.weeklyData.map((week: any, index: number) => {
@@ -74,26 +79,53 @@ export default function TrendsPage() {
       clickShare: trend.topClickShare,
       conversionShare: trend.top3ConversionShare
     }]
-  }
+  }, [])
 
-  useEffect(() => {
+  // Memoize filtered trends for better performance
+  const filteredTrends = useMemo(() => {
     let filtered = trends
-
-    if (searchQuery) {
+    
+    // Filter by marketplace
+    if (selectedCountry !== 'US') {
+      // For now, show a message for non-US marketplaces
+      // In the future, this would filter by marketplace
+      filtered = []
+    }
+    
+    // Filter by search query - use debounced value
+    if (debouncedSearchQuery) {
+      const query = debouncedSearchQuery.toLowerCase()
       filtered = filtered.filter(trend => 
-        trend.keyword.toLowerCase().includes(searchQuery.toLowerCase())
+        trend.keyword.toLowerCase().includes(query)
       )
     }
+    
+    return filtered
+  }, [debouncedSearchQuery, trends, selectedCountry])
 
-    setFilteredTrends(filtered)
-    setCurrentPage(1) // Reset to first page when filters change
-  }, [searchQuery, trends])
-
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredTrends.length / itemsPerPage)
+  // Calculate pagination for both views
+  const totalPages = Math.ceil(
+    selectedView === 'ranking' 
+      ? filteredTrends.length / itemsPerPage
+      : trendingKeywords.length / itemsPerPage
+  )
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const paginatedTrends = filteredTrends.slice(startIndex, endIndex)
+  
+  const paginatedTrends = useMemo(() => 
+    filteredTrends.slice(startIndex, endIndex),
+    [filteredTrends, startIndex, endIndex]
+  )
+  
+  const paginatedTrendingKeywords = useMemo(() =>
+    trendingKeywords.slice(startIndex, endIndex),
+    [trendingKeywords, startIndex, endIndex]
+  )
+
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
 
   // Show loading state
   if (loading || (selectedView === 'skyrocket' && trendingLoading)) {
@@ -126,7 +158,7 @@ export default function TrendsPage() {
       <div className="w-full">
         {/* Header */}
         <div className="text-center py-8 bg-white border-b">
-          <h1 className="text-4xl font-bold text-blue-600 mb-4">Trending Search Terms</h1>
+          <h1 className="text-5xl font-bold text-blue-600 mb-4">Trending Search Terms</h1>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             Weekly keyword ranking data with search volume, click share, and conversion metrics
           </p>
@@ -148,7 +180,7 @@ export default function TrendsPage() {
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    ABA Ranking List
+                    Ranking
                   </button>
                   <button
                     onClick={() => setSelectedView('skyrocket')}
@@ -158,44 +190,41 @@ export default function TrendsPage() {
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    Search Skyrocket List
-                  </button>
-                  <button
-                    onClick={() => setSelectedView('newtrending')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                      selectedView === 'newtrending'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    New Trending
+                    Trending
                   </button>
                 </div>
               </div>
 
               {/* Right side: Country Selector */}
-              <div className="flex items-center gap-2">
-                {Object.entries(marketplaceFlags).map(([country, flag]) => (
-                  <div key={country} className="flex flex-col items-center">
+              <div className="flex items-center gap-2 flex-wrap">
+{marketplaces.map((marketplace) => (
+                  marketplace.code === 'US' ? (
                     <button
+                      key={marketplace.code}
                       onClick={() => {
-                        setSelectedCountry(country)
-                        // Show message that data for other countries will be available soon
-                        if (country !== 'US') {
-                          alert(`Data for ${country} marketplace will be available soon. Currently showing US data.`)
-                        }
+                        setSelectedCountry(marketplace.code)
+                        setCurrentPage(1) // Reset pagination when changing marketplace
                       }}
-                      className={`p-2 text-2xl rounded-lg transition-all ${
-                        selectedCountry === country
-                          ? 'bg-blue-100 ring-2 ring-blue-500'
-                          : 'hover:bg-gray-100'
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-sm font-medium ${
+                        selectedCountry === marketplace.code
+                          ? 'bg-blue-100 ring-2 ring-blue-500 text-blue-700'
+                          : 'hover:bg-gray-100 text-gray-700'
                       }`}
-                      title={country}
+                      title={marketplace.name}
                     >
-                      {flag}
+                      <span className="text-lg">{marketplace.flag}</span>
+                      <span>{marketplace.code}</span>
                     </button>
-                    <span className="text-xs text-gray-600 mt-1">{country}</span>
-                  </div>
+                  ) : (
+                    <div
+                      key={marketplace.code}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-400 opacity-50 cursor-not-allowed"
+                      title={`${marketplace.name} - Coming Soon`}
+                    >
+                      <span className="text-lg">{marketplace.flag}</span>
+                      <span>{marketplace.code}</span>
+                    </div>
+                  )
                 ))}
               </div>
             </div>
@@ -225,9 +254,7 @@ export default function TrendsPage() {
             <span>
               {selectedView === 'ranking' 
                 ? `${filteredTrends.length.toLocaleString()} search terms`
-                : selectedView === 'skyrocket'
-                ? `${trendingKeywords.length} skyrocketing keywords`
-                : `${newKeywords.length} new keywords`
+                : `${trendingKeywords.length} trending keywords`
               }
             </span>
           </div>
@@ -249,327 +276,97 @@ export default function TrendsPage() {
                     </tr>
                   </thead>
                   <tbody className="relative">
-                    {paginatedTrends.map((trend, index) => (
-                    <tr
-                      key={trend.id}
-                      className="border-b hover:bg-gray-50 transition-colors"
-                    >
-                      {/* Keyword */}
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <div className="font-medium text-blue-600">
-                            {trend.keyword}
+                    {selectedCountry !== 'US' ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-16">
+                          <div className="text-gray-500">
+                            <div className="text-2xl mb-2">{marketplaces.find(m => m.code === selectedCountry)?.flag}</div>
+                            <p className="text-lg font-medium mb-2">
+                              {marketplaces.find(m => m.code === selectedCountry)?.name} marketplace data coming soon
+                            </p>
+                            <p className="text-sm">
+                              Currently only US marketplace data is available. We're working on adding more regions.
+                            </p>
                           </div>
-                          <a
-                            href={getAmazonSearchUrl(trend.keyword)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-orange-500 hover:text-orange-600 transition-colors"
-                            title={`Search "${trend.keyword}" on Amazon`}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
-                        </div>
-                      </td>
-
-                      {/* Search Frequency Rank */}
-                      <td className="p-3 text-center">
-                        <div className="space-y-1">
-                          <div className="font-semibold text-lg">{trend.searchFrequencyRank}</div>
-                          <div className="h-8 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <AreaChart data={getTrendData(trend)} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                                <Area
-                                  type="monotone"
-                                  dataKey="rank"
-                                  stroke="#3B82F6"
-                                  fill="#3B82F6"
-                                  fillOpacity={0.1}
-                                  strokeWidth={1.5}
-                                />
-                                <Tooltip
-                                  content={({ active, payload, label }) => {
-                                    if (active && payload && payload[0]) {
-                                      const data = payload[0].payload
-                                      const dateValue = typeof data.date === 'object' ? data.date.value : data.date
-                                      return (
-                                        <div className="bg-white border rounded p-2 text-xs shadow-lg">
-                                          <p className="font-medium text-gray-600 mb-1">{dateValue}</p>
-                                          <p>Rank: {Math.round(payload[0].value)}</p>
-                                        </div>
-                                      )
-                                    }
-                                    return null
-                                  }}
-                                />
-                              </AreaChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Click Share */}
-                      <td className="p-3 text-center">
-                        <div className="space-y-1">
-                          <div className="font-semibold">{Math.round(trend.topClickShare)}%</div>
-                          <div className="h-8 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <AreaChart data={getTrendData(trend)} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                                <Area
-                                  type="monotone"
-                                  dataKey="clickShare"
-                                  stroke="#10B981"
-                                  fill="#10B981"
-                                  fillOpacity={0.1}
-                                  strokeWidth={1.5}
-                                />
-                                <Tooltip
-                                  content={({ active, payload, label }) => {
-                                    if (active && payload && payload[0]) {
-                                      const data = payload[0].payload
-                                      const dateValue = typeof data.date === 'object' ? data.date.value : data.date
-                                      return (
-                                        <div className="bg-white border rounded p-2 text-xs shadow-lg">
-                                          <p className="font-medium text-gray-600 mb-1">{dateValue}</p>
-                                          <p>Click: {Math.round(payload[0].value)}%</p>
-                                        </div>
-                                      )
-                                    }
-                                    return null
-                                  }}
-                                />
-                              </AreaChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Conversion Share */}
-                      <td className="p-3 text-center">
-                        <div className="space-y-1">
-                          <div className="font-semibold">{Math.round(trend.top3ConversionShare)}%</div>
-                          <div className="h-8 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <AreaChart data={getTrendData(trend)} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                                <Area
-                                  type="monotone"
-                                  dataKey="conversionShare"
-                                  stroke="#F59E0B"
-                                  fill="#F59E0B"
-                                  fillOpacity={0.1}
-                                  strokeWidth={1.5}
-                                />
-                                <Tooltip
-                                  content={({ active, payload, label }) => {
-                                    if (active && payload && payload[0]) {
-                                      const data = payload[0].payload
-                                      const dateValue = typeof data.date === 'object' ? data.date.value : data.date
-                                      return (
-                                        <div className="bg-white border rounded p-2 text-xs shadow-lg">
-                                          <p className="font-medium text-gray-600 mb-1">{dateValue}</p>
-                                          <p>Conv: {Math.round(payload[0].value)}%</p>
-                                        </div>
-                                      )
-                                    }
-                                    return null
-                                  }}
-                                />
-                              </AreaChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Top ASINs */}
-                      <td className="p-3">
-                        <div className="flex items-center gap-3 justify-center">
-                          {trend.top3ASINs.filter(asin => asin.asin && asin.asin !== 'N/A').map((asin, i) => (
-                            <div key={i} className="text-center">
-                              <div className="w-10 h-10 bg-gray-100 rounded overflow-hidden mb-1 mx-auto">
-                                <img
-                                  src={`https://via.placeholder.com/40x40/e2e8f0/64748b?text=${asin.asin.slice(-3)}`}
-                                  alt={asin.asin}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <div className="text-xs font-mono text-gray-600 mb-1">
-                                {asin.asin}
-                              </div>
-                              <div className="flex flex-col gap-0.5">
-                                <div className="text-xs">
-                                  <span className="text-gray-500">Clicks:</span>
-                                  <span className="text-blue-600 font-medium ml-0.5">{Math.round(asin.clickShare)}%</span>
-                                </div>
-                                <div className="text-xs">
-                                  <span className="text-gray-500">Conversions:</span>
-                                  <span className="text-green-600 font-medium ml-0.5">{Math.round(asin.conversionShare || 0)}%</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              ) : selectedView === 'skyrocket' ? (
-                // Search Skyrocket List View
-                <div>
-                  {/* Skyrocketing Keywords Table */}
-                  <table className="w-full">
-                    <thead className="sticky top-0 z-10">
-                      <tr className="border-b bg-gray-50 text-xs text-gray-600">
-                        <th className="text-left p-4 font-medium whitespace-nowrap">Keyword</th>
-                        <th className="text-center p-4 font-medium whitespace-nowrap">Search Frequency Rank</th>
-                        <th className="text-center p-4 font-medium whitespace-nowrap">Weekly Search Volume</th>
-                        <th className="text-center p-4 font-medium whitespace-nowrap">Top 3 Click Share</th>
-                        <th className="text-center p-4 font-medium whitespace-nowrap">Top 3 Conversion Share</th>
-                        <th className="text-center p-4 font-medium whitespace-nowrap min-w-[200px]">Top 3 ASINs</th>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="relative">
-                      {trendingKeywords.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="text-center py-8 text-gray-500">
-                            <TrendingUp className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                            <p>No skyrocketing keywords found this week</p>
-                            <p className="text-sm mt-1">Check back after next week's data is available</p>
-                          </td>
-                        </tr>
-                      ) : (
-                        trendingKeywords.slice(0, 50).map((keyword, index) => (
-                          <tr key={keyword.searchTerm} className="border-b hover:bg-gray-50 transition-colors">
-                            {/* Keyword */}
-                            <td className="p-3">
-                              <div className="flex items-center gap-2">
-                                <div className="font-medium text-blue-600">
-                                  {keyword.searchTerm}
-                                </div>
-                                <a
-                                  href={getAmazonSearchUrl(keyword.searchTerm)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-orange-500 hover:text-orange-600 transition-colors"
-                                  title={`Search "${keyword.searchTerm}" on Amazon`}
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </a>
-                              </div>
-                            </td>
-
-                            {/* Search Frequency Rank */}
-                            <td className="p-3 text-center">
-                              <div className="flex flex-col items-center">
-                                <div className="font-semibold text-lg">{keyword.currentRank}</div>
-                                {keyword.previousRank && (
-                                  <div className="text-xs text-green-600 flex items-center gap-0.5">
-                                    <ArrowUp className="h-3 w-3" />
-                                    <span>{keyword.rankImprovement.toLocaleString()}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-
-                            {/* Weekly Search Volume */}
-                            <td className="p-3 text-center">
-                              <div className="h-8 flex items-center justify-center">
-                                <div className="bg-gray-100 rounded px-3 py-1 text-xs text-gray-500">
-                                  Data Available Soon
-                                </div>
-                              </div>
-                            </td>
-
-                            {/* Click Share */}
-                            <td className="p-3 text-center">
-                              <div className="font-semibold">{Math.round(keyword.totalClickShare)}%</div>
-                            </td>
-
-                            {/* Conversion Share */}
-                            <td className="p-3 text-center">
-                              <div className="font-semibold">{Math.round(keyword.totalConversionShare)}%</div>
-                            </td>
-
-                            {/* Top ASINs */}
-                            <td className="p-3">
-                              <div className="flex items-center gap-2 justify-center">
-                                <div className="bg-gray-100 rounded px-2 py-1 text-xs text-gray-500">
-                                  Loading ASINs...
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                // New Trending View
-                <div className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Sparkles className="h-5 w-5 text-purple-600" />
-                    <h2 className="text-lg font-semibold">New Trending Keywords</h2>
-                    <span className="text-sm text-gray-500">Brand new keywords entering the top rankings</span>
-                  </div>
-                  <div className="grid gap-3">
-                    {newKeywords.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
-                        <Sparkles className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                        <p>No new trending keywords found this week</p>
-                      </div>
+                    ) : paginatedTrends.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-16 text-gray-500">
+                          <p>No search terms found</p>
+                        </td>
+                      </tr>
                     ) : (
-                      newKeywords.slice(0, 20).map((keyword) => (
-                        <div key={keyword.searchTerm} className="bg-purple-50 rounded-lg p-4 hover:bg-purple-100 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-purple-700">{keyword.searchTerm}</span>
-                                  <a
-                                    href={getAmazonSearchUrl(keyword.searchTerm)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-orange-500 hover:text-orange-600"
-                                  >
-                                    <ExternalLink className="h-4 w-4" />
-                                  </a>
-                                </div>
-                                <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
-                                  <span className="flex items-center gap-1">
-                                    <Sparkles className="h-3 w-3 text-purple-500" />
-                                    New This Week
-                                  </span>
-                                  <span>Rank: #{keyword.currentRank}</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <div className="text-right">
-                                <div className="text-sm font-medium">{Math.round(keyword.totalClickShare)}%</div>
-                                <div className="text-xs text-gray-500">Click Share</div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-sm font-medium">{Math.round(keyword.totalConversionShare)}%</div>
-                                <div className="text-xs text-gray-500">Conv Share</div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                      paginatedTrends.map((trend) => (
+                        <SimpleTrendTableRow
+                          key={trend.id}
+                          trend={trend}
+                          getAmazonSearchUrl={getAmazonSearchUrl}
+                        />
                       ))
                     )}
-                  </div>
-                </div>
+                  </tbody>
+                </table>
+              ) : (
+                // Trending Keywords View
+                <table className="w-full">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="border-b bg-gray-50 text-xs text-gray-600">
+                      <th className="text-left p-4 font-medium whitespace-nowrap">Keyword</th>
+                      <th className="text-center p-4 font-medium whitespace-nowrap">Search Frequency Rank</th>
+                      <th className="text-center p-4 font-medium whitespace-nowrap">Top 3 Click Share</th>
+                      <th className="text-center p-4 font-medium whitespace-nowrap">Top 3 Conversion Share</th>
+                      <th className="text-center p-4 font-medium whitespace-nowrap">Top ASINs</th>
+                    </tr>
+                  </thead>
+                  <tbody className="relative">
+                    {selectedCountry !== 'US' ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-16">
+                          <div className="text-gray-500">
+                            <div className="text-2xl mb-2">{marketplaces.find(m => m.code === selectedCountry)?.flag}</div>
+                            <p className="text-lg font-medium mb-2">
+                              {marketplaces.find(m => m.code === selectedCountry)?.name} marketplace data coming soon
+                            </p>
+                            <p className="text-sm">
+                              Currently only US marketplace data is available. We're working on adding more regions.
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : paginatedTrendingKeywords.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-16 text-gray-500">
+                          <TrendingUp className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                          <p>No trending keywords found this week</p>
+                          <p className="text-sm mt-1">Check back after next week's data is available</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedTrendingKeywords.map((keyword) => (
+                        <SimpleTrendingTableRow
+                          key={keyword.searchTerm}
+                          keyword={keyword}
+                          getAmazonSearchUrl={getAmazonSearchUrl}
+                        />
+                      ))
+                    )}
+                  </tbody>
+                </table>
               )}
             </div>
 
           </div>
 
-          {/* Pagination Controls - Only show for ranking view */}
-          {selectedView === 'ranking' && (
+          {/* Pagination Controls - Show for both views */}
+          {totalPages > 1 && (
           <div className="mt-6 flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Showing {startIndex + 1} to {Math.min(endIndex, filteredTrends.length)} of {filteredTrends.length} results
+              {selectedView === 'ranking' ? (
+                <>Showing {startIndex + 1} to {Math.min(endIndex, filteredTrends.length)} of {filteredTrends.length} results</>
+              ) : (
+                <>Showing {startIndex + 1} to {Math.min(endIndex, trendingKeywords.length)} of {trendingKeywords.length} results</>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Button

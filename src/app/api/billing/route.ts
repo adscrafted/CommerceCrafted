@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 import { getStripeInvoices, getStripeUpcomingInvoice, formatCurrency } from '@/lib/stripe'
 import { getAllUserUsage } from '@/lib/usage'
 
@@ -17,17 +17,9 @@ export async function GET(_request: NextRequest) {
       )
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        email: true,
-        subscriptionTier: true,
-        subscriptionExpiresAt: true,
-        stripeCustomerId: true,
-        stripeSubscriptionId: true,
-      }
-    })
+    // TODO: Convert to Supabase
+    // const { data: user } = await supabase.from('users').select('id, email, subscription_tier, subscription_expires_at, stripe_customer_id, stripe_subscription_id').eq('id', session.user.id).single()
+    const user = null
 
     if (!user) {
       return NextResponse.json(
@@ -40,11 +32,9 @@ export async function GET(_request: NextRequest) {
     const usage = await getAllUserUsage(user.id)
 
     // Get invoices from database
-    const invoices = await prisma.invoice.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
-      take: 10
-    })
+    // TODO: Convert to Supabase
+    // const { data: invoices } = await supabase.from('invoices').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10)
+    const invoices = []
 
     // Get Stripe invoices if customer exists
     let stripeInvoices: Array<{

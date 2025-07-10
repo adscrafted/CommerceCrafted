@@ -115,32 +115,6 @@ export default function LaunchPage({ params }: LaunchPageProps) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Key Insights */}
-        <Card className="mb-6 bg-gradient-to-r from-orange-50 to-red-50">
-          <CardHeader>
-            <CardTitle>Key Launch Insights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-green-600">25-35</div>
-                <div className="text-sm text-gray-600">Daily Sales Goal</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-blue-600">$19.97</div>
-                <div className="text-sm text-gray-600">Launch Price</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-purple-600">90 days</div>
-                <div className="text-sm text-gray-600">To Break Even</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-orange-600">$15K</div>
-                <div className="text-sm text-gray-600">Total Investment</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Launch Strategy Component */}
         <LaunchStrategy data={mockProductData} />

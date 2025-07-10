@@ -293,16 +293,36 @@ export default function HomePage() {
         {/* Product of the Day Section */}
         {dailyFeature && (
           <section className="mb-16">
-            {/* Header */}
+            {/* Header with Navigation */}
             <div className="text-center mb-8">
-              <div className="flex items-center justify-center space-x-2 mb-2">
-                <Calendar className="h-5 w-5 text-blue-600" />
-                <Badge variant="secondary">
-                  {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                </Badge>
-              </div>
               <h2 className="text-4xl font-bold text-blue-600 mb-2">Product of the Day</h2>
-              <p className="text-gray-600 text-lg">Today's featured Amazon opportunity with comprehensive analysis</p>
+              <div className="flex items-center justify-center gap-6 mb-2">
+                <Link href="/products/smart-bluetooth-sleep-mask-with-built-in-speakers">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hover:bg-gray-100"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Previous
+                  </Button>
+                </Link>
+                
+                <div className="text-gray-600 font-medium">
+                  July 10, 2025
+                </div>
+                
+                <Link href="/next-product">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hover:bg-gray-100"
+                  >
+                    Next Product
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </div>
             </div>
 
             <Card className="overflow-hidden">
@@ -334,7 +354,7 @@ export default function HomePage() {
                       </div>
                     </div>
                     
-                    {/* Product Image with Opportunity Score */}
+                    {/* Product Image */}
                     <div className="relative text-center">
                       <div className="relative inline-block">
                         <Image 
@@ -344,10 +364,6 @@ export default function HomePage() {
                           height={256}
                           className="rounded-lg shadow-2xl w-64 h-64 object-cover"
                         />
-                        <div className="absolute -top-4 -right-4 bg-yellow-400 text-black rounded-full p-4 shadow-lg">
-                          <div className="text-2xl font-bold">{dailyFeature.product.analysis?.opportunityScore || 8.5}</div>
-                          <div className="text-xs">Score</div>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -380,142 +396,287 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Analysis Summary Card */}
-              <CardContent className="p-8">
-                <div className="max-w-6xl mx-auto">
-                  <div className="grid md:grid-cols-3 gap-6 mb-8">
-                    {/* Analysis Summary - Takes 2 columns */}
-                    <div className="md:col-span-2">
-                      <Card className="h-full bg-gradient-to-br from-indigo-50 to-indigo-100 border-2">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <CardTitle className="text-lg">Analysis Summary</CardTitle>
-                              <CardDescription className="text-sm">Key insights and opportunities</CardDescription>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-3xl font-bold text-indigo-600">
-                                {dailyFeature.product.analysis?.opportunityScore || 8.5}
-                              </div>
-                              <div className="text-xs text-gray-600">Overall Score</div>
-                            </div>
+              {/* Analysis Cards Section */}
+              <CardContent className="px-8 pb-8">
+                <div className="mb-8 pt-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Complete Product Analysis</h2>
+                  <p className="text-gray-600">Deep-dive analysis across 8 key dimensions</p>
+                </div>
+                
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                  {/* Opportunity Score Card - Spans 2 columns */}
+                  <Card className="lg:col-span-2 hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-200 bg-gradient-to-br from-indigo-50 to-indigo-100">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-3 bg-white rounded-lg shadow-sm">
+                            <BarChart3 className="h-6 w-6 text-gray-700" />
                           </div>
-                        </CardHeader>
-                        <CardContent>
-                          <Progress value={(dailyFeature.product.analysis?.opportunityScore || 8.5) * 10} className="h-2 mb-4" />
-                          <div className="grid md:grid-cols-2 gap-6">
-                            <div>
-                              <h3 className="font-semibold text-gray-900 mb-2">Strengths</h3>
-                              <ul className="space-y-1">
-                                <li className="text-sm text-gray-700 flex items-start space-x-2">
-                                  <Eye className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                                  <span>High demand with {dailyFeature.product.analysis?.keywordAnalysis.searchVolume.toLocaleString() || '89K'} monthly searches</span>
-                                </li>
-                                <li className="text-sm text-gray-700 flex items-start space-x-2">
-                                  <Eye className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                                  <span>Growing market (+{dailyFeature.product.analysis?.marketAnalysis.growthRate || 15.2}% YoY)</span>
-                                </li>
-                                <li className="text-sm text-gray-700 flex items-start space-x-2">
-                                  <Eye className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                                  <span>Strong profit margins ({dailyFeature.product.analysis?.financialAnalysis.profitMargin || 35}%)</span>
-                                </li>
-                              </ul>
-                            </div>
-                            
-                            <div>
-                              <h3 className="font-semibold text-gray-900 mb-2">Opportunities</h3>
-                              <ul className="space-y-1">
-                                <li className="text-sm text-gray-700 flex items-start space-x-2">
-                                  <ArrowRight className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                                  <span>Underserved premium segment</span>
-                                </li>
-                                <li className="text-sm text-gray-700 flex items-start space-x-2">
-                                  <ArrowRight className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                                  <span>Weak competitor listings</span>
-                                </li>
-                                <li className="text-sm text-gray-700 flex items-start space-x-2">
-                                  <ArrowRight className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                                  <span>High keyword opportunities</span>
-                                </li>
-                              </ul>
-                            </div>
+                          <div>
+                            <CardTitle className="text-lg">Opportunity Score</CardTitle>
+                            <CardDescription className="text-sm">Overall product opportunity rating</CardDescription>
                           </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    {/* Key Scores - Single column */}
-                    <div className="space-y-4">
-                      {/* Demand Score */}
-                      <div className="bg-white border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 text-blue-600" />
-                            <span className="font-medium text-sm">Demand</span>
-                          </div>
-                          <span className="text-xl font-bold text-blue-600">
-                            {dailyFeature.product.analysis?.demandScore || 9.2}
-                          </span>
                         </div>
-                        <Progress value={(dailyFeature.product.analysis?.demandScore || 9.2) * 10} className="h-1.5" />
-                      </div>
-
-                      {/* Competition Score */}
-                      <div className="bg-white border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Target className="h-4 w-4 text-red-600" />
-                            <span className="font-medium text-sm">Competition</span>
-                          </div>
-                          <span className="text-xl font-bold text-red-600">
-                            {dailyFeature.product.analysis?.competitionScore || 7.8}
-                          </span>
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-indigo-600">{dailyFeature.product.analysis?.opportunityScore || 87}</div>
+                          <div className="text-xs text-gray-600">Overall</div>
                         </div>
-                        <Progress value={(dailyFeature.product.analysis?.competitionScore || 7.8) * 10} className="h-1.5" />
                       </div>
-
-                      {/* Financial Score */}
-                      <div className="bg-white border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-green-600" />
-                            <span className="font-medium text-sm">Financial</span>
-                          </div>
-                          <span className="text-xl font-bold text-green-600">
-                            {dailyFeature.product.analysis?.feasibilityScore || 8.0}
-                          </span>
+                    </CardHeader>
+                    <CardContent>
+                      <Progress value={dailyFeature.product.analysis?.opportunityScore || 87} className="h-2 mb-3" />
+                      <p className="text-sm text-gray-700 mb-3">
+                        This comprehensive score combines all analysis dimensions to give you an overall product opportunity rating.
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 bg-white/50 rounded">
+                          <div className="text-2xl font-bold text-green-600">High</div>
+                          <div className="text-xs text-gray-600">Market Opportunity</div>
                         </div>
-                        <Progress value={(dailyFeature.product.analysis?.feasibilityScore || 8.0) * 10} className="h-1.5" />
+                        <div className="text-center p-3 bg-white/50 rounded">
+                          <div className="text-2xl font-bold text-blue-600">Strong</div>
+                          <div className="text-xs text-gray-600">Success Potential</div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
 
-                  {/* CTA */}
-                  <div className="text-center">
-                    <Link href="/product-of-the-day">
-                      <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                        View Complete Analysis
-                        <ArrowRight className="ml-2 h-5 w-5" />
-                      </Button>
+                  {/* Market Intelligence Card */}
+                  <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-200 bg-gradient-to-br from-yellow-50 to-yellow-100">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-3 bg-white rounded-lg shadow-sm">
+                            <MessageSquare className="h-6 w-6 text-gray-700" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">Market Intelligence</CardTitle>
+                            <CardDescription className="text-sm">Reviews & customer insights</CardDescription>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-yellow-600">88</div>
+                          <div className="text-xs text-gray-600">Score</div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Progress value={88} className="h-2 mb-3" />
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div><span className="text-gray-600">Sentiment:</span> <span className="font-medium">4.2★</span></div>
+                        <div><span className="text-gray-600">Reviews:</span> <span className="font-medium">36.6K</span></div>
+                        <div><span className="text-gray-600">Opportunities:</span> <span className="font-medium">4</span></div>
+                        <div><span className="text-gray-600">Avatars:</span> <span className="font-medium">3 Types</span></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Demand Analysis Card */}
+                  <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-3 bg-white rounded-lg shadow-sm">
+                            <TrendingUp className="h-6 w-6 text-gray-700" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">Demand Analysis</CardTitle>
+                            <CardDescription className="text-sm">Market size & growth</CardDescription>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-blue-600">92</div>
+                          <div className="text-xs text-gray-600">Score</div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Progress value={92} className="h-2 mb-3" />
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div><span className="text-gray-600">Trend:</span> <span className="font-medium">Growing</span></div>
+                        <div><span className="text-gray-600">Growth:</span> <span className="font-medium">+15%</span></div>
+                        <div><span className="text-gray-600">Conv Rate:</span> <span className="font-medium">12.5%</span></div>
+                        <div><span className="text-gray-600">Market:</span> <span className="font-medium">$1.2B</span></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Competition Analysis Card */}
+                  <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-200 bg-gradient-to-br from-red-50 to-red-100">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-3 bg-white rounded-lg shadow-sm">
+                            <Target className="h-6 w-6 text-gray-700" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">Competition Analysis</CardTitle>
+                            <CardDescription className="text-sm">Market positioning</CardDescription>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-red-600">78</div>
+                          <div className="text-xs text-gray-600">Score</div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Progress value={78} className="h-2 mb-3" />
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div><span className="text-gray-600">Competitors:</span> <span className="font-medium">127</span></div>
+                        <div><span className="text-gray-600">Avg Price:</span> <span className="font-medium">$27.99</span></div>
+                        <div><span className="text-gray-600">Avg Rating:</span> <span className="font-medium">4.2★</span></div>
+                        <div><span className="text-gray-600">Avg Reviews:</span> <span className="font-medium">3.4K</span></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Keywords Analysis Card */}
+                  <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-200 bg-gradient-to-br from-green-50 to-green-100">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-3 bg-white rounded-lg shadow-sm">
+                            <Search className="h-6 w-6 text-gray-700" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">Keywords Analysis</CardTitle>
+                            <CardDescription className="text-sm">Search opportunities</CardDescription>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-green-600">85</div>
+                          <div className="text-xs text-gray-600">Score</div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Progress value={85} className="h-2 mb-3" />
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div><span className="text-gray-600">CPC:</span> <span className="font-medium">$1.23</span></div>
+                        <div><span className="text-gray-600">Keywords:</span> <span className="font-medium">248</span></div>
+                        <div><span className="text-gray-600">Revenue:</span> <span className="font-medium">$454K</span></div>
+                        <div><span className="text-gray-600">Competition:</span> <span className="font-medium">Medium</span></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Financial Analysis Card */}
+                  <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-200 bg-gradient-to-br from-emerald-50 to-emerald-100">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-3 bg-white rounded-lg shadow-sm">
+                            <DollarSign className="h-6 w-6 text-gray-700" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">Financial Analysis</CardTitle>
+                            <CardDescription className="text-sm">Profitability & ROI</CardDescription>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-emerald-600">88</div>
+                          <div className="text-xs text-gray-600">Score</div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Progress value={88} className="h-2 mb-3" />
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div><span className="text-gray-600">Revenue:</span> <span className="font-medium">$52K</span></div>
+                        <div><span className="text-gray-600">Profit:</span> <span className="font-medium">$18.2K</span></div>
+                        <div><span className="text-gray-600">Margin:</span> <span className="font-medium">35%</span></div>
+                        <div><span className="text-gray-600">ROI:</span> <span className="font-medium">142%</span></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Listing Optimization Card */}
+                  <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-200 bg-gradient-to-br from-purple-50 to-purple-100">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-3 bg-white rounded-lg shadow-sm">
+                            <FileText className="h-6 w-6 text-gray-700" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">Listing Optimization</CardTitle>
+                            <CardDescription className="text-sm">Title, images & content</CardDescription>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-purple-600">82</div>
+                          <div className="text-xs text-gray-600">Score</div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Progress value={82} className="h-2 mb-3" />
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div><span className="text-gray-600">Title Score:</span> <span className="font-medium">85%</span></div>
+                        <div><span className="text-gray-600">Image Score:</span> <span className="font-medium">78%</span></div>
+                        <div><span className="text-gray-600">A+ Content:</span> <span className="font-medium">Ready</span></div>
+                        <div><span className="text-gray-600">Video:</span> <span className="font-medium">3 Types</span></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Launch Strategy Card */}
+                  <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-200 bg-gradient-to-br from-orange-50 to-orange-100">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-3 bg-white rounded-lg shadow-sm">
+                            <Rocket className="h-6 w-6 text-gray-700" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">Launch Strategy</CardTitle>
+                            <CardDescription className="text-sm">90-day roadmap</CardDescription>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-orange-600">90</div>
+                          <div className="text-xs text-gray-600">Score</div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Progress value={90} className="h-2 mb-3" />
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div><span className="text-gray-600">Price:</span> <span className="font-medium">$19.99</span></div>
+                        <div><span className="text-gray-600">Reviews:</span> <span className="font-medium">100+</span></div>
+                        <div><span className="text-gray-600">PPC:</span> <span className="font-medium">$75/day</span></div>
+                        <div><span className="text-gray-600">Timeline:</span> <span className="font-medium">90 days</span></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* CTA */}
+                <div className="text-center mb-8">
+                  <Link href="/product-of-the-day">
+                    <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                      View Complete Analysis
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </Link>
+                  <p className="text-sm text-gray-600 mt-3">
+                    Get detailed insights, competitor analysis, and launch strategies
+                  </p>
+                </div>
+
+                {/* Debug Link */}
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    Debug: <Link href="/products/smart-bluetooth-sleep-mask-with-built-in-speakers" className="text-blue-600 hover:text-blue-700 underline">
+                      View Main Product Detail Page (Smart Bluetooth Sleep Mask)
                     </Link>
-                    <p className="text-sm text-gray-600 mt-3">
-                      Get detailed insights, competitor analysis, and launch strategies
-                    </p>
-                  </div>
+                  </p>
                 </div>
               </CardContent>
             </Card>
           </section>
         )}
-
-        {/* Debug Link - Remove in production */}
-        <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800">
-            Debug: <Link href="/products/smart-bluetooth-sleep-mask-with-built-in-speakers" className="text-blue-600 hover:text-blue-700 underline">
-              View Main Product Detail Page (Smart Bluetooth Sleep Mask)
-            </Link>
-          </p>
-        </div>
 
         {/* The Product Database Section */}
         <section className="mb-16">
@@ -682,43 +843,8 @@ export default function HomePage() {
                     </div>
 
                     {/* Search Volume Chart */}
-                    <div className="h-20 w-full mb-4">
+                    <div className="h-32 w-full">
                       {renderTrendChart(trend.searchVolumeHistory)}
-                    </div>
-
-                    {/* Metrics Grid */}
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="bg-gray-50 rounded-lg p-2 text-center">
-                        <div className="text-sm font-semibold">{trend.topClickShare.toFixed(1)}%</div>
-                        <div className="text-xs text-gray-600">Click Share</div>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-2 text-center">
-                        <div className="text-sm font-semibold">{trend.top3ConversionShare.toFixed(1)}%</div>
-                        <div className="text-xs text-gray-600">Conversion</div>
-                      </div>
-                    </div>
-
-                    {/* Top ASINs */}
-                    <div className="border-t pt-4">
-                      <div className="text-xs font-medium text-gray-700 mb-2">Top 3 Products</div>
-                      <div className="flex items-center gap-2">
-                        {trend.top3ASINs.map((asin, i) => (
-                          <div key={i} className="flex-1 text-center">
-                            <div className="w-12 h-12 mx-auto bg-gray-100 rounded overflow-hidden mb-1">
-                              <Image
-                                src={asin.image || 'https://via.placeholder.com/48x48?text=Product'}
-                                alt={asin.asin}
-                                width={48}
-                                height={48}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {asin.clickShare.toFixed(0)}%
-                            </div>
-                          </div>
-                        ))}
-                      </div>
                     </div>
                   </CardContent>
                 </Card>

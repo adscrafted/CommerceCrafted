@@ -14,8 +14,10 @@ export default function Header() {
   }
 
   const navigation: Array<{ name: string; href: string; badge?: string }> = [
+    { name: 'Product of the Day', href: '/product-of-the-day' },
     { name: 'Database', href: '/database' },
     { name: 'Trends', href: '/trends' },
+    { name: 'Features', href: '/features' },
     { name: 'Pricing', href: '/pricing' },
   ]
 
@@ -23,32 +25,32 @@ export default function Header() {
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
-          <div className="flex items-center space-x-8">
-            <Link href="/" className="flex items-center space-x-2">
-              <Package className="h-6 w-6 text-blue-600" />
-              <span className="text-blue-600 text-2xl font-bold">CommerceCrafted</span>
-            </Link>
-            <nav className="hidden md:flex items-center space-x-8">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center ${
-                    isActive(item.href)
-                      ? 'text-blue-600 font-medium'
-                      : 'text-gray-600 hover:text-blue-600'
-                  }`}
-                >
-                  {item.name}
-                  {item.badge && (
-                    <Badge className="ml-2 bg-blue-100 text-blue-600 text-xs">
-                      {item.badge}
-                    </Badge>
-                  )}
-                </Link>
-              ))}
-            </nav>
-          </div>
+          <Link href="/" className="flex items-center space-x-2">
+            <Package className="h-6 w-6 text-blue-600" />
+            <span className="text-blue-600 text-2xl font-bold">CommerceCrafted</span>
+          </Link>
+          
+          <nav className="hidden md:flex items-center space-x-8 absolute left-1/2 transform -translate-x-1/2">
+            {navigation.map((item, index) => (
+              <Link
+                key={`${item.name}-${index}`}
+                href={item.href}
+                className={`flex items-center ${
+                  isActive(item.href)
+                    ? 'text-blue-600 font-medium'
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                {item.name}
+                {item.badge && (
+                  <Badge className="ml-2 bg-blue-100 text-blue-600 text-xs">
+                    {item.badge}
+                  </Badge>
+                )}
+              </Link>
+            ))}
+          </nav>
+          
           <div className="flex items-center space-x-4">
             <Link href="/auth/signin">
               <Button variant="outline">Login</Button>

@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 import { STRIPE_CONFIG } from '@/lib/stripe'
 
 export type UsageType = 'analyses' | 'aiQueries' | 'exports' | 'keywordResearch'
@@ -20,51 +20,55 @@ export async function getUserUsage(userId: string, usageType: UsageType): Promis
   const nextResetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
 
   // Get user to determine subscription tier
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { subscriptionTier: true }
-  })
+  const { data: user } = await supabase
+    .from('users')
+    .select('subscription_tier')
+    .eq('id', userId)
+    .single()
 
   if (!user) {
     throw new Error('User not found')
   }
 
   // Get usage limits for the user's plan
-  const plan = STRIPE_CONFIG.plans[user.subscriptionTier as keyof typeof STRIPE_CONFIG.plans]
+  const plan = STRIPE_CONFIG.plans[user.subscription_tier as keyof typeof STRIPE_CONFIG.plans]
   const limit = plan?.limits?.[usageType] || null
 
   // Get or create usage record for this month
-  let usage = await prisma.subscriptionUsage.findFirst({
-    where: {
-      userId,
-      usageType,
-      periodStart: startOfMonth,
-    }
-  })
+  let { data: usage } = await supabase
+    .from('subscription_usage')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('usage_type', usageType)
+    .eq('period_start', startOfMonth.toISOString())
+    .maybeSingle()
 
   if (!usage) {
-    usage = await prisma.subscriptionUsage.create({
-      data: {
-        userId,
-        usageType,
-        usageCount: 0,
-        usageLimit: limit,
-        periodStart: startOfMonth,
-        periodEnd: endOfMonth,
-        resetDate: nextResetDate,
-      }
-    })
+    const { data: newUsage } = await supabase
+      .from('subscription_usage')
+      .insert({
+        user_id: userId,
+        usage_type: usageType,
+        usage_count: 0,
+        usage_limit: limit,
+        period_start: startOfMonth.toISOString(),
+        period_end: endOfMonth.toISOString(),
+        reset_date: nextResetDate.toISOString(),
+      })
+      .select('*')
+      .single()
+    usage = newUsage
   }
 
   const isUnlimited = limit === null
-  const remainingUsage = isUnlimited ? null : Math.max(0, (limit || 0) - usage.usageCount)
-  const percentageUsed = isUnlimited ? null : ((usage.usageCount / (limit || 1)) * 100)
+  const remainingUsage = isUnlimited ? null : Math.max(0, (limit || 0) - usage.usage_count)
+  const percentageUsed = isUnlimited ? null : ((usage.usage_count / (limit || 1)) * 100)
 
   return {
     usageType,
-    usageCount: usage.usageCount,
+    usageCount: usage.usage_count,
     usageLimit: limit,
-    resetDate: usage.resetDate,
+    resetDate: new Date(usage.reset_date),
     isUnlimited,
     remainingUsage,
     percentageUsed,
@@ -91,17 +95,11 @@ export async function incrementUsage(userId: string, usageType: UsageType, count
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  await prisma.subscriptionUsage.updateMany({
-    where: {
-      userId,
-      usageType,
-      periodStart: startOfMonth,
-    },
-    data: {
-      usageCount: {
-        increment: count
-      }
-    }
+  await supabase.rpc('increment_usage_count', {
+    p_user_id: userId,
+    p_usage_type: usageType,
+    p_period_start: startOfMonth.toISOString(),
+    p_count: count
   })
 
   return await getUserUsage(userId, usageType)
@@ -127,59 +125,36 @@ export async function resetMonthlyUsage(): Promise<void> {
   const nextResetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
 
   // Archive old usage records by setting them to inactive
-  await prisma.subscriptionUsage.updateMany({
-    where: {
-      resetDate: {
-        lte: now
-      },
-      isActive: true
-    },
-    data: {
-      isActive: false
-    }
-  })
+  await supabase
+    .from('subscription_usage')
+    .update({ is_active: false })
+    .lte('reset_date', now.toISOString())
+    .eq('is_active', true)
 
   // Create new usage records for all active users
-  const users = await prisma.user.findMany({
-    select: { 
-      id: true, 
-      subscriptionTier: true 
-    }
-  })
+  const { data: users } = await supabase
+    .from('users')
+    .select('id, subscription_tier')
+  
+  if (!users) return
 
   const usageTypes: UsageType[] = ['analyses', 'aiQueries', 'exports', 'keywordResearch']
 
   for (const user of users) {
-    const plan = STRIPE_CONFIG.plans[user.subscriptionTier as keyof typeof STRIPE_CONFIG.plans]
+    const plan = STRIPE_CONFIG.plans[user.subscription_tier as keyof typeof STRIPE_CONFIG.plans]
     
     for (const usageType of usageTypes) {
       const limit = plan?.limits?.[usageType] || null
       
-      await prisma.subscriptionUsage.upsert({
-        where: {
-          userId_usageType_periodStart: {
-            userId: user.id,
-            usageType,
-            periodStart: startOfMonth
-          }
-        },
-        update: {
-          usageCount: 0,
-          usageLimit: limit,
-          periodEnd: endOfMonth,
-          resetDate: nextResetDate,
-          isActive: true
-        },
-        create: {
-          userId: user.id,
-          usageType,
-          usageCount: 0,
-          usageLimit: limit,
-          periodStart: startOfMonth,
-          periodEnd: endOfMonth,
-          resetDate: nextResetDate,
-          isActive: true
-        }
+      await supabase.from('subscription_usage').upsert({
+        user_id: user.id,
+        usage_type: usageType,
+        period_start: startOfMonth.toISOString(),
+        usage_count: 0,
+        usage_limit: limit,
+        period_end: endOfMonth.toISOString(),
+        reset_date: nextResetDate.toISOString(),
+        is_active: true
       })
     }
   }

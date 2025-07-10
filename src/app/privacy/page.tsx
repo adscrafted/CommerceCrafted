@@ -303,10 +303,6 @@ export default function PrivacyPage() {
               Terms of Service
             </a>
             <span className="text-gray-400">•</span>
-            <a href="/contact" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-              Contact Support
-            </a>
-            <span className="text-gray-400">•</span>
             <a href="/account" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
               Manage Preferences
             </a>

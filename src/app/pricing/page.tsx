@@ -82,14 +82,28 @@ export default function PricingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Badge className="bg-purple-100 text-purple-700 mb-6">Limited Offer</Badge>
           <h1 className="text-4xl font-bold text-gray-900 mb-6">
-            Find Your Next Big Idea
+            Find Your Next Winning Product
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            Stop wasting weeks researching dead ends. Use our system packed with a detailed opportunities all the hours of analysis already done for you.
+            Stop wasting weeks researching dead ends. Use our system packed with detailed product opportunities with all the analysis already done for you.
           </p>
-          <p className="text-lg text-gray-500 mb-12">
-            Join with the right trends and two idea hits became.
+          <p className="text-lg text-gray-500 mb-8">
+            Join thousands finding profitable Amazon products with our proven system.
           </p>
+          
+          {/* Launch Deal Notice */}
+          <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-6 max-w-2xl mx-auto">
+            <div className="flex items-center justify-center space-x-2 mb-2">
+              <span className="text-xl">🚀</span>
+              <span className="text-lg font-bold text-orange-800">LAUNCH SPECIAL</span>
+            </div>
+            <p className="text-orange-700 font-medium">
+              50% OFF All Plans - Limited Time Only!
+            </p>
+            <p className="text-sm text-orange-600 mt-2">
+              Celebrate our launch with exclusive pricing for early adopters
+            </p>
+          </div>
         </div>
       </div>
 
@@ -145,14 +159,18 @@ export default function PricingPage() {
 
           {/* Starter Plan */}
           <Card className="relative">
+            <div className="absolute -top-3 right-4">
+              <Badge className="bg-orange-500 text-white">50% OFF</Badge>
+            </div>
             <CardContent className="p-8">
               <div className="text-center mb-8">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Starter - Opportunity Hunter</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold">$999</span>
+                  <div className="text-lg text-gray-400 line-through">$999</div>
+                  <span className="text-4xl font-bold text-orange-600">$499</span>
                   <span className="text-gray-600 ml-2">per year</span>
                 </div>
-                <Link href="/auth/signin?plan=starter&price=999">
+                <Link href="/auth/signin?plan=starter&price=499">
                   <Button className="w-full mb-6 bg-blue-600 hover:bg-blue-700">
                     Select Starter
                   </Button>
@@ -171,7 +189,7 @@ export default function PricingPage() {
                   </div>
                   <div className="flex items-center">
                     <Check className="h-4 w-4 text-green-600 mr-3" />
-                    <span>Ability to bookmark ideas</span>
+                    <span>Ability to bookmark products</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="h-4 w-4 text-green-600 mr-3" />
@@ -205,14 +223,18 @@ export default function PricingPage() {
                 Recommended
               </Badge>
             </div>
+            <div className="absolute -top-3 right-4">
+              <Badge className="bg-orange-500 text-white">50% OFF</Badge>
+            </div>
             <CardContent className="p-8">
               <div className="text-center mb-8">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Pro - The Ultimate</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold">$1,499</span>
+                  <div className="text-lg text-gray-400 line-through">$1,499</div>
+                  <span className="text-4xl font-bold text-orange-600">$749</span>
                   <span className="text-gray-600 ml-2">per year</span>
                 </div>
-                <Link href="/auth/signin?plan=pro&price=1499">
+                <Link href="/auth/signin?plan=pro&price=749">
                   <Button className="w-full mb-6 bg-purple-600 hover:bg-purple-700">
                     Select Pro
                   </Button>
@@ -243,7 +265,7 @@ export default function PricingPage() {
                   </div>
                   <div className="flex items-center">
                     <Check className="h-4 w-4 text-green-600 mr-3" />
-                    <span>Unlimited exports and research reports</span>
+                    <span>Unlimited exports and analysis</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="h-4 w-4 text-green-600 mr-3" />
@@ -263,9 +285,6 @@ export default function PricingPage() {
           </Card>
         </div>
 
-        <p className="text-center text-sm text-gray-600 mt-8">
-          Have questions? Email us at [email]
-        </p>
 
         {/* Compare Plans Section */}
         <div className="mt-20">
@@ -332,7 +351,6 @@ export default function PricingPage() {
                         category: "Export & Reports",
                         items: [
                           { feature: "Export Product Analysis", free: "", starter: "Limited", pro: "Unlimited" },
-                          { feature: "Research Reports", free: "", starter: "Basic", pro: "Unlimited" },
                           { feature: "Advanced Search & Filtering", free: "", starter: "", pro: "✓" }
                         ]
                       }
@@ -372,11 +390,6 @@ export default function PricingPage() {
           </div>
         </div>
 
-        <div className="text-center mt-8">
-          <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-            Compare All Features
-          </Button>
-        </div>
 
         {/* FAQ Section */}
         <div className="mt-16">

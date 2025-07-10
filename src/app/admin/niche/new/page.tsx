@@ -1,20 +1,11 @@
-import { redirect } from 'next/navigation'
-import { NicheAnalysisForm } from '@/components/admin/NicheAnalysisForm'
-import { NicheAnalysisFormData } from '@/types/niche'
+import { NicheAnalysisFormEnhanced } from '@/components/admin/NicheAnalysisFormEnhanced'
+import { createNicheWithAnalysis } from './actions'
 
 export default function NewNicheAnalysisPage() {
-  const handleSave = async (data: NicheAnalysisFormData) => {
-    'use server'
-    // Implement save logic here
-    console.log('Creating new niche analysis:', data)
-    // After saving, redirect to the edit page or admin dashboard
-    redirect('/admin')
-  }
-
   return (
     <div className="container mx-auto py-8">
-      <NicheAnalysisForm
-        onSave={handleSave}
+      <NicheAnalysisFormEnhanced
+        onSave={createNicheWithAnalysis}
         isNew={true}
       />
     </div>

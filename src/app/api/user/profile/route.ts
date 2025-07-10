@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 import { z } from 'zod'
 import { createEmailVerificationToken } from '@/lib/tokens'
 import { emailService } from '@/lib/email'
@@ -23,23 +23,24 @@ export async function GET() {
       )
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        subscriptionTier: true,
-        subscriptionExpiresAt: true,
-        emailVerified: true,
-        emailSubscribed: true,
-        isActive: true,
-        lastLoginAt: true,
-        createdAt: true,
-        updatedAt: true,
-      }
-    })
+    const { data: user } = await supabase
+      .from('users')
+      .select(`
+        id,
+        email,
+        name,
+        role,
+        subscription_tier,
+        subscription_expires_at,
+        email_verified,
+        email_subscribed,
+        is_active,
+        last_login_at,
+        created_at,
+        updated_at
+      `)
+      .eq('id', session.user.id)
+      .single()
 
     if (!user) {
       return NextResponse.json(
@@ -73,10 +74,11 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const validatedData = updateProfileSchema.parse(body)
 
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { email: true, emailVerified: true }
-    })
+    const { data: currentUser } = await supabase
+      .from('users')
+      .select('email, email_verified')
+      .eq('id', session.user.id)
+      .single()
 
     if (!currentUser) {
       return NextResponse.json(
@@ -96,9 +98,11 @@ export async function PUT(request: NextRequest) {
     // Handle email update
     if (validatedData.email !== undefined && validatedData.email !== currentUser.email) {
       // Check if new email is already in use
-      const existingUser = await prisma.user.findUnique({
-        where: { email: validatedData.email }
-      })
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', validatedData.email)
+        .maybeSingle()
 
       if (existingUser) {
         return NextResponse.json(
@@ -108,33 +112,29 @@ export async function PUT(request: NextRequest) {
       }
 
       updateData.email = validatedData.email
-      updateData.emailVerified = null // Reset verification status
+      updateData.email_verified = null // Reset verification status
       requiresEmailVerification = true
     }
 
     // Handle newsletter subscription
     if (validatedData.emailSubscribed !== undefined) {
-      updateData.emailSubscribed = validatedData.emailSubscribed
+      updateData.email_subscribed = validatedData.emailSubscribed
       
       // Update newsletter subscription record
       try {
         if (validatedData.emailSubscribed) {
-          await prisma.newsletterSubscription.upsert({
-            where: { email: validatedData.email || currentUser.email },
-            update: { isActive: true },
-            create: {
-              email: validatedData.email || currentUser.email,
-              userId: session.user.id,
-              subscriptionType: 'daily_deals',
-              subscribeSource: 'profile_update',
-              unsubscribeToken: `unsubscribe_${session.user.id}_${Date.now()}`,
-            }
+          await supabase.from('newsletter_subscriptions').upsert({
+            email: validatedData.email || currentUser.email,
+            user_id: session.user.id,
+            subscription_type: 'daily_deals',
+            subscribe_source: 'profile_update',
+            unsubscribe_token: `unsubscribe_${session.user.id}_${Date.now()}`,
+            is_active: true
           })
         } else {
-          await prisma.newsletterSubscription.updateMany({
-            where: { email: validatedData.email || currentUser.email },
-            data: { isActive: false }
-          })
+          await supabase.from('newsletter_subscriptions')
+            .update({ is_active: false })
+            .eq('email', validatedData.email || currentUser.email)
         }
       } catch (error) {
         console.error('Newsletter subscription update failed:', error)
@@ -143,21 +143,22 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user profile
-    const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
-      data: updateData,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        subscriptionTier: true,
-        subscriptionExpiresAt: true,
-        emailVerified: true,
-        emailSubscribed: true,
-        updatedAt: true,
-      }
-    })
+    const { data: updatedUser } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', session.user.id)
+      .select(`
+        id,
+        email,
+        name,
+        role,
+        subscription_tier,
+        subscription_expires_at,
+        email_verified,
+        email_subscribed,
+        updated_at
+      `)
+      .single()
 
     // Send verification email if email was changed
     if (requiresEmailVerification && validatedData.email) {

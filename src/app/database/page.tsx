@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Label } from '@/components/ui/label'
 import { 
   Search,
   Filter,
@@ -20,126 +22,115 @@ import {
   MessageSquare,
   Rocket,
   Calculator,
-  BarChart3
+  BarChart3,
+  X
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
-// Mock products data with all scores
-const mockProducts = [
-  {
-    id: 1,
-    slug: 'smart-bluetooth-sleep-mask-with-built-in-speakers',
-    title: 'Smart Bluetooth Sleep Mask with Built-in Speakers',
-    mainImage: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=100&h=100&fit=crop',
-    opportunityScore: 87,
-    scores: {
-      demand: 92,
-      competition: 78,
-      keywords: 85,
-      listing: 82,
-      intelligence: 88,
-      launch: 90,
-      financial: 88
-    },
-    category: 'Health & Personal Care',
-    price: '$29.99',
-    reviews: '36.6K'
-  },
-  {
-    id: 2,
-    slug: 'portable-car-jump-starter',
-    title: 'Portable Car Jump Starter with Air Compressor',
-    mainImage: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=100&h=100&fit=crop',
-    opportunityScore: 82,
-    scores: {
-      demand: 88,
-      competition: 72,
-      keywords: 80,
-      listing: 78,
-      intelligence: 85,
-      launch: 82,
-      financial: 84
-    },
-    category: 'Automotive',
-    price: '$89.99',
-    reviews: '12.3K'
-  },
-  {
-    id: 3,
-    slug: 'adjustable-laptop-stand',
-    title: 'Adjustable Laptop Stand for Desk',
-    mainImage: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=100&h=100&fit=crop',
-    opportunityScore: 79,
-    scores: {
-      demand: 85,
-      competition: 68,
-      keywords: 82,
-      listing: 75,
-      intelligence: 80,
-      launch: 78,
-      financial: 81
-    },
-    category: 'Office Products',
-    price: '$34.99',
-    reviews: '8.7K'
-  },
-  {
-    id: 4,
-    slug: 'bamboo-cutting-board-set',
-    title: 'Bamboo Cutting Board Set with Compartments',
-    mainImage: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=100&h=100&fit=crop',
-    opportunityScore: 75,
-    scores: {
-      demand: 78,
-      competition: 82,
-      keywords: 76,
-      listing: 72,
-      intelligence: 74,
-      launch: 70,
-      financial: 77
-    },
-    category: 'Home & Kitchen',
-    price: '$42.99',
-    reviews: '5.2K'
-  },
-  {
-    id: 5,
-    slug: 'pet-grooming-gloves',
-    title: 'Pet Grooming Gloves with Enhanced Five Finger Design',
-    mainImage: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=100&h=100&fit=crop',
-    opportunityScore: 73,
-    scores: {
-      demand: 80,
-      competition: 65,
-      keywords: 74,
-      listing: 70,
-      intelligence: 76,
-      launch: 72,
-      financial: 75
-    },
-    category: 'Pet Supplies',
-    price: '$15.99',
-    reviews: '22.1K'
+interface Product {
+  id: string
+  slug: string
+  title: string
+  mainImage: string
+  opportunityScore: number
+  scores: {
+    demand: number
+    competition: number
+    keywords: number
+    listing: number
+    intelligence: number
+    launch: number
+    financial: number
   }
-]
+  category: string
+  price: string
+  reviews: string
+}
 
 export default function ProductDatabasePage() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [isGridView, setIsGridView] = useState(false) // Default to list view
+  const [isGridView, setIsGridView] = useState(true) // Default to grid view
   const [currentPage, setCurrentPage] = useState(1)
+  const [products, setProducts] = useState<Product[]>([])
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const [showFilters, setShowFilters] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const productsPerPage = 12
+  const filterRef = useRef<HTMLDivElement>(null)
 
-  // Filter products based on search
-  const filteredProducts = mockProducts.filter(product =>
-    product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Get unique categories from products
+  const categories = Array.from(new Set(products.map(p => p.category))).sort()
 
-  // Pagination
-  const totalPages = Math.ceil(filteredProducts.length / productsPerPage)
-  const startIndex = (currentPage - 1) * productsPerPage
-  const displayedProducts = filteredProducts.slice(startIndex, startIndex + productsPerPage)
+  // Click outside handler for filter dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setShowFilters(false)
+      }
+    }
+
+    if (showFilters) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showFilters])
+
+  // Fetch products from database
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true)
+      
+      try {
+        const params = new URLSearchParams({
+          search: searchQuery,
+          page: currentPage.toString(),
+          limit: productsPerPage.toString()
+        })
+        
+        const response = await fetch(`/api/products?${params}`)
+        
+        if (!response.ok) {
+          // Handle any non-ok response gracefully
+          console.log('Products API returned:', response.status)
+          setProducts([])
+          setTotalPages(0)
+          setTotalCount(0)
+          return
+        }
+        
+        const data = await response.json()
+        setProducts(data.products || [])
+        setTotalPages(data.totalPages || 0)
+        setTotalCount(data.totalCount || 0)
+      } catch (err) {
+        // Log error but don't throw - just show empty state
+        console.log('Error fetching products, showing empty state')
+        setProducts([])
+        setTotalPages(0)
+        setTotalCount(0)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProducts()
+  }, [searchQuery, currentPage])
+
+  // Reset to page 1 when search or category changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, selectedCategory])
+
+  // Filter products by category
+  const filteredProducts = selectedCategory 
+    ? products.filter(p => p.category === selectedCategory)
+    : products
 
   const getScoreColor = (score: number) => {
     if (score >= 85) return 'text-green-600'
@@ -153,87 +144,185 @@ export default function ProductDatabasePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-blue-600 mb-4">The Product Database</h1>
+          <h1 className="text-5xl font-bold text-blue-600 mb-4">The Product Database</h1>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             Discover profitable Amazon product opportunities
           </p>
         </div>
 
         {/* Search and Filters */}
-        <div className="flex flex-col lg:flex-row gap-4 mb-8">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" className="flex items-center">
-              <Filter className="h-4 w-4 mr-2" />
-              All Filters
-            </Button>
-            <div className="flex border rounded-lg">
-              <Button
-                variant={isGridView ? "default" : "outline"}
-                size="sm"
-                onClick={() => setIsGridView(true)}
-                className="rounded-r-none"
-              >
-                <Grid3X3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={!isGridView ? "default" : "outline"}
-                size="sm"
-                onClick={() => setIsGridView(false)}
-                className="rounded-l-none"
-              >
-                <List className="h-4 w-4" />
-              </Button>
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="relative" ref={filterRef}>
+                <Button 
+                  variant="outline" 
+                  className="flex items-center"
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  All Filters
+                  {selectedCategory && (
+                    <Badge className="ml-2 bg-blue-100 text-blue-700">1</Badge>
+                  )}
+                </Button>
+                
+                {/* Filter Dropdown */}
+                {showFilters && (
+                  <div className="absolute top-full mt-2 right-0 w-64 bg-white rounded-lg shadow-lg border p-4 z-10">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold">Filters</h3>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setShowFilters(false)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium mb-2">Category</Label>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {categories.map(category => (
+                            <label key={category} className="flex items-center space-x-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="category"
+                                checked={selectedCategory === category}
+                                onChange={() => setSelectedCategory(category)}
+                                className="text-blue-600"
+                              />
+                              <span className="text-sm">{category}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {selectedCategory && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => {
+                            setSelectedCategory(null)
+                            setCurrentPage(1)
+                          }}
+                        >
+                          Clear Filters
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex border rounded-lg">
+                <Button
+                  variant={isGridView ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setIsGridView(true)}
+                  className="rounded-r-none"
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={!isGridView ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setIsGridView(false)}
+                  className="rounded-l-none"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
+
         {/* Products List */}
-        {filteredProducts.length > 0 ? (
+        {isLoading ? (
+          /* Loading State */
+          <div className="grid md:grid-cols-2 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i} className="overflow-hidden bg-white border-2">
+                <div className="p-8">
+                  <div className="flex items-start space-x-4 mb-6">
+                    <Skeleton className="w-20 h-20 rounded-lg" />
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Skeleton className="h-5 w-24" />
+                        <Skeleton className="h-4 w-16" />
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                      <Skeleton className="h-6 w-full mb-1" />
+                      <Skeleton className="h-6 w-3/4" />
+                    </div>
+                    <Skeleton className="h-12 w-12" />
+                  </div>
+                  <div className="pt-6 border-t space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      {[...Array(6)].map((_, j) => (
+                        <div key={j} className="space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-2 w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : filteredProducts.length > 0 ? (
           <>
-            <div className="grid md:grid-cols-2 gap-6">
-              {displayedProducts.map((product) => (
+            <div className={isGridView ? "grid md:grid-cols-2 gap-6" : "space-y-4"}>
+              {filteredProducts.map((product) => (
                 <Link key={product.id} href={`/products/${product.slug}`}>
                   <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer bg-white border-2 h-full">
-                    <div className="p-8">
-                      {/* Header with product info */}
-                      <div className="flex flex-col space-y-4">
-                        <div className="flex items-start space-x-4">
-                          <img
-                            src={product.mainImage}
-                            alt={product.title}
-                            className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <Badge variant="secondary" className="text-xs">
-                                {product.category}
-                              </Badge>
-                              <span className="text-sm text-gray-500">{product.price}</span>
-                              <span className="text-sm text-gray-500">• {product.reviews} reviews</span>
+                    <div className={isGridView ? "p-8" : "p-6"}>
+                      {isGridView ? (
+                        <>
+                          {/* Grid View Layout */}
+                          <div className="flex flex-col space-y-4">
+                            <div className="flex items-start space-x-4">
+                              <img
+                                src={product.mainImage}
+                                alt={product.title}
+                                className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <Badge variant="secondary" className="text-xs">
+                                    {product.category}
+                                  </Badge>
+                                  <span className="text-sm text-gray-500">{product.price}</span>
+                                  <span className="text-sm text-gray-500">• {product.reviews} reviews</span>
+                                </div>
+                                <h2 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">{product.title}</h2>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-4xl font-bold text-blue-600">
+                                  {product.opportunityScore}
+                                </div>
+                                <div className="text-xs text-gray-600">Opportunity</div>
+                              </div>
                             </div>
-                            <h2 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">{product.title}</h2>
                           </div>
-                          <div className="text-center">
-                            <div className="text-4xl font-bold text-blue-600">
-                              {product.opportunityScore}
-                            </div>
-                            <div className="text-xs text-gray-600">Opportunity</div>
-                          </div>
-                        </div>
-                      </div>
 
-                      {/* Analysis Progress Bars */}
-                      <div className="mt-6 pt-6 border-t space-y-3">
+                          {/* Analysis Progress Bars for Grid View */}
+                          <div className="mt-6 pt-6 border-t space-y-3">
                         <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                           <div className="space-y-2">
                             <div className="flex items-center space-x-2">
@@ -292,6 +381,65 @@ export default function ProductDatabasePage() {
                           </div>
                         </div>
                       </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* List View Layout */}
+                          <div className="flex items-center space-x-4">
+                            <img
+                              src={product.mainImage}
+                              alt={product.title}
+                              className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <h2 className="text-lg font-semibold text-gray-900">{product.title}</h2>
+                                <Badge variant="secondary" className="text-xs">
+                                  {product.category}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                <span>{product.price}</span>
+                                <span>• {product.reviews} reviews</span>
+                              </div>
+                            </div>
+                            
+                            {/* Scores in List View */}
+                            <div className="flex items-center space-x-6">
+                              <div className="text-center">
+                                <div className="text-xs text-gray-600 mb-1">Demand</div>
+                                <div className={`font-semibold ${getScoreColor(product.scores.demand)}`}>
+                                  {product.scores.demand}%
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-xs text-gray-600 mb-1">Competition</div>
+                                <div className={`font-semibold ${getScoreColor(product.scores.competition)}`}>
+                                  {product.scores.competition}%
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-xs text-gray-600 mb-1">Keywords</div>
+                                <div className={`font-semibold ${getScoreColor(product.scores.keywords)}`}>
+                                  {product.scores.keywords}%
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-xs text-gray-600 mb-1">Financial</div>
+                                <div className={`font-semibold ${getScoreColor(product.scores.financial)}`}>
+                                  {product.scores.financial}%
+                                </div>
+                              </div>
+                              <div className="text-center px-4 py-2 bg-blue-50 rounded-lg">
+                                <div className="text-2xl font-bold text-blue-600">
+                                  {product.opportunityScore}
+                                </div>
+                                <div className="text-xs text-gray-600">Opportunity</div>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </Card>
                 </Link>
@@ -302,6 +450,11 @@ export default function ProductDatabasePage() {
             <div className="flex items-center justify-between mt-8">
               <div className="text-sm text-gray-600">
                 {filteredProducts.length} results
+                {selectedCategory && (
+                  <span className="ml-2">
+                    (filtered by: <span className="font-medium">{selectedCategory}</span>)
+                  </span>
+                )}
               </div>
               
               <div className="flex items-center space-x-2">
@@ -341,10 +494,9 @@ export default function ProductDatabasePage() {
               </svg>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
-            <p className="text-gray-600 text-center max-w-md mb-6">
+            <p className="text-gray-600 text-center max-w-md">
               No products match your search criteria. Try adjusting your filters or search terms.
             </p>
-            <Button onClick={() => setSearchQuery('')}>Clear Search</Button>
           </div>
         )}
       </div>

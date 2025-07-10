@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/lib/supabase/auth-context'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Calculator } from 'lucide-react'
@@ -17,7 +17,7 @@ interface FinancialPageProps {
 }
 
 export default function FinancialPage({ params }: FinancialPageProps) {
-  const { data: session, status } = useSession()
+  const { user, session, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [slug, setSlug] = useState<string>('')
 
@@ -31,7 +31,7 @@ export default function FinancialPage({ params }: FinancialPageProps) {
     loadData()
   }, [params])
 
-  if (loading || status === 'loading') {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -39,11 +39,11 @@ export default function FinancialPage({ params }: FinancialPageProps) {
     )
   }
 
-  if (status === 'unauthenticated' || !session) {
+  if (!user || !session) {
     return <MembershipGate productTitle={mockProductData.title} productImage={mockProductData.mainImage} />
   }
 
-  const userTier = session.user?.subscriptionTier || 'free'
+  const userTier = user.subscriptionTier || 'free'
   if (userTier === 'free') {
     return <MembershipGate productTitle={mockProductData.title} productImage={mockProductData.mainImage} />
   }

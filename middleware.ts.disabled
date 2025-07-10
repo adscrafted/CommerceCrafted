@@ -1,0 +1,93 @@
+import { withAuth } from "next-auth/middleware"
+import { NextResponse } from 'next/server'
+
+export default withAuth(
+  function middleware(req) {
+    const token = req.nextauth.token
+    const { pathname } = req.nextUrl
+
+    // Admin routes protection
+    if (pathname.startsWith('/admin')) {
+      if (!token || token.role !== 'ADMIN') {
+        return NextResponse.redirect(new URL('/', req.url))
+      }
+    }
+
+    // Subscription-protected routes
+    const subscriptionRequiredRoutes = [
+      '/database',
+      '/trends', 
+      '/keyword-graph',
+      '/external-data',
+    ]
+
+    const isSubscriptionRoute = subscriptionRequiredRoutes.some(route => 
+      pathname === route || pathname.startsWith(route + '/')
+    )
+
+    if (isSubscriptionRoute) {
+      if (!token || token.subscriptionTier === 'free') {
+        return NextResponse.redirect(new URL('/pricing', req.url))
+      }
+    }
+
+    return NextResponse.next()
+  },
+  {
+    callbacks: {
+      authorized: ({ token, req }) => {
+        const { pathname } = req.nextUrl
+        
+        // Public routes
+        const publicRoutes = [
+          '/',
+          '/about',
+          '/features', 
+          '/pricing',
+          '/terms',
+          '/privacy',
+          '/frequently-asked-questions',
+          '/product-of-the-day',
+        ]
+
+        // API routes that don't require auth
+        const publicApiRoutes = [
+          '/api/auth',
+          '/api/health',
+          '/api/products/trending',
+          '/api/products/daily-feature',
+        ]
+
+        // Check if route is public
+        const isPublicRoute = publicRoutes.some(route => 
+          pathname === route || pathname.startsWith(route + '/')
+        )
+
+        const isPublicApiRoute = publicApiRoutes.some(route => 
+          pathname.startsWith(route)
+        )
+
+        // Allow public routes
+        if (isPublicRoute || isPublicApiRoute) {
+          return true
+        }
+
+        // Require auth for all other routes
+        return !!token
+      },
+    },
+  }
+)
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+  ],
+}

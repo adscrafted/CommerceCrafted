@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 
 // GET report status
 export async function GET(
@@ -21,20 +21,9 @@ export async function GET(
     const { reportId } = params
 
     // Get report from database
-    const report = await prisma.amazonReport.findUnique({
-      where: { 
-        id: reportId,
-        userId: session.user.id // Ensure user owns this report
-      },
-      include: {
-        reportData: {
-          select: {
-            recordCount: true,
-            createdAt: true
-          }
-        }
-      }
-    })
+    // TODO: Convert to Supabase with proper joins
+    // const { data: report } = await supabase.from('amazon_reports').select('*, report_data:amazon_report_data(record_count, created_at)').eq('id', reportId).eq('user_id', session.user.id).single()
+    const report = null
 
     if (!report) {
       return NextResponse.json(
