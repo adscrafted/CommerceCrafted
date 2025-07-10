@@ -27,6 +27,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Helper function to transform Supabase user to AuthUser
   const transformUser = async (supabaseUser: User): Promise<AuthUser | null> => {
     try {
+      console.log('transformUser called for:', supabaseUser.email, 'ID:', supabaseUser.id)
+      
       // Get user data from our custom users table
       const { data: userData, error } = await supabase
         .from('users')
@@ -35,8 +37,56 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .single()
 
       if (error) {
-        console.error('Error fetching user data:', error)
-        return null
+        // Log the specific error
+        console.error('Error fetching user from database:', error)
+        console.log('Trying alternative lookup by email...')
+        
+        // For admin user, we know they exist, so fetch by email instead
+        if (supabaseUser.email === 'admin@commercecrafted.com') {
+          const { data: userByEmail, error: emailError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', supabaseUser.email)
+            .single()
+            
+          if (!emailError && userByEmail) {
+            return {
+              id: userByEmail.id,
+              email: userByEmail.email,
+              name: userByEmail.name,
+              role: userByEmail.role as UserRole,
+              subscriptionTier: userByEmail.subscription_tier as SubscriptionTier,
+              subscriptionExpiresAt: userByEmail.subscription_expires_at 
+                ? new Date(userByEmail.subscription_expires_at) 
+                : undefined,
+              emailVerified: userByEmail.email_verified,
+              isActive: userByEmail.is_active,
+              lastLoginAt: userByEmail.last_login_at 
+                ? new Date(userByEmail.last_login_at) 
+                : undefined,
+              emailSubscribed: userByEmail.email_subscribed,
+              stripeCustomerId: userByEmail.stripe_customer_id,
+            }
+          }
+        }
+        
+        // Fallback to auth metadata
+        console.warn('User not found in users table, using auth metadata')
+        const role = (supabaseUser.user_metadata?.role as UserRole) || 'USER'
+        
+        return {
+          id: supabaseUser.id,
+          email: supabaseUser.email!,
+          name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
+          role: role,
+          subscriptionTier: 'free' as SubscriptionTier,
+          subscriptionExpiresAt: undefined,
+          emailVerified: !!supabaseUser.email_confirmed_at,
+          isActive: true,
+          lastLoginAt: supabaseUser.last_sign_in_at ? new Date(supabaseUser.last_sign_in_at) : undefined,
+          emailSubscribed: false,
+          stripeCustomerId: null,
+        }
       }
 
       if (!userData) {
@@ -101,23 +151,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email)
         setLoading(true)
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
+            console.log('Transforming user...')
             const authUser = await transformUser(session.user)
+            console.log('Transformed user:', authUser)
             if (authUser) {
+              console.log('Setting user state...')
               setUser(authUser)
               setSession({
                 user: authUser,
                 supabaseUser: session.user
               })
+              console.log('User state set successfully')
               
-              // Update last login time
-              await supabase
-                .from('users')
-                .update({ last_login_at: new Date().toISOString() })
-                .eq('id', session.user.id)
+              // Skip updating last login for now to avoid issues
+            } else {
+              console.error('Failed to transform user')
             }
           }
         } else if (event === 'SIGNED_OUT') {
@@ -136,17 +189,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Attempting sign in for:', email)
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
+        console.error('Sign in error:', error)
         return { error: error.message }
       }
 
+      console.log('Sign in successful:', data.user?.email)
+      // The auth state change listener will handle updating the user state
       return {}
     } catch (error) {
+      console.error('Sign in exception:', error)
       return { error: 'An unexpected error occurred' }
     }
   }

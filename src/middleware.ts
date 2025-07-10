@@ -1,128 +1,110 @@
-import { withAuth } from "next-auth/middleware"
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
-export default withAuth(
-  function middleware(req) {
-    const { pathname } = req.nextUrl
-    const token = req.nextauth.token
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({
+    request,
+  })
 
-    // Public routes that don't require authentication
-    const publicRoutes = [
-      '/',
-      '/auth/signin',
-      '/auth/signup',
-      '/auth/forgot-password',
-      '/auth/reset-password',
-      '/auth/verify-email',
-      '/pricing',
-      '/terms',
-      '/privacy',
-      '/api/auth',
-    ]
-
-    // Check if route is public
-    const isPublicRoute = publicRoutes.some(route => 
-      pathname.startsWith(route) || pathname === route
-    )
-
-    if (isPublicRoute) {
-      return NextResponse.next()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
     }
+  )
 
-    // If no token and not a public route, redirect to signin
-    if (!token) {
-      const signInUrl = new URL('/auth/signin', req.url)
-      signInUrl.searchParams.set('callbackUrl', pathname)
-      return NextResponse.redirect(signInUrl)
-    }
+  // Refresh session if needed
+  const { data: { user } } = await supabase.auth.getUser()
 
-    // Admin-only routes
-    const adminRoutes = ['/admin']
-    const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route))
-    
-    if (isAdminRoute && token.role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
-    }
+  // Public routes that don't require authentication
+  const publicRoutes = [
+    '/',
+    '/auth/signin',
+    '/auth/signup',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+    '/auth/verify-email',
+    '/pricing',
+    '/terms',
+    '/privacy',
+    '/test-auth',
+    '/debug-api',
+  ]
 
-    // Analyst or Admin routes
-    const analystRoutes = ['/analytics', '/reports']
-    const isAnalystRoute = analystRoutes.some(route => pathname.startsWith(route))
-    
-    if (isAnalystRoute && !['ADMIN', 'ANALYST'].includes(token.role as string)) {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
-    }
+  const { pathname } = request.nextUrl
 
-    // Pro/Enterprise features
-    const premiumRoutes = ['/ai-research', '/advanced-analytics', '/bulk-export']
-    const isPremiumRoute = premiumRoutes.some(route => pathname.startsWith(route))
-    
-    if (isPremiumRoute && token.subscriptionTier === 'free') {
-      const pricingUrl = new URL('/pricing', req.url)
-      pricingUrl.searchParams.set('feature', pathname.split('/')[1])
-      return NextResponse.redirect(pricingUrl)
-    }
+  // Check if route is public
+  const isPublicRoute = publicRoutes.some(route => 
+    pathname === route || pathname.startsWith(route + '/')
+  )
 
-    // Check subscription expiry for paid features
-    if (isPremiumRoute && token.subscriptionTier !== 'free') {
-      const now = new Date()
-      const expiresAt = token.subscriptionExpiresAt ? new Date(token.subscriptionExpiresAt) : null
+  if (isPublicRoute) {
+    return supabaseResponse
+  }
+
+  // API routes handle their own auth
+  if (pathname.startsWith('/api/')) {
+    return supabaseResponse
+  }
+
+  // Protected routes
+  if (!user) {
+    // Redirect to sign in
+    const signInUrl = new URL('/auth/signin', request.url)
+    signInUrl.searchParams.set('callbackUrl', pathname)
+    return NextResponse.redirect(signInUrl)
+  }
+
+  // Admin-only routes
+  if (pathname.startsWith('/admin')) {
+    console.log('Middleware: checking admin access for user:', user.email)
+    // Check if user is admin
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    console.log('Middleware: userData:', userData)
+
+    if (userData?.role !== 'ADMIN') {
+      // Also check by email as fallback
+      const { data: userByEmail } = await supabase
+        .from('users')
+        .select('role')
+        .eq('email', user.email!)
+        .single()
       
-      if (expiresAt && expiresAt < now) {
-        const pricingUrl = new URL('/pricing', req.url)
-        pricingUrl.searchParams.set('expired', 'true')
-        return NextResponse.redirect(pricingUrl)
+      console.log('Middleware: userByEmail fallback:', userByEmail)
+      
+      if (userByEmail?.role !== 'ADMIN') {
+        console.log('Middleware: redirecting non-admin user')
+        return NextResponse.redirect(new URL('/dashboard', request.url))
       }
     }
-
-    return NextResponse.next()
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        const { pathname } = req.nextUrl
-        
-        // Allow public routes
-        const publicRoutes = [
-          '/',
-          '/auth/signin',
-          '/auth/signup',
-          '/auth/forgot-password',
-          '/auth/reset-password',
-          '/auth/verify-email',
-          '/pricing',
-          '/terms',
-          '/privacy',
-        ]
-
-        const isPublicRoute = publicRoutes.some(route => 
-          pathname.startsWith(route) || pathname === route
-        )
-
-        if (isPublicRoute) {
-          return true
-        }
-
-        // API routes that start with /api/auth are handled by NextAuth
-        if (pathname.startsWith('/api/auth')) {
-          return true
-        }
-
-        // For protected routes, require a valid token
-        return !!token
-      },
-    },
+    
+    console.log('Middleware: allowing admin access')
   }
-)
+
+  return supabaseResponse
+}
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public (public files)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

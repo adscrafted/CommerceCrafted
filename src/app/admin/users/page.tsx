@@ -24,24 +24,30 @@ import {
   CheckCircle,
   Eye,
   Edit,
-  RefreshCw
+  RefreshCw,
+  TrendingUp,
+  User as UserIcon,
+  Save,
+  Loader2
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
+import { createClient } from '@supabase/supabase-js'
+import { useRouter } from 'next/navigation'
 
 interface User {
   id: string
-  name: string
+  name: string | null
   email: string
   role: string
-  subscriptionTier: string
-  subscriptionExpiresAt?: Date
-  emailSubscribed: boolean
-  createdAt: Date
-  lastLoginAt?: Date
-  analysisCount: number
-  status: 'active' | 'inactive' | 'suspended'
-  emailVerified: boolean
-  totalSpent: number
-  country?: string
+  subscription_tier: string
+  subscription_expires_at: string | null
+  email_subscribed: boolean
+  created_at: string
+  last_login_at: string | null
+  is_active: boolean
+  email_verified: string | null
+  stripe_customer_id: string | null
+  updated_at: string
 }
 
 export default function UsersPage() {
@@ -52,6 +58,8 @@ export default function UsersPage() {
   const [selectedPlan, setSelectedPlan] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
+  const [savingUserId, setSavingUserId] = useState<string | null>(null)
+  const router = useRouter()
   const usersPerPage = 10
 
   useEffect(() => {
@@ -61,87 +69,17 @@ export default function UsersPage() {
   const loadUsers = async () => {
     setLoading(true)
     try {
-      // Mock data - in production this would be an API call
-      const mockUsers: User[] = [
-        {
-          id: '1',
-          name: 'John Doe',
-          email: 'john.doe@email.com',
-          role: 'USER',
-          subscriptionTier: 'pro',
-          subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          emailSubscribed: true,
-          createdAt: new Date('2024-01-15'),
-          lastLoginAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          analysisCount: 234,
-          status: 'active',
-          emailVerified: true,
-          totalSpent: 599.88,
-          country: 'United States'
-        },
-        {
-          id: '2',
-          name: 'Sarah Johnson',
-          email: 'sarah.johnson@email.com',
-          role: 'USER',
-          subscriptionTier: 'enterprise',
-          subscriptionExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-          emailSubscribed: true,
-          createdAt: new Date('2023-11-20'),
-          lastLoginAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
-          analysisCount: 1247,
-          status: 'active',
-          emailVerified: true,
-          totalSpent: 2997.00,
-          country: 'Canada'
-        },
-        {
-          id: '3',
-          name: 'Mike Wilson',
-          email: 'mike.wilson@email.com',
-          role: 'USER',
-          subscriptionTier: 'free',
-          emailSubscribed: false,
-          createdAt: new Date('2024-02-10'),
-          lastLoginAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-          analysisCount: 3,
-          status: 'active',
-          emailVerified: false,
-          totalSpent: 0,
-          country: 'United Kingdom'
-        },
-        {
-          id: '4',
-          name: 'Admin User',
-          email: 'admin@commercecrafted.com',
-          role: 'ADMIN',
-          subscriptionTier: 'enterprise',
-          emailSubscribed: true,
-          createdAt: new Date('2023-01-01'),
-          lastLoginAt: new Date(Date.now() - 10 * 60 * 1000),
-          analysisCount: 0,
-          status: 'active',
-          emailVerified: true,
-          totalSpent: 0,
-          country: 'United States'
-        },
-        {
-          id: '5',
-          name: 'Inactive User',
-          email: 'inactive@email.com',
-          role: 'USER',
-          subscriptionTier: 'free',
-          emailSubscribed: false,
-          createdAt: new Date('2023-12-01'),
-          lastLoginAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-          analysisCount: 12,
-          status: 'inactive',
-          emailVerified: true,
-          totalSpent: 0,
-          country: 'Australia'
-        }
-      ]
-      setUsers(mockUsers)
+      // Fetch all users (admin can see all with the new policies)
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching users:', error)
+      }
+
+      setUsers(data || [])
     } catch (error) {
       console.error('Error loading users:', error)
     } finally {
@@ -149,12 +87,36 @@ export default function UsersPage() {
     }
   }
 
+  const updateUserRole = async (userId: string, newRole: string) => {
+    setSavingUserId(userId)
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ role: newRole })
+        .eq('id', userId)
+
+      if (error) throw error
+
+      // Update local state
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, role: newRole } : user
+      ))
+    } catch (error) {
+      console.error('Error updating user role:', error)
+      alert('Failed to update user role')
+    } finally {
+      setSavingUserId(null)
+    }
+  }
+
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = (user.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesRole = selectedRole === 'all' || user.role === selectedRole
-    const matchesPlan = selectedPlan === 'all' || user.subscriptionTier === selectedPlan
-    const matchesStatus = selectedStatus === 'all' || user.status === selectedStatus
+    const matchesPlan = selectedPlan === 'all' || user.subscription_tier === selectedPlan
+    const matchesStatus = selectedStatus === 'all' || 
+                         (selectedStatus === 'active' && user.is_active) ||
+                         (selectedStatus === 'inactive' && !user.is_active)
     
     return matchesSearch && matchesRole && matchesPlan && matchesStatus
   })
@@ -168,9 +130,9 @@ export default function UsersPage() {
       case 'ADMIN':
         return <Badge className="bg-red-100 text-red-800"><Shield className="h-3 w-3 mr-1" />Admin</Badge>
       case 'ANALYST':
-        return <Badge className="bg-blue-100 text-blue-800">Analyst</Badge>
+        return <Badge className="bg-purple-100 text-purple-800"><TrendingUp className="h-3 w-3 mr-1" />Analyst</Badge>
       default:
-        return <Badge className="bg-gray-100 text-gray-800">User</Badge>
+        return <Badge className="bg-gray-100 text-gray-800"><UserIcon className="h-3 w-3 mr-1" />User</Badge>
     }
   }
 
@@ -185,20 +147,16 @@ export default function UsersPage() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Active</Badge>
-      case 'inactive':
-        return <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>
-      case 'suspended':
-        return <Badge className="bg-red-100 text-red-800"><Ban className="h-3 w-3 mr-1" />Suspended</Badge>
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">Unknown</Badge>
+  const getStatusBadge = (isActive: boolean) => {
+    if (isActive) {
+      return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Active</Badge>
     }
+    return <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>
   }
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Never'
+    const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -206,7 +164,9 @@ export default function UsersPage() {
     })
   }
 
-  const getTimeAgo = (date: Date) => {
+  const getTimeAgo = (dateString: string | null) => {
+    if (!dateString) return 'Never'
+    const date = new Date(dateString)
     const now = new Date()
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / 60000)
     
@@ -327,9 +287,7 @@ export default function UsersPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email Sub</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Verified</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Spent</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Analyses</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -342,11 +300,11 @@ export default function UsersPage() {
                           <div className="flex items-center">
                             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                               <span className="text-xs font-medium text-blue-700">
-                                {user.name.charAt(0).toUpperCase()}
+                                {(user.name || user.email).charAt(0).toUpperCase()}
                               </span>
                             </div>
                             <div className="ml-3">
-                              <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                              <div className="text-sm font-medium text-gray-900">{user.name || user.email.split('@')[0]}</div>
                             </div>
                           </div>
                         </td>
@@ -354,16 +312,47 @@ export default function UsersPage() {
                           <div className="text-sm text-gray-900">{user.email}</div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          {getRoleBadge(user.role)}
+                          <Select
+                            value={user.role}
+                            onValueChange={(value) => updateUserRole(user.id, value)}
+                            disabled={savingUserId === user.id}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="USER">
+                                <span className="flex items-center space-x-2">
+                                  <UserIcon className="h-4 w-4" />
+                                  <span>User</span>
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="ANALYST">
+                                <span className="flex items-center space-x-2">
+                                  <TrendingUp className="h-4 w-4" />
+                                  <span>Analyst</span>
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="ADMIN">
+                                <span className="flex items-center space-x-2">
+                                  <Shield className="h-4 w-4" />
+                                  <span>Admin</span>
+                                </span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {savingUserId === user.id && (
+                            <Loader2 className="h-4 w-4 animate-spin ml-2 inline" />
+                          )}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          {getPlanBadge(user.subscriptionTier)}
+                          {getPlanBadge(user.subscription_tier)}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          {getStatusBadge(user.status)}
+                          {getStatusBadge(user.is_active)}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          {user.emailSubscribed ? (
+                          {user.email_subscribed ? (
                             <Badge className="bg-green-100 text-green-800">
                               <Mail className="h-3 w-3 mr-1" />
                               Yes
@@ -373,7 +362,7 @@ export default function UsersPage() {
                           )}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          {user.emailVerified ? (
+                          {user.email_verified ? (
                             <Badge className="bg-green-100 text-green-800">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Verified
@@ -383,36 +372,24 @@ export default function UsersPage() {
                           )}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            ${user.totalSpent.toFixed(2)}
-                          </div>
+                          <div className="text-sm text-gray-900">{formatDate(user.subscription_expires_at)}</div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{user.analysisCount}</div>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{user.country || 'Unknown'}</div>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{formatDate(user.createdAt)}</div>
+                          <div className="text-sm text-gray-900">{formatDate(user.created_at)}</div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            {user.lastLoginAt ? getTimeAgo(user.lastLoginAt) : 'Never'}
+                            {getTimeAgo(user.last_login_at)}
                           </div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            title="View details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                         </td>
                       </tr>
                     ))}

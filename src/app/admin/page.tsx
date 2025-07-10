@@ -1,426 +1,73 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import Link from 'next/link'
-import {
-  Plus,
-  RefreshCw,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  Search,
-  Trash2,
-  Edit,
-  Eye
-} from 'lucide-react'
+import React, { Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Home, Users, BarChart3, Loader2 } from 'lucide-react'
 
-interface NicheQueueItem {
-  id: string
-  nicheName: string
-  asins: string[]
-  status: 'pending' | 'analyzing' | 'completed' | 'scheduled'
-  addedDate: string
-  scheduledDate: string
-  category: string
-  totalProducts: number
-  avgBsr: number
-  avgPrice: number
-  avgRating: number
-  totalReviews: number
-  totalMonthlyRevenue: number
-  opportunityScore?: number
-  competitionLevel: string
-  processTime?: string
-  analystAssigned?: string
-  nicheKeywords: string[]
-  marketSize: number
-  // Extended data for editing
-  aiAnalysis?: {
-    whyThisProduct?: string
-    keyHighlights?: string[]
-    demandAnalysis?: string
-    competitionAnalysis?: string
-    keywordAnalysis?: string
-    financialAnalysis?: string
-    listingOptimization?: {
-      title?: string
-      bulletPoints?: string[]
-      description?: string
-    }
-  }
-}
+// Import the individual tab components
+import ProductQueueTab from './components/ProductQueueTab'
+import UsersTab from './components/UsersTab'
+import AnalyticsTab from './components/AnalyticsTab'
 
-export default function AdminNicheQueue() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [newNicheName, setNewNicheName] = useState('')
-  const [newAsins, setNewAsins] = useState('')
-  const [selectedDate, setSelectedDate] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [nicheQueue, setNicheQueue] = useState<NicheQueueItem[]>([])
-
-  // Load niches from database
-  useEffect(() => {
-    fetchNiches()
-  }, [])
-
-  const fetchNiches = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch('/api/admin/niches')
-      if (!response.ok) {
-        throw new Error('Failed to fetch niches')
-      }
-      const niches = await response.json()
-      setNicheQueue(niches)
-    } catch (error) {
-      console.error('Error fetching niches:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleAddNiche = async () => {
-    if (!newNicheName || !newAsins || !selectedDate) return
-
-    const asinList = newAsins.split(',').map(asin => asin.trim()).filter(asin => asin.length > 0)
-    if (asinList.length === 0) return
-
-    try {
-      const response = await fetch('/api/admin/niches', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          nicheName: newNicheName,
-          asins: newAsins,
-          scheduledDate: selectedDate
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to create niche')
-      }
-
-      const newNiche = await response.json()
-      setNicheQueue([...nicheQueue, newNiche])
-      setNewNicheName('')
-      setNewAsins('')
-      setSelectedDate('')
-    } catch (error) {
-      console.error('Error creating niche:', error)
-      alert('Failed to create niche. Please try again.')
-    }
-  }
-
-
-  const handleDelete = async (id: string) => {
-    try {
-      const response = await fetch(`/api/admin/niches/${id}`, {
-        method: 'DELETE'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to delete niche')
-      }
-
-      setNicheQueue(nicheQueue.filter(item => item.id !== id))
-    } catch (error) {
-      console.error('Error deleting niche:', error)
-      alert('Failed to delete niche. Please try again.')
-    }
-  }
-
-  const handleAnalyzeNow = async (id: string) => {
-    try {
-      const response = await fetch(`/api/admin/niches/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          status: 'analyzing'
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to update niche status')
-      }
-
-      setNicheQueue(nicheQueue.map(item => 
-        item.id === id ? { ...item, status: 'analyzing' } : item
-      ))
-    } catch (error) {
-      console.error('Error updating niche status:', error)
-      alert('Failed to update niche status. Please try again.')
-    }
-  }
-
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800'
-      case 'analyzing': return 'bg-blue-100 text-blue-800'
-      case 'pending': return 'bg-yellow-100 text-yellow-800'
-      case 'scheduled': return 'bg-purple-100 text-purple-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed': return <CheckCircle className="h-4 w-4" />
-      case 'analyzing': return <RefreshCw className="h-4 w-4 animate-spin" />
-      case 'pending': return <Clock className="h-4 w-4" />
-      case 'failed': return <AlertCircle className="h-4 w-4" />
-      default: return null
-    }
-  }
-
-  const filteredQueue = nicheQueue.filter(item =>
-    item.nicheName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.asins.some(asin => asin.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
-
-  if (loading) {
-    return (
-      <div className="space-y-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Niche Queue Management</h1>
-            <p className="text-gray-600">Loading...</p>
-          </div>
-        </div>
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    )
+function AdminDashboardContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const tab = searchParams.get('tab') || 'products'
+  
+  const handleTabChange = (value: string) => {
+    router.push(`/admin?tab=${value}`)
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Niche Queue Management</h1>
-          <p className="text-gray-600">
-            Manage and schedule product niches for deep research analysis
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/admin/niche/new">
-            <Plus className="h-4 w-4 mr-2" />
-            New Analysis
-          </Link>
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+        <p className="text-gray-600">Manage products, users, and view analytics</p>
       </div>
 
+      {/* Tabs */}
+      <Tabs value={tab} onValueChange={handleTabChange} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3 max-w-2xl">
+          <TabsTrigger value="products" className="flex items-center space-x-2">
+            <Home className="h-4 w-4" />
+            <span>Product Queue</span>
+          </TabsTrigger>
+          <TabsTrigger value="users" className="flex items-center space-x-2">
+            <Users className="h-4 w-4" />
+            <span>Users</span>
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center space-x-2">
+            <BarChart3 className="h-4 w-4" />
+            <span>Analytics</span>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Add New Niche */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Add Niche to Queue</CardTitle>
-          <CardDescription>Schedule a collection of related products for deep research analysis</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="nicheName" className="text-sm font-medium text-gray-700">Niche Name</Label>
-                <Input
-                  id="nicheName"
-                  placeholder="e.g., Bluetooth Sleep Masks"
-                  value={newNicheName}
-                  onChange={(e) => setNewNicheName(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="date" className="text-sm font-medium text-gray-700">Scheduled Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="asins" className="text-sm font-medium text-gray-700">Amazon ASINs (comma-separated)</Label>
-              <Input
-                id="asins"
-                placeholder="e.g., B08MVBRNKV, B07SHBQY7Z, B07KC5DWCC"
-                value={newAsins}
-                onChange={(e) => setNewAsins(e.target.value)}
-                className="font-mono mt-1"
-              />
-              <p className="text-sm text-gray-500 mt-2">Enter 3-10 related ASINs separated by commas</p>
-            </div>
-            <div className="flex justify-end pt-4">
-              <Button onClick={handleAddNiche} disabled={!newNicheName || !newAsins || !selectedDate}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Niche to Queue
-              </Button>
-            </div>
-          </div>
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Deep Research Analysis:</strong> Each niche will undergo comprehensive analysis including market trends, competition mapping, keyword clustering, demand forecasting, and opportunity scoring across all provided ASINs.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+        <TabsContent value="products">
+          <ProductQueueTab />
+        </TabsContent>
 
-      {/* Niche Queue */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>Niche Queue</CardTitle>
-              <CardDescription>Manage scheduled niche analyses</CardDescription>
-            </div>
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search niches..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-y">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Niche Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ASINs</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Products</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg BSR</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Price</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Reviews</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market Size</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Competition</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scheduled</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredQueue.map((niche) => (
-                  <tr key={niche.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{niche.nicheName}</div>
-                      {niche.nicheKeywords.length > 0 && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          {niche.nicheKeywords.slice(0, 2).join(', ')}
-                          {niche.nicheKeywords.length > 2 && '...'}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="text-xs text-gray-600 font-mono">
-                        {niche.asins.slice(0, 2).join(', ')}
-                        {niche.asins.length > 2 && ` +${niche.asins.length - 2} more`}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{niche.category}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{niche.totalProducts}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">#{niche.avgBsr.toLocaleString()}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">${niche.avgPrice}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{niche.totalReviews.toLocaleString()}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">${(niche.marketSize / 1000000).toFixed(1)}M</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <Badge variant="outline" className={
-                        niche.competitionLevel === 'Low' ? 'border-green-200 text-green-800' :
-                        niche.competitionLevel === 'Medium' ? 'border-yellow-200 text-yellow-800' :
-                        niche.competitionLevel === 'High' ? 'border-orange-200 text-orange-800' :
-                        'border-red-200 text-red-800'
-                      }>
-                        {niche.competitionLevel}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <Badge className={getStatusColor(niche.status)}>
-                        <span className="flex items-center gap-1">
-                          {getStatusIcon(niche.status)}
-                          {niche.status}
-                        </span>
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{new Date(niche.scheduledDate).toLocaleDateString()}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        {niche.status === 'pending' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleAnalyzeNow(niche.id)}
-                          >
-                            Process
-                          </Button>
-                        )}
-                        {niche.status === 'completed' && (
-                          <Button size="sm" variant="outline" asChild>
-                            <Link href={`/products/${niche.asins[0]}`}>
-                              <Eye className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          asChild
-                        >
-                          <Link href={`/admin/niche/${niche.id}`}>
-                            <Edit className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => handleDelete(niche.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+        <TabsContent value="users">
+          <UsersTab />
+        </TabsContent>
 
-      {/* Removed Edit Modal - Now using full page routes */}
-
+        <TabsContent value="analytics">
+          <AnalyticsTab />
+        </TabsContent>
+      </Tabs>
     </div>
+  )
+}
+
+export default function AdminDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    }>
+      <AdminDashboardContent />
+    </Suspense>
   )
 }

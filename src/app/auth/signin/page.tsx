@@ -30,9 +30,10 @@ function SignInComponent() {
   const [message, setMessage] = useState('')
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [planPrice, setPlanPrice] = useState<string | null>(null)
+  const [hasRedirected, setHasRedirected] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { signIn, signInWithGoogle } = useAuthActions()
+  const { signIn } = useAuthActions()
   const { user, isAuthenticated } = useAuthState()
 
   useEffect(() => {
@@ -52,53 +53,71 @@ function SignInComponent() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && user) {
-      if (selectedPlan && planPrice) {
-        router.push(`/billing?plan=${selectedPlan}&price=${planPrice}`)
-      } else if (user.role === 'ADMIN') {
-        router.push('/admin')
-      } else {
-        router.push('/dashboard')
+    console.log('Auth state in signin page:', { 
+      isAuthenticated, 
+      user: user ? { email: user.email, role: user.role } : null, 
+      loading: !user && !isAuthenticated,
+      authChecked: true,
+      hasRedirected,
+      currentPath: window.location.pathname
+    })
+    
+    // Prevent redirect loops - don't redirect if we're already on the target page
+    if (isAuthenticated && user && !hasRedirected) {
+      const redirectUrl = searchParams.get('callbackUrl') || '/dashboard'
+      const currentPath = window.location.pathname
+      
+      // Check if we're already on the target page
+      if (currentPath === redirectUrl || 
+          (user.role === 'ADMIN' && currentPath === '/admin') ||
+          (currentPath === '/dashboard')) {
+        console.log('Already on target page, not redirecting')
+        return
       }
+      
+      console.log('User authenticated, redirecting...')
+      setHasRedirected(true)
+      
+      setTimeout(() => {
+        if (selectedPlan && planPrice) {
+          window.location.href = `/billing?plan=${selectedPlan}&price=${planPrice}`
+        } else if (user.role === 'ADMIN') {
+          const adminRedirect = redirectUrl.includes('admin') ? redirectUrl : '/admin'
+          console.log('Redirecting admin to:', adminRedirect)
+          window.location.href = adminRedirect
+        } else {
+          window.location.href = redirectUrl
+        }
+      }, 100)
     }
-  }, [isAuthenticated, user, selectedPlan, planPrice, router])
+  }, [isAuthenticated, user, selectedPlan, planPrice, searchParams, hasRedirected])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
+    
+    console.log('Starting sign in...')
 
     try {
       const result = await signIn(email, password)
+      console.log('Sign in result:', result)
 
       if (result.error) {
-        setError(result.error)
-      }
-      // Success is handled by the auth context and redirect useEffect
-    } catch {
-      setError('An error occurred. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true)
-    setError('')
-    
-    try {
-      const result = await signInWithGoogle()
-      
-      if (result.error) {
+        console.error('Sign in error:', result.error)
         setError(result.error)
         setIsLoading(false)
+      } else {
+        console.log('Sign in successful, waiting for auth state...')
+        // Let the useEffect handle the redirect to avoid double redirects
       }
-      // Success is handled by the auth context and redirect useEffect
-    } catch {
-      setError('Failed to sign in with Google')
+    } catch (error) {
+      console.error('Sign in exception:', error)
+      setError('An error occurred. Please try again.')
       setIsLoading(false)
     }
   }
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -170,6 +189,7 @@ function SignInComponent() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
                     placeholder="Enter your email"
+                    autoComplete="email"
                     required
                   />
                 </div>
@@ -186,6 +206,7 @@ function SignInComponent() {
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10"
                     placeholder="Enter your password"
+                    autoComplete="current-password"
                     required
                   />
                   <button
@@ -231,43 +252,6 @@ function SignInComponent() {
               </Button>
             </form>
 
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
-              </div>
-            </div>
-
-            {/* Google Sign In */}
-            <Button
-              onClick={handleGoogleSignIn}
-              variant="outline"
-              className="w-full"
-              disabled={isLoading}
-            >
-              <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-              </svg>
-              Sign in with Google
-            </Button>
 
             {/* Sign Up Link */}
             <div className="text-center">
@@ -282,18 +266,6 @@ function SignInComponent() {
               </p>
             </div>
 
-            {/* Demo Accounts */}
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="text-sm font-medium text-blue-900 mb-2">Demo Accounts</h4>
-              <div className="space-y-2 text-xs">
-                <div>
-                  <span className="font-medium">Admin:</span> admin@commercecrafted.com / password
-                </div>
-                <div>
-                  <span className="font-medium">User:</span> user@commercecrafted.com / password
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
