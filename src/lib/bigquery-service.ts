@@ -7,12 +7,17 @@ import { Transform } from 'stream'
 import { getBigQueryClient } from './bigquery-client'
 
 export class BigQueryService {
-  client: BigQuery
+  client: BigQuery | null
   private dataset: string
   private table: string
 
   constructor() {
-    this.client = getBigQueryClient()
+    try {
+      this.client = getBigQueryClient()
+    } catch (error) {
+      console.warn('BigQuery not configured:', error)
+      this.client = null
+    }
     this.dataset = process.env.BIGQUERY_DATASET || 'amazon_analytics'
     this.table = 'search_terms'
   }
@@ -27,6 +32,9 @@ export class BigQueryService {
       weekEndDate: string
     }
   ): Promise<void> {
+    if (!this.client) {
+      throw new Error('BigQuery client not configured')
+    }
     console.log(`Processing ${filePath}...`)
     
     try {
@@ -171,6 +179,9 @@ export class BigQueryService {
 
   // Get top search terms with historical trend data
   async getTopSearchTerms(weekStartDate: string, limit: number = 100): Promise<any[]> {
+    if (!this.client) {
+      throw new Error('BigQuery client not configured')
+    }
     const query = `
       WITH report_quality AS (
         -- Calculate report quality metrics
@@ -335,6 +346,9 @@ export class BigQueryService {
 
   // Search for specific terms
   async searchTerms(searchQuery: string, weekStartDate: string, limit: number = 100): Promise<any[]> {
+    if (!this.client) {
+      throw new Error('BigQuery client not configured')
+    }
     const query = `
       WITH latest_records AS (
         SELECT 
@@ -445,6 +459,9 @@ export class BigQueryService {
 
   // Load NDJSON data into BigQuery
   async loadSearchTermsData(ndjsonPath: string): Promise<void> {
+    if (!this.client) {
+      throw new Error('BigQuery client not configured')
+    }
     const datasetId = this.dataset
     const tableId = this.table
     

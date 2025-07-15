@@ -52,7 +52,7 @@ export type ProcessedSearchTerms = z.infer<typeof processedSearchTermsSchema>
 
 export class AmazonAnalyticsService {
   private spApi: SellingPartnerAPI
-  private bigQuery: BigQuery
+  private bigQuery: BigQuery | null
   private datasetId: string
   private tableId: string
 
@@ -67,7 +67,12 @@ export class AmazonAnalyticsService {
     })
 
     // Initialize BigQuery using the new client
-    this.bigQuery = getBigQueryClient()
+    try {
+      this.bigQuery = getBigQueryClient()
+    } catch (error) {
+      console.warn('BigQuery not configured:', error)
+      this.bigQuery = null
+    }
 
     this.datasetId = process.env.BIGQUERY_DATASET || 'amazon_analytics'
     this.tableId = 'search_terms'
@@ -210,6 +215,9 @@ export class AmazonAnalyticsService {
    * Store search terms data in BigQuery
    */
   async storeInBigQuery(data: SearchTermsData[]): Promise<void> {
+    if (!this.bigQuery) {
+      throw new Error('BigQuery client not configured')
+    }
     try {
       // Ensure dataset exists
       const [datasetExists] = await this.bigQuery.dataset(this.datasetId).exists()
@@ -271,6 +279,9 @@ export class AmazonAnalyticsService {
     keywords: string[],
     weeks: number = 4
   ): Promise<ProcessedSearchTerms[]> {
+    if (!this.bigQuery) {
+      throw new Error('BigQuery client not configured')
+    }
     const query = `
       WITH weekly_data AS (
         SELECT 

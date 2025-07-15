@@ -16,22 +16,12 @@ export function getBigQueryClient(): BigQuery {
   
   if (!hasCredentials) {
     console.warn('BigQuery credentials not configured - using mock client');
-    // Return a mock client that throws meaningful errors
-    return {
-      dataset: () => ({
-        table: () => ({
-          load: async () => { throw new Error('BigQuery not configured') },
-          insert: async () => { throw new Error('BigQuery not configured') },
-          query: async () => { throw new Error('BigQuery not configured') },
-        })
-      }),
-      query: async () => { throw new Error('BigQuery not configured') },
-    } as any;
+    throw new Error('BigQuery not configured - missing credentials');
   }
 
-  // In production (Vercel), use JSON from environment variable
-  if (process.env.NODE_ENV === 'production' && process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-    try {
+  try {
+    // In production (Vercel), use JSON from environment variable
+    if (process.env.NODE_ENV === 'production' && process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
       // Create temp directory if it doesn't exist
       const tmpDir = '/tmp';
       if (!existsSync(tmpDir)) {
@@ -53,16 +43,8 @@ export function getBigQueryClient(): BigQuery {
         projectId: process.env.BIGQUERY_PROJECT_ID || 'commercecrafted',
         keyFilename: credentialsPath
       });
-    } catch (error) {
-      console.error('Error setting up BigQuery credentials:', error);
-      // Fallback to default initialization
-      bigqueryClient = new BigQuery({
-        projectId: process.env.BIGQUERY_PROJECT_ID || 'commercecrafted'
-      });
-    }
-  } else {
-    // Development environment - use local file
-    try {
+    } else {
+      // Development environment - use local file
       const keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || 'google-service-key.json';
       if (existsSync(keyFile)) {
         bigqueryClient = new BigQuery({
@@ -70,16 +52,12 @@ export function getBigQueryClient(): BigQuery {
           keyFilename: keyFile
         });
       } else {
-        console.warn(`BigQuery key file not found: ${keyFile}`);
-        // Create a client without credentials - will use default auth or fail gracefully
-        bigqueryClient = new BigQuery({
-          projectId: process.env.BIGQUERY_PROJECT_ID || 'commercecrafted'
-        });
+        throw new Error(`BigQuery key file not found: ${keyFile}`);
       }
-    } catch (error) {
-      console.error('Error initializing BigQuery client:', error);
-      throw error;
     }
+  } catch (error) {
+    console.error('Error initializing BigQuery client:', error);
+    throw new Error(`Failed to initialize BigQuery: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 
   return bigqueryClient;
