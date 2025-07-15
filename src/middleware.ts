@@ -80,6 +80,8 @@ export async function middleware(request: NextRequest) {
   // Admin-only routes - check this BEFORE general auth check
   if (pathname.startsWith('/admin')) {
     console.log('Middleware: checking admin access for user:', user?.email || 'no user')
+    console.log('Middleware: user object:', user)
+    console.log('Middleware: pathname:', pathname)
     
     // In development, allow bypass
     if (process.env.NODE_ENV === 'development') {

@@ -122,12 +122,15 @@ function SignInComponent() {
       } else if (result.success) {
         console.log('Sign in successful, user:', result.user)
         console.log('Preparing to redirect...')
+        // Immediately hide loading state to prevent UI blocking
+        setIsLoading(false)
         // Force redirect for admin users
         setTimeout(() => {
           console.log('Executing redirect to /admin')
-          router.push('/admin')
-          console.log('Router.push called')
-        }, 500)
+          // Use window.location for guaranteed redirect
+          window.location.href = '/admin'
+          console.log('Window.location redirect called')
+        }, 100)
       } else {
         console.error('Unexpected result structure:', result)
         setError('An unexpected error occurred')
