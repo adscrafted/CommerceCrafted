@@ -1,9 +1,9 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
-import { supabase } from "@/lib/supabase"
 import bcrypt from "bcryptjs"
 import { UserRole, SubscriptionTier } from "@/types/auth"
+import { getServerSupabase } from "@/lib/supabase-server"
 
 declare module "next-auth" {
   interface Session {
@@ -59,7 +59,9 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const { data: user, error } = await supabase
+        try {
+          const supabase = getServerSupabase()
+          const { data: user, error } = await supabase
           .from('users')
           .select('*')
           .eq('email', credentials.email)
@@ -84,7 +86,8 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Update last login time
-        await supabase
+        const supabaseUpdate = getServerSupabase()
+        await supabaseUpdate
           .from('users')
           .update({ last_login_at: new Date().toISOString() })
           .eq('id', user.id)
@@ -97,6 +100,10 @@ export const authOptions: NextAuthOptions = {
           subscriptionTier: user.subscription_tier as SubscriptionTier,
           subscriptionExpiresAt: user.subscription_expires_at ? new Date(user.subscription_expires_at) : undefined,
           emailVerified: user.email_verified ? new Date(user.email_verified) : undefined,
+        }
+        } catch (error) {
+          console.error('Auth error:', error)
+          return null
         }
       }
     })
@@ -113,13 +120,15 @@ export const authOptions: NextAuthOptions = {
       
       // Refresh user data on each request to check for updates
       if (token.id) {
-        const { data: dbUser, error } = await supabase
-          .from('users')
-          .select('id, role, subscription_tier, subscription_expires_at, email_verified, is_active')
-          .eq('id', token.id)
-          .single()
-        
-        if (!error && dbUser && dbUser.is_active) {
+        try {
+          const supabaseJwt = getServerSupabase()
+          const { data: dbUser, error } = await supabaseJwt
+            .from('users')
+            .select('id, role, subscription_tier, subscription_expires_at, email_verified, is_active')
+            .eq('id', token.id)
+            .single()
+          
+          if (!error && dbUser && dbUser.is_active) {
           token.role = dbUser.role
           token.subscriptionTier = dbUser.subscription_tier
           token.subscriptionExpiresAt = dbUser.subscription_expires_at ? new Date(dbUser.subscription_expires_at) : undefined
@@ -127,6 +136,10 @@ export const authOptions: NextAuthOptions = {
         } else {
           // User is no longer active, invalidate token
           return null
+        }
+        } catch (error) {
+          console.error('JWT refresh error:', error)
+          // Return existing token if database is unavailable
         }
       }
       
@@ -145,7 +158,8 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
         try {
-          const { data: existingUser } = await supabase
+          const supabaseSignIn = getServerSupabase()
+          const { data: existingUser } = await supabaseSignIn
             .from('users')
             .select('id')
             .eq('email', user.email!)
@@ -153,7 +167,7 @@ export const authOptions: NextAuthOptions = {
 
           if (!existingUser) {
             // Create new user for Google OAuth
-            await supabase
+            await supabaseSignIn
               .from('users')
               .insert({
                 email: user.email!,
