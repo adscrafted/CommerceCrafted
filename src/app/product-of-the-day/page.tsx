@@ -164,8 +164,8 @@ const AnalysisScoreCard = ({
 
 // Mock daily feature data - in production this would come from the API
 const getDailyFeature = () => {
-  // Use a fixed date for SSR consistency
-  const today = new Date('2025-07-10')
+  // Use current date
+  const today = new Date()
   const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24)
   
   // Rotate through products based on day of year
@@ -239,8 +239,12 @@ export default function ProductOfTheDayPage() {
   const product = dailyFeature.product
   const slug = generateProductSlug(product.title, product.asin)
   
-  // Use consistent date formatting for SSR
-  const dateString = 'July 10, 2025'
+  // Use current date formatting
+  const dateString = new Date().toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  })
 
   useEffect(() => {
     setTimeout(() => setLoading(false), 500)
