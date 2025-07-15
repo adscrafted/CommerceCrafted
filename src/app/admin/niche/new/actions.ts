@@ -77,7 +77,7 @@ export async function createNicheWithAnalysis(formData: NicheAnalysisFormData) {
 
     // Step 2: Add products to the niche
     if (formData.asins.length > 0) {
-      const addProductsResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/niches/${nicheId}/products`, {
+      const addProductsResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/niches/by-id/products?id=${nicheId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -94,7 +94,7 @@ export async function createNicheWithAnalysis(formData: NicheAnalysisFormData) {
     }
 
     // Step 3: Trigger analysis
-    const analyzeResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/niches/${nicheId}/analyze`, {
+    const analyzeResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/niches/by-id/analyze?id=${nicheId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

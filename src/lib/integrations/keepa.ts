@@ -556,6 +556,9 @@ class KeepaAPI {
       ratingHistory: ratingHistory,
       reviewCountHistory: reviewCountHistory,
       
+      // Combined review history for database storage
+      reviewHistory: this.combineReviewHistories(ratingHistory, reviewCountHistory),
+      
       // Raw data for storage (limit size to avoid database issues)
       keepaData: {
         productType: product.productType,
@@ -566,6 +569,61 @@ class KeepaAPI {
       },
       lastKeepaSync: new Date()
     }
+  }
+
+  /**
+   * Combine rating and review count histories into a single array
+   * Matches entries by timestamp and fills missing data
+   */
+  private combineReviewHistories(
+    ratingHistory: Array<{ timestamp: Date; value: number }>,
+    reviewCountHistory: Array<{ timestamp: Date; value: number }>
+  ): Array<{
+    timestamp: Date;
+    rating: number;
+    reviewCount: number;
+    ratingAmazon: number;
+    reviewCountAmazon: number;
+    keepaTimestamp: number;
+  }> {
+    const combined: Map<string, any> = new Map();
+    
+    // Add rating data
+    ratingHistory.forEach(item => {
+      const key = item.timestamp.toISOString();
+      combined.set(key, {
+        timestamp: item.timestamp,
+        rating: item.value,
+        reviewCount: 0,
+        ratingAmazon: item.value,
+        reviewCountAmazon: 0,
+        keepaTimestamp: Math.floor(item.timestamp.getTime() / 1000)
+      });
+    });
+    
+    // Add review count data
+    reviewCountHistory.forEach(item => {
+      const key = item.timestamp.toISOString();
+      if (combined.has(key)) {
+        const existing = combined.get(key);
+        existing.reviewCount = item.value;
+        existing.reviewCountAmazon = item.value;
+      } else {
+        combined.set(key, {
+          timestamp: item.timestamp,
+          rating: 0,
+          reviewCount: item.value,
+          ratingAmazon: 0,
+          reviewCountAmazon: item.value,
+          keepaTimestamp: Math.floor(item.timestamp.getTime() / 1000)
+        });
+      }
+    });
+    
+    // Convert to array and sort by timestamp
+    return Array.from(combined.values()).sort((a, b) => 
+      a.timestamp.getTime() - b.timestamp.getTime()
+    );
   }
 }
 

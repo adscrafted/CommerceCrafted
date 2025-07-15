@@ -11,19 +11,27 @@ const addProductSchema = z.object({
   position: z.number().int().positive().optional(),
 })
 
+const addProductsSchema = z.object({
+  asins: z.array(z.string().regex(/^B[0-9A-Z]{9}$/, 'Invalid ASIN format')),
+  notes: z.string().optional(),
+})
+
 const removeProductSchema = z.object({
   asin: z.string().regex(/^B[0-9A-Z]{9}$/, 'Invalid ASIN format'),
 })
 
-// GET /api/niches/[id]/products - Get products in a niche
-async function handleGet(req: NextRequest, { params }: { params: { id: string } }) {
+// GET /api/niches/by-id/products - Get products in a niche
+async function handleGet(req: NextRequest) {
   try {
     const userId = req.headers.get('x-user-id')
     if (!userId) {
       return NextResponse.json({ error: 'User ID not found' }, { status: 401 })
     }
     
-    const nicheId = params.id
+    const nicheId = req.nextUrl.searchParams.get('id')
+    if (!nicheId) {
+      return NextResponse.json({ error: 'Niche ID is required' }, { status: 400 })
+    }
     
     // Fetch niche products
     const products = await nicheService.getNicheProducts(nicheId, userId)
@@ -48,27 +56,60 @@ async function handleGet(req: NextRequest, { params }: { params: { id: string } 
   }
 }
 
-// POST /api/niches/[id]/products - Add a product to a niche
-async function handlePost(req: NextRequest, { params }: { params: { id: string } }) {
+// POST /api/niches/by-id/products - Add product(s) to a niche
+async function handlePost(req: NextRequest) {
   try {
     const userId = req.headers.get('x-user-id')
     if (!userId) {
       return NextResponse.json({ error: 'User ID not found' }, { status: 401 })
     }
     
-    const nicheId = params.id
+    const nicheId = req.nextUrl.searchParams.get('id')
+    if (!nicheId) {
+      return NextResponse.json({ error: 'Niche ID is required' }, { status: 400 })
+    }
     
     // Parse and validate request body
     const body = await req.json()
-    const data = addProductSchema.parse(body)
     
-    // Add product to niche
-    const nicheProduct = await nicheService.addProductToNiche(nicheId, userId, data)
-    
-    return NextResponse.json({
-      data: nicheProduct,
-      message: 'Product added to niche successfully',
-    }, { status: 201 })
+    // Handle bulk ASIN addition
+    if (body.asins && Array.isArray(body.asins)) {
+      const data = addProductsSchema.parse(body)
+      const results = []
+      const errors = []
+      
+      // Process each ASIN
+      for (const asin of data.asins) {
+        try {
+          const productData = {
+            asin,
+            notes: data.notes,
+          }
+          const nicheProduct = await nicheService.addProductToNiche(nicheId, userId, productData)
+          results.push(nicheProduct)
+        } catch (error) {
+          errors.push({
+            asin,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          })
+        }
+      }
+      
+      return NextResponse.json({
+        data: results,
+        errors: errors.length > 0 ? errors : undefined,
+        message: `Added ${results.length} products to niche${errors.length > 0 ? ` with ${errors.length} errors` : ''}`,
+      }, { status: 201 })
+    } else {
+      // Handle single ASIN addition
+      const data = addProductSchema.parse(body)
+      const nicheProduct = await nicheService.addProductToNiche(nicheId, userId, data)
+      
+      return NextResponse.json({
+        data: nicheProduct,
+        message: 'Product added to niche successfully',
+      }, { status: 201 })
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -112,15 +153,18 @@ async function handlePost(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-// DELETE /api/niches/[id]/products - Remove a product from a niche
-async function handleDelete(req: NextRequest, { params }: { params: { id: string } }) {
+// DELETE /api/niches/by-id/products - Remove a product from a niche
+async function handleDelete(req: NextRequest) {
   try {
     const userId = req.headers.get('x-user-id')
     if (!userId) {
       return NextResponse.json({ error: 'User ID not found' }, { status: 401 })
     }
     
-    const nicheId = params.id
+    const nicheId = req.nextUrl.searchParams.get('id')
+    if (!nicheId) {
+      return NextResponse.json({ error: 'Niche ID is required' }, { status: 400 })
+    }
     
     // Parse request body or query params
     const asin = req.nextUrl.searchParams.get('asin')

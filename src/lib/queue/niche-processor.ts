@@ -129,11 +129,11 @@ export class NicheProcessor {
   }
 
   /**
-   * Sync all data for a single ASIN using Keepa
+   * Sync all data for a single ASIN using Keepa only
    */
   private async syncAsinData(asin: string) {
     try {
-      // First, fetch data from Keepa
+      // Fetch data from Keepa
       const keepaResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/keepa/fetch-product`, {
         method: 'POST',
         headers: {
@@ -148,15 +148,25 @@ export class NicheProcessor {
       
       const keepaResult = await keepaResponse.json()
       
-      // If we successfully fetched Keepa data, also try the enhanced sync
-      // This can add additional analysis data if available
+      // Try to fetch additional data from other APIs (Ads API, OpenAI analysis)
+      // but skip SP-API since we're removing it from the niche workflow
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/sync-all-enhanced/${asin}`, {
+        // Call Ads API if available
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ads-api/sync/${asin}`, {
           method: 'POST'
+        }).catch(error => {
+          console.warn('Ads API sync failed for ASIN:', asin, error)
         })
-      } catch (enhancedError) {
-        // Log but don't fail if enhanced sync fails
-        console.warn('Enhanced sync failed for ASIN:', asin, enhancedError)
+        
+        // Call OpenAI analysis if available
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/openai/analyze/${asin}`, {
+          method: 'POST'
+        }).catch(error => {
+          console.warn('OpenAI analysis failed for ASIN:', asin, error)
+        })
+      } catch (additionalError) {
+        // Log but don't fail if additional syncs fail
+        console.warn('Additional sync failed for ASIN:', asin, additionalError)
       }
       
       return { 

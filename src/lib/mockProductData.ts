@@ -1434,7 +1434,202 @@ export const mockProductData = {
       positive: ['comfort', 'sleep quality improvement', 'sound quality', 'battery life', 'side sleeping'],
       negative: ['durability', 'sizing', 'controls', 'connectivity', 'comfort variations'],
       opportunities: ['improved controls', 'better sizing options', 'enhanced durability', 'premium materials']
-    }
+    },
+    rawReviews: [
+      {
+        reviewId: 'R1ABCDEF123456',
+        asin: 'B08MVBRNKV',
+        reviewerName: 'Sarah M.',
+        reviewerProfileUrl: 'https://amazon.com/profile/sarah-m',
+        rating: 5,
+        title: 'Game changer for night shift workers!',
+        text: 'As a nurse working night shifts, I struggled with sleeping during the day. This sleep mask has been a lifesaver! The speakers are perfectly positioned - I can listen to calming music or white noise without disturbing my husband. The fabric is incredibly soft and the elastic band doesnt dig into my head. After 3 months of daily use, its holding up perfectly. The battery lasts through my entire 8-hour sleep period. Highly recommend for anyone who needs to sleep during odd hours!',
+        date: new Date('2024-06-15'),
+        verified: true,
+        helpfulVotes: 127,
+        totalVotes: 142,
+        variant: 'Gray',
+        images: ['https://images.unsplash.com/photo-1559563458-527698bf5295?w=400&h=400&fit=crop'],
+        sentiment: {
+          score: 0.89,
+          label: 'positive',
+          aspects: [
+            { aspect: 'comfort', sentiment: 'positive', confidence: 0.95 },
+            { aspect: 'sound quality', sentiment: 'positive', confidence: 0.87 },
+            { aspect: 'battery life', sentiment: 'positive', confidence: 0.92 },
+            { aspect: 'durability', sentiment: 'positive', confidence: 0.78 }
+          ]
+        }
+      },
+      {
+        reviewId: 'R2GHIJKL789012',
+        asin: 'B08MVBRNKV',
+        reviewerName: 'Michael R.',
+        reviewerProfileUrl: 'https://amazon.com/profile/michael-r',
+        rating: 4,
+        title: 'Great for meditation, some comfort issues',
+        text: 'I bought this for my daily meditation practice. The audio quality is surprisingly good for such small speakers. I love that I can listen to guided meditations without headphones. However, after wearing it for 45+ minutes, the elastic band starts to feel tight around my head. The mask part is comfortable and blocks light well. The Bluetooth connection is stable. Overall good product but wish the band was a bit more adjustable.',
+        date: new Date('2024-06-18'),
+        verified: true,
+        helpfulVotes: 89,
+        totalVotes: 98,
+        variant: 'Black',
+        sentiment: {
+          score: 0.72,
+          label: 'positive',
+          aspects: [
+            { aspect: 'sound quality', sentiment: 'positive', confidence: 0.91 },
+            { aspect: 'comfort', sentiment: 'mixed', confidence: 0.65 },
+            { aspect: 'light blocking', sentiment: 'positive', confidence: 0.88 },
+            { aspect: 'bluetooth', sentiment: 'positive', confidence: 0.83 }
+          ]
+        }
+      },
+      {
+        reviewId: 'R3MNOPQR345678',
+        asin: 'B08MVBRNKV',
+        reviewerName: 'Jessica L.',
+        reviewerProfileUrl: 'https://amazon.com/profile/jessica-l',
+        rating: 5,
+        title: 'Perfect for travel and hotel stays',
+        text: 'As someone who travels frequently for work, this has been amazing. Hotel rooms are never dark or quiet enough for quality sleep. This mask blocks all light and the speakers let me play brown noise or sleep stories. The compact design fits perfectly in my carry-on. Ive used it on dozens of flights and hotel stays. The battery life is excellent - I can go a full week of travel without charging. The controls are intuitive even in the dark. Worth every penny!',
+        date: new Date('2024-06-20'),
+        verified: true,
+        helpfulVotes: 156,
+        totalVotes: 167,
+        variant: 'Navy',
+        sentiment: {
+          score: 0.94,
+          label: 'positive',
+          aspects: [
+            { aspect: 'travel', sentiment: 'positive', confidence: 0.96 },
+            { aspect: 'light blocking', sentiment: 'positive', confidence: 0.93 },
+            { aspect: 'battery life', sentiment: 'positive', confidence: 0.89 },
+            { aspect: 'portability', sentiment: 'positive', confidence: 0.92 }
+          ]
+        }
+      },
+      {
+        reviewId: 'R4STUVWX901234',
+        asin: 'B08MVBRNKV',
+        reviewerName: 'David K.',
+        reviewerProfileUrl: 'https://amazon.com/profile/david-k',
+        rating: 3,
+        title: 'Decent product but durability concerns',
+        text: 'Used this for about 4 months. The concept is great and it worked well initially. Sound quality is good and its comfortable for side sleeping. However, the stitching started coming apart around the 3-month mark. The right speaker also developed a crackling sound. For the price point, I expected better build quality. Customer service was responsive and sent a replacement, but Im worried about long-term durability.',
+        date: new Date('2024-06-22'),
+        verified: true,
+        helpfulVotes: 78,
+        totalVotes: 95,
+        variant: 'Gray',
+        sentiment: {
+          score: 0.42,
+          label: 'mixed',
+          aspects: [
+            { aspect: 'sound quality', sentiment: 'positive', confidence: 0.76 },
+            { aspect: 'durability', sentiment: 'negative', confidence: 0.87 },
+            { aspect: 'comfort', sentiment: 'positive', confidence: 0.81 },
+            { aspect: 'customer service', sentiment: 'positive', confidence: 0.73 }
+          ]
+        }
+      },
+      {
+        reviewId: 'R5YZABCD567890',
+        asin: 'B08MVBRNKV',
+        reviewerName: 'Amanda T.',
+        reviewerProfileUrl: 'https://amazon.com/profile/amanda-t',
+        rating: 5,
+        title: 'Helped with my insomnia!',
+        text: 'I have struggled with insomnia for years and this has been a game-changer. I use it with a sleep app that plays bedtime stories and it helps me fall asleep so much faster. The mask is incredibly comfortable - I forget Im wearing it. The speakers dont press against my ears at all. The battery lasts several nights. My only wish is that it came with a better carrying case, but thats minor. This has genuinely improved my sleep quality and I wake up more rested.',
+        date: new Date('2024-06-25'),
+        verified: true,
+        helpfulVotes: 203,
+        totalVotes: 218,
+        variant: 'Black',
+        sentiment: {
+          score: 0.91,
+          label: 'positive',
+          aspects: [
+            { aspect: 'sleep quality', sentiment: 'positive', confidence: 0.94 },
+            { aspect: 'comfort', sentiment: 'positive', confidence: 0.88 },
+            { aspect: 'battery life', sentiment: 'positive', confidence: 0.85 },
+            { aspect: 'effectiveness', sentiment: 'positive', confidence: 0.92 }
+          ]
+        }
+      },
+      {
+        reviewId: 'R6EFGHIJ123456',
+        asin: 'B08MVBRNKV',
+        reviewerName: 'Robert P.',
+        reviewerProfileUrl: 'https://amazon.com/profile/robert-p',
+        rating: 2,
+        title: 'Not suitable for larger heads',
+        text: 'I really wanted to love this product but the sizing is clearly designed for smaller heads. The elastic band is too tight even on the loosest setting, causing headaches after 20-30 minutes. The mask part fits fine and blocks light well, but the pressure from the band makes it unwearable for extended periods. The audio quality is decent but meaningless if you cant wear it comfortably. Would not recommend for people with larger head circumferences.',
+        date: new Date('2024-06-28'),
+        verified: true,
+        helpfulVotes: 45,
+        totalVotes: 67,
+        variant: 'Navy',
+        sentiment: {
+          score: 0.28,
+          label: 'negative',
+          aspects: [
+            { aspect: 'sizing', sentiment: 'negative', confidence: 0.93 },
+            { aspect: 'comfort', sentiment: 'negative', confidence: 0.89 },
+            { aspect: 'light blocking', sentiment: 'positive', confidence: 0.74 },
+            { aspect: 'sound quality', sentiment: 'neutral', confidence: 0.68 }
+          ]
+        }
+      },
+      {
+        reviewId: 'R7KLMNOP789012',
+        asin: 'B08MVBRNKV',
+        reviewerName: 'Lisa H.',
+        reviewerProfileUrl: 'https://amazon.com/profile/lisa-h',
+        rating: 4,
+        title: 'Good for audiobooks, wish controls were better',
+        text: 'I primarily use this for listening to audiobooks before bed. The sound quality is clear and the comfort is generally good. My main complaint is the control buttons - theyre hard to find in the dark and sometimes I accidentally pause instead of adjusting volume. The Bluetooth connection occasionally drops but reconnects quickly. Battery life is solid. The light blocking is complete which I appreciate. Overall a good product that could be great with better controls.',
+        date: new Date('2024-06-30'),
+        verified: true,
+        helpfulVotes: 67,
+        totalVotes: 82,
+        variant: 'Gray',
+        sentiment: {
+          score: 0.69,
+          label: 'positive',
+          aspects: [
+            { aspect: 'sound quality', sentiment: 'positive', confidence: 0.84 },
+            { aspect: 'controls', sentiment: 'negative', confidence: 0.76 },
+            { aspect: 'bluetooth', sentiment: 'mixed', confidence: 0.71 },
+            { aspect: 'battery life', sentiment: 'positive', confidence: 0.82 }
+          ]
+        }
+      },
+      {
+        reviewId: 'R8QRSTUV345678',
+        asin: 'B08MVBRNKV',
+        reviewerName: 'Mark S.',
+        reviewerProfileUrl: 'https://amazon.com/profile/mark-s',
+        rating: 5,
+        title: 'Excellent for shift workers',
+        text: 'Working rotating shifts as a paramedic, my sleep schedule is constantly changing. This mask has been essential for getting quality sleep during daylight hours. The light blocking is 100% effective and the speakers provide just enough volume for sleep sounds without being too loud. The material is breathable and doesnt cause sweating. After 6 months of regular use, it still looks and works like new. Highly recommend for anyone with irregular sleep schedules.',
+        date: new Date('2024-07-02'),
+        verified: true,
+        helpfulVotes: 134,
+        totalVotes: 149,
+        variant: 'Black',
+        sentiment: {
+          score: 0.88,
+          label: 'positive',
+          aspects: [
+            { aspect: 'light blocking', sentiment: 'positive', confidence: 0.95 },
+            { aspect: 'durability', sentiment: 'positive', confidence: 0.87 },
+            { aspect: 'breathability', sentiment: 'positive', confidence: 0.79 },
+            { aspect: 'effectiveness', sentiment: 'positive', confidence: 0.91 }
+          ]
+        }
+      }
+    ]
   },
 
   // Listing Optimization Data

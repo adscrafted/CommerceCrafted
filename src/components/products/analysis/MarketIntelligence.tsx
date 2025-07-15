@@ -138,6 +138,31 @@ interface MarketIntelligenceProps {
         negative: string[]
         opportunities: string[]
       }
+      rawReviews?: Array<{
+        reviewId: string
+        asin: string
+        reviewerName: string
+        reviewerProfileUrl?: string
+        rating: number
+        title: string
+        text: string
+        date: Date
+        verified: boolean
+        helpfulVotes: number
+        totalVotes: number
+        variant?: string
+        images?: string[]
+        videoUrl?: string
+        sentiment?: {
+          score: number
+          label: 'positive' | 'negative' | 'neutral' | 'mixed'
+          aspects?: Array<{
+            aspect: string
+            sentiment: 'positive' | 'negative' | 'neutral'
+            confidence: number
+          }>
+        }
+      }>
     }
     demandData: {
       customerAvatars: Array<{
@@ -207,7 +232,8 @@ export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
           { id: 'voice', label: 'Voice of Customer', icon: Megaphone },
           { id: 'emotions', label: 'Emotional Triggers', icon: Heart },
           { id: 'personas', label: 'Customer Personas', icon: Users },
-          { id: 'opportunities', label: 'Opportunities', icon: Lightbulb }
+          { id: 'opportunities', label: 'Opportunities', icon: Lightbulb },
+          { id: 'reviews', label: 'Raw Reviews', icon: MessageSquare }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -704,6 +730,131 @@ export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
                     </div>
                   ))}
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Raw Reviews Tab */}
+      {activeTab === 'reviews' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <MessageSquare className="h-5 w-5 text-blue-600" />
+                <span>Raw Review Data</span>
+              </CardTitle>
+              <CardDescription>
+                Complete individual customer reviews with sentiment analysis
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {data.reviewAnalysisData.rawReviews?.map((review, index) => (
+                  <div key={review.reviewId} className="border rounded-lg p-4 bg-white">
+                    {/* Review Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-1">
+                          {[...Array(5)].map((_, i) => (
+                            <span
+                              key={i}
+                              className={`text-sm ${
+                                i < review.rating ? 'text-yellow-400' : 'text-gray-300'
+                              }`}
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                        <span className="font-medium text-gray-900">{review.reviewerName}</span>
+                        {review.verified && (
+                          <Badge variant="secondary" className="text-xs">
+                            Verified
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-500">
+                          {review.date.toLocaleDateString()}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {review.helpfulVotes} of {review.totalVotes} helpful
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Review Title */}
+                    <h4 className="font-semibold text-gray-900 mb-2">{review.title}</h4>
+
+                    {/* Review Text */}
+                    <p className="text-gray-700 text-sm mb-3 leading-relaxed">
+                      {review.text}
+                    </p>
+
+                    {/* Review Metadata */}
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <div className="flex items-center space-x-4">
+                        {review.variant && (
+                          <span className="text-xs text-gray-500">
+                            Variant: <span className="font-medium">{review.variant}</span>
+                          </span>
+                        )}
+                        {review.sentiment && (
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">Sentiment:</span>
+                            <Badge
+                              variant={
+                                review.sentiment.label === 'positive' ? 'default' : 
+                                review.sentiment.label === 'negative' ? 'destructive' : 
+                                'secondary'
+                              }
+                              className="text-xs"
+                            >
+                              {review.sentiment.label} ({(review.sentiment.score * 100).toFixed(0)}%)
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Aspect Sentiments */}
+                      {review.sentiment?.aspects && (
+                        <div className="flex flex-wrap gap-1">
+                          {review.sentiment.aspects.slice(0, 3).map((aspect, i) => (
+                            <Badge
+                              key={i}
+                              variant="outline"
+                              className={`text-xs ${
+                                aspect.sentiment === 'positive' ? 'border-green-300 text-green-700' :
+                                aspect.sentiment === 'negative' ? 'border-red-300 text-red-700' :
+                                'border-gray-300 text-gray-700'
+                              }`}
+                            >
+                              {aspect.aspect}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Review Images */}
+                    {review.images && review.images.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex space-x-2">
+                          {review.images.map((image, i) => (
+                            <img
+                              key={i}
+                              src={image}
+                              alt={`Review image ${i + 1}`}
+                              className="w-16 h-16 object-cover rounded-lg border"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

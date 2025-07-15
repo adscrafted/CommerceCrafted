@@ -20,7 +20,6 @@ export async function POST(
     const results = {
       asin,
       keepa: { success: false, error: null, data: null },
-      spApi: { success: false, error: null, data: null },
       adsApi: { success: false, error: null, data: null },
       openai: { success: false, error: null, data: null },
       startTime: new Date(),
@@ -57,10 +56,9 @@ export async function POST(
       }
     }
 
-    // Run data syncs first (Keepa, SP-API, Ads API)
-    const [keepaResult, spApiResult, adsApiResult] = await Promise.allSettled([
+    // Run data syncs first (Keepa, Ads API) - SP-API removed from niche workflow
+    const [keepaResult, adsApiResult] = await Promise.allSettled([
       callSyncEndpoint(`/api/keepa/sync/${asin}`, 'Keepa'),
-      callSyncEndpoint(`/api/sp-api/sync/${asin}`, 'SP-API'),
       callSyncEndpoint(`/api/ads-api/sync/${asin}`, 'Ads API')
     ])
 
@@ -71,12 +69,6 @@ export async function POST(
       results.keepa = { success: false, error: keepaResult.reason?.message || 'Keepa sync failed', data: null }
     }
 
-    if (spApiResult.status === 'fulfilled') {
-      results.spApi = spApiResult.value
-    } else {
-      results.spApi = { success: false, error: spApiResult.reason?.message || 'SP-API sync failed', data: null }
-    }
-
     if (adsApiResult.status === 'fulfilled') {
       results.adsApi = adsApiResult.value
     } else {
@@ -84,7 +76,7 @@ export async function POST(
     }
 
     // Only run OpenAI analysis if at least one data source succeeded
-    const dataSourceSuccessCount = [results.keepa.success, results.spApi.success, results.adsApi.success].filter(Boolean).length
+    const dataSourceSuccessCount = [results.keepa.success, results.adsApi.success].filter(Boolean).length
     
     if (dataSourceSuccessCount > 0) {
       // Run OpenAI analysis after data sources complete
@@ -105,8 +97,8 @@ export async function POST(
     results.duration = results.endTime.getTime() - results.startTime.getTime()
 
     // Count successful syncs (including OpenAI)
-    const successCount = [results.keepa.success, results.spApi.success, results.adsApi.success, results.openai.success].filter(Boolean).length
-    const totalCount = 4
+    const successCount = [results.keepa.success, results.adsApi.success, results.openai.success].filter(Boolean).length
+    const totalCount = 3
 
     console.log(`Comprehensive sync completed: ${successCount}/${totalCount} APIs successful`)
 
@@ -144,7 +136,6 @@ export async function POST(
         successRate: Math.round((successCount / totalCount) * 100),
         duration: results.duration,
         keepaSuccess: results.keepa.success,
-        spApiSuccess: results.spApi.success,
         adsApiSuccess: results.adsApi.success,
         openaiSuccess: results.openai.success
       }
@@ -194,12 +185,11 @@ export async function GET(
       .from('amazon_api_cache')
       .select('*')
       .eq('asin', asin)
-      .in('data_type', ['keepa_product', 'sp_api_catalog', 'ads_api_keywords', 'openai_analysis'])
+      .in('data_type', ['keepa_product', 'ads_api_keywords', 'openai_analysis'])
       .gt('cache_expires_at', new Date().toISOString())
 
     const currentCache = {
       keepa: allCachedData?.find(d => d.data_type === 'keepa_product') || null,
-      spApi: allCachedData?.find(d => d.data_type === 'sp_api_catalog') || null,
       adsApi: allCachedData?.find(d => d.data_type === 'ads_api_keywords') || null,
       openai: allCachedData?.find(d => d.data_type === 'openai_analysis') || null
     }
@@ -216,11 +206,6 @@ export async function GET(
           available: !!currentCache.keepa,
           cachedAt: currentCache.keepa?.created_at || null,
           expiresAt: currentCache.keepa?.cache_expires_at || null
-        },
-        spApi: {
-          available: !!currentCache.spApi,
-          cachedAt: currentCache.spApi?.created_at || null,
-          expiresAt: currentCache.spApi?.cache_expires_at || null
         },
         adsApi: {
           available: !!currentCache.adsApi,

@@ -20,7 +20,6 @@ export async function POST(
     const results = {
       asin,
       keepa: { success: false, error: null, data: null },
-      spApi: { success: false, error: null, data: null },
       adsApi: { success: false, error: null, data: null },
       openai: { success: false, error: null, data: null },
       reviews: { success: false, error: null, data: null },
@@ -60,10 +59,9 @@ export async function POST(
       }
     }
 
-    // Phase 1: Core data syncs (Keepa, SP-API, Ads API)
-    const [keepaResult, spApiResult, adsApiResult] = await Promise.allSettled([
+    // Phase 1: Core data syncs (Keepa, Ads API) - SP-API removed from niche workflow
+    const [keepaResult, adsApiResult] = await Promise.allSettled([
       callSyncEndpoint(`/api/keepa/sync/${asin}`, 'Keepa'),
-      callSyncEndpoint(`/api/sp-api/sync/${asin}`, 'SP-API'),
       callSyncEndpoint(`/api/ads-api/sync/${asin}`, 'Ads API')
     ])
 
@@ -74,12 +72,6 @@ export async function POST(
       results.keepa = { success: false, error: keepaResult.reason?.message || 'Keepa sync failed', data: null }
     }
 
-    if (spApiResult.status === 'fulfilled') {
-      results.spApi = spApiResult.value
-    } else {
-      results.spApi = { success: false, error: spApiResult.reason?.message || 'SP-API sync failed', data: null }
-    }
-
     if (adsApiResult.status === 'fulfilled') {
       results.adsApi = adsApiResult.value
     } else {
@@ -87,7 +79,7 @@ export async function POST(
     }
 
     // Phase 2: Enhanced data (Reviews & Social) - only if we have product data
-    const dataSourceSuccessCount = [results.keepa.success, results.spApi.success, results.adsApi.success].filter(Boolean).length
+    const dataSourceSuccessCount = [results.keepa.success, results.adsApi.success].filter(Boolean).length
     
     if (dataSourceSuccessCount > 0) {
       // Get keywords for Reddit search if Ads API succeeded
@@ -99,9 +91,10 @@ export async function POST(
         keywords = results.adsApi.data.data.topKeywords.map((k: any) => k.keyword)
       }
       
-      if (results.spApi.success && results.spApi.data?.data) {
-        productTitle = results.spApi.data.data.title || ''
-        brand = results.spApi.data.data.brand || ''
+      // Get product title and brand from Keepa data if available
+      if (results.keepa.success && results.keepa.data?.data) {
+        productTitle = results.keepa.data.data.title || ''
+        brand = results.keepa.data.data.brand || ''
       }
 
       // Run reviews and Reddit scraping in parallel
@@ -151,13 +144,12 @@ export async function POST(
     // Count successful syncs
     const successCount = [
       results.keepa.success, 
-      results.spApi.success, 
       results.adsApi.success, 
       results.openai.success,
       results.reviews.success,
       results.reddit.success
     ].filter(Boolean).length
-    const totalCount = 6
+    const totalCount = 5
 
     console.log(`Enhanced comprehensive sync completed: ${successCount}/${totalCount} APIs successful`)
 
@@ -195,7 +187,6 @@ export async function POST(
         successRate: Math.round((successCount / totalCount) * 100),
         duration: results.duration,
         keepaSuccess: results.keepa.success,
-        spApiSuccess: results.spApi.success,
         adsApiSuccess: results.adsApi.success,
         openaiSuccess: results.openai.success,
         reviewsSuccess: results.reviews.success,

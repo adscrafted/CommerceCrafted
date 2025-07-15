@@ -35,7 +35,7 @@ function SignInComponent() {
   const [skipAutoRedirect, setSkipAutoRedirect] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { signIn } = useAuthActions()
+  const { signIn, signUp } = useAuthActions()
   const { user, isAuthenticated } = useAuthState()
 
   useEffect(() => {
@@ -126,18 +126,66 @@ function SignInComponent() {
     }
   }
 
-  const handleAutoLogin = () => {
-    console.log('Bypass auto-login - going directly to admin...')
+  const handleAutoLogin = async () => {
+    console.log('Auto-login with admin credentials...')
+    setIsLoading(true)
+    setError('')
     
-    // Just go directly to admin page - bypass all auth
-    const redirectUrl = searchParams.get('callbackUrl') || '/admin'
-    console.log('Direct redirect to:', redirectUrl)
+    const adminEmail = 'anthony@adscrafted.com'
+    const adminPassword = 'admin123'
     
-    // Set a flag in localStorage so the admin page knows this is a debug access
-    localStorage.setItem('debug_admin_access', 'true')
-    
-    // Go directly
-    window.location.href = redirectUrl
+    try {
+      // First try to sign in
+      console.log('Attempting sign in...')
+      const signInResult = await signIn(adminEmail, adminPassword)
+      console.log('Sign in result:', signInResult)
+
+      if (signInResult.error) {
+        // If sign in fails, try to create the admin user first
+        if (signInResult.error.includes('Invalid login credentials') || 
+            signInResult.error.includes('User not found')) {
+          console.log('Admin user not found, creating...')
+          
+          const signUpResult = await signUp(adminEmail, adminPassword, {
+            name: 'Admin User',
+            role: 'ADMIN'
+          })
+          console.log('Sign up result:', signUpResult)
+          
+          if (signUpResult.error) {
+            console.error('Sign up error:', signUpResult.error)
+            setError('Failed to create admin user: ' + signUpResult.error)
+            setIsLoading(false)
+            return
+          }
+          
+          // After successful signup, try to sign in again
+          console.log('Admin user created, signing in...')
+          const retrySignIn = await signIn(adminEmail, adminPassword)
+          
+          if (retrySignIn.error) {
+            console.error('Retry sign in error:', retrySignIn.error)
+            setError('Auto-login failed after creating user: ' + retrySignIn.error)
+            setIsLoading(false)
+            return
+          }
+        } else {
+          console.error('Other sign in error:', signInResult.error)
+          setError('Auto-login failed: ' + signInResult.error)
+          setIsLoading(false)
+          return
+        }
+      }
+      
+      console.log('Auto-login successful, waiting for auth state...')
+      setHasRedirected(true) // Prevent double redirects
+      // Let the useEffect handle the redirect
+      
+    } catch (error) {
+      console.error('Auto-login exception:', error)
+      setError('Auto-login failed. Please try manual login.')
+      setIsLoading(false)
+    }
   }
 
 

@@ -53,4 +53,4 @@ CREATE TRIGGER on_auth_user_created
 -- Update the admin user's role if they exist
 UPDATE public.users 
 SET role = 'ADMIN', subscription_tier = 'enterprise'
-WHERE email = 'admin@commercecrafted.com';
+WHERE email = 'anthony@adscrafted.com';

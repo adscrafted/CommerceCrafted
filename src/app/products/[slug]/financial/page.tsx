@@ -117,33 +117,6 @@ export default function FinancialPage({ params }: FinancialPageProps) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Key Insights */}
-        <Card className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50">
-          <CardHeader>
-            <CardTitle>Key Financial Insights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-green-600">$8.50</div>
-                <div className="text-sm text-gray-600">Profit per Unit</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-blue-600">28.9%</div>
-                <div className="text-sm text-gray-600">Net Margin</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-purple-600">4 months</div>
-                <div className="text-sm text-gray-600">Break-even</div>
-              </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                <div className="text-2xl font-bold text-orange-600">124%</div>
-                <div className="text-sm text-gray-600">Year 1 ROI</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Financial Analysis Component */}
         <FinancialAnalysis data={mockProductData} />
       </div>

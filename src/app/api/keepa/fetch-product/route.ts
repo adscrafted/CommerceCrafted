@@ -171,8 +171,35 @@ export async function POST(request: NextRequest) {
         // Continue anyway
       }
     }
+
+    // Write review history (last 50 entries)
+    if (transformedData.reviewHistory && transformedData.reviewHistory.length > 0) {
+      console.log('10. Storing review history...')
+      const reviewData = transformedData.reviewHistory.slice(-50).map(entry => ({
+        product_id: productId,
+        asin: asin,
+        review_count: entry.reviewCount || 0,
+        rating: entry.rating || 0,
+        review_count_amazon: entry.reviewCountAmazon || entry.reviewCount || 0,
+        rating_amazon: entry.ratingAmazon || entry.rating || 0,
+        timestamp: entry.timestamp.toISOString(),
+        keepa_timestamp: entry.keepaTimestamp || Math.floor(entry.timestamp.getTime() / 1000)
+      }))
+      
+      const { error: reviewError } = await supabase
+        .from('keepa_review_history')
+        .upsert(reviewData, {
+          onConflict: 'product_id,timestamp',
+          ignoreDuplicates: true
+        })
+      
+      if (reviewError) {
+        console.error('Review history error:', reviewError)
+        // Continue anyway
+      }
+    }
     
-    console.log('10. Success!')
+    console.log('11. Success!')
     return NextResponse.json({
       source: 'api',
       productId: productId,
