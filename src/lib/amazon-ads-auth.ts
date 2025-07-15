@@ -16,13 +16,13 @@ interface CachedToken {
 }
 
 export class AmazonAdsAuth {
-  private static instance: AmazonAdsAuth
+  private static instance: AmazonAdsAuth | null = null
   private cachedToken: CachedToken | null = null
   
-  private readonly clientId = process.env.ADS_API_CLIENT_ID!
-  private readonly clientSecret = process.env.ADS_API_CLIENT_SECRET!
-  private readonly refreshToken = process.env.ADS_API_REFRESH_TOKEN!
-  private readonly profileId = process.env.ADS_API_PROFILE_ID!
+  private readonly clientId: string
+  private readonly clientSecret: string
+  private readonly refreshToken: string
+  private readonly profileId: string
   
   private readonly endpoints = {
     NA: 'https://advertising-api.amazon.com',
@@ -33,10 +33,11 @@ export class AmazonAdsAuth {
   private readonly tokenEndpoint = 'https://api.amazon.com/auth/o2/token'
   
   private constructor() {
-    // Validate required environment variables
-    if (!this.clientId || !this.clientSecret || !this.refreshToken) {
-      throw new Error('Missing required Amazon Ads API credentials in environment variables')
-    }
+    // Get environment variables with defaults for build time
+    this.clientId = process.env.ADS_API_CLIENT_ID || ''
+    this.clientSecret = process.env.ADS_API_CLIENT_SECRET || ''
+    this.refreshToken = process.env.ADS_API_REFRESH_TOKEN || ''
+    this.profileId = process.env.ADS_API_PROFILE_ID || ''
   }
   
   public static getInstance(): AmazonAdsAuth {
@@ -44,6 +45,10 @@ export class AmazonAdsAuth {
       AmazonAdsAuth.instance = new AmazonAdsAuth()
     }
     return AmazonAdsAuth.instance
+  }
+  
+  public isConfigured(): boolean {
+    return !!(this.clientId && this.clientSecret && this.refreshToken)
   }
   
   private async refreshAccessToken(): Promise<string> {
@@ -132,13 +137,43 @@ export class AmazonAdsAuth {
   }
 }
 
-// Export singleton instance
-export const adsApiAuth = AmazonAdsAuth.getInstance()
+// Export function to get singleton instance
+export function getAdsApiAuth() {
+  return AmazonAdsAuth.getInstance()
+}
+
+// For backward compatibility
+export const adsApiAuth = {
+  makeRequest: async (...args: Parameters<AmazonAdsAuth['makeRequest']>) => {
+    const instance = getAdsApiAuth()
+    if (!instance.isConfigured()) {
+      throw new Error('Amazon Ads API credentials not configured')
+    }
+    return instance.makeRequest(...args)
+  },
+  getAccessToken: async () => {
+    const instance = getAdsApiAuth()
+    if (!instance.isConfigured()) {
+      throw new Error('Amazon Ads API credentials not configured')
+    }
+    return instance.getAccessToken()
+  },
+  isConfigured: () => {
+    const instance = getAdsApiAuth()
+    return instance.isConfigured()
+  }
+}
 
 // Middleware helper for API routes
 export async function requireAdsApiAuth(request: NextRequest) {
   try {
-    const auth = AmazonAdsAuth.getInstance()
+    const auth = getAdsApiAuth()
+    if (!auth.isConfigured()) {
+      return {
+        success: false,
+        error: 'Amazon Ads API credentials not configured'
+      }
+    }
     await auth.getAccessToken() // Verify we can get a token
     return { success: true, auth }
   } catch (error) {

@@ -3,12 +3,11 @@
 
 import OpenAI from 'openai'
 
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY is not set in environment variables')
-}
+// Use dummy key for build time if env var is missing
+const openaiApiKey = process.env.OPENAI_API_KEY || 'sk-dummy-key-for-build'
 
 export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: openaiApiKey,
 })
 
 // AI Research Agent Configuration

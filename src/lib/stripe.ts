@@ -1,6 +1,9 @@
 import Stripe from 'stripe'
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+// Create Stripe instance with graceful handling for missing env vars
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || 'sk_test_dummy_key_for_build'
+
+export const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2025-06-30.basil',
   typescript: true,
 })
