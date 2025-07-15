@@ -103,6 +103,7 @@ function SignInComponent() {
     e.preventDefault()
     setIsLoading(true)
     setError('')
+    setHasRedirected(false) // Reset redirect flag for new sign-in attempt
     
     console.log('Starting sign in...')
 
