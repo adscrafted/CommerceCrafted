@@ -7,7 +7,16 @@ export async function GET(request: NextRequest) {
     const keyword = searchParams.get('keyword')
     const limit = parseInt(searchParams.get('limit') || '10')
     
-    const bigquery = getBigQueryClient()
+    let bigquery
+    try {
+      bigquery = getBigQueryClient()
+    } catch (error) {
+      console.error('BigQuery not configured:', error)
+      return NextResponse.json({ 
+        error: 'Analytics service not available',
+        searchTerms: []
+      })
+    }
     
     // Query to get search terms data from our existing table
     const query = `

@@ -16,7 +16,6 @@ export default function Header() {
   const navigation: Array<{ name: string; href: string; badge?: string }> = [
     { name: 'Product of the Day', href: '/product-of-the-day' },
     { name: 'Database', href: '/database' },
-    { name: 'Keyword Groups', href: '/keyword-groups' },
     { name: 'Trends', href: '/trends' },
     { name: 'Features', href: '/features' },
     { name: 'Pricing', href: '/pricing' },

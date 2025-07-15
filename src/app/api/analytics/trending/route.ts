@@ -7,7 +7,16 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const days = parseInt(searchParams.get('days') || '7')
     
-    const bigquery = getBigQueryClient()
+    let bigquery
+    try {
+      bigquery = getBigQueryClient()
+    } catch (error) {
+      console.error('BigQuery not configured:', error)
+      return NextResponse.json({ 
+        error: 'Analytics service not available',
+        trending: []
+      })
+    }
     
     // Query to find trending keywords based on rank improvement
     const query = `
