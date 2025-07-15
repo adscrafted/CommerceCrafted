@@ -115,10 +115,12 @@ function SignInComponent() {
         console.error('Sign in error:', result.error)
         setError(result.error)
         setIsLoading(false)
-      } else {
-        console.log('Sign in successful, waiting for auth state...')
-        // Don't set loading to false here - let the redirect happen first
-        // The useEffect will handle the redirect
+      } else if (result.success) {
+        console.log('Sign in successful, redirecting...')
+        // Force redirect for admin users
+        setTimeout(() => {
+          router.push('/admin')
+        }, 500)
       }
     } catch (error) {
       console.error('Sign in exception:', error)

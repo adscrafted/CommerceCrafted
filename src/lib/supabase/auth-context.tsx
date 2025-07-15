@@ -168,17 +168,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               })
               console.log('User state set successfully')
               
+              // Force loading to false to trigger re-render
+              setLoading(false)
+              
               // Skip updating last login for now to avoid issues
             } else {
               console.error('Failed to transform user')
+              setLoading(false)
             }
           }
         } else if (event === 'SIGNED_OUT') {
           setUser(null)
           setSession(null)
+          setLoading(false)
         }
-        
-        setLoading(false)
       }
     )
 
@@ -202,7 +205,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       console.log('Sign in successful:', data.user?.email)
       // The auth state change listener will handle updating the user state
-      return {}
+      // Return success immediately
+      return { success: true }
     } catch (error) {
       console.error('Sign in exception:', error)
       return { error: 'An unexpected error occurred' }
