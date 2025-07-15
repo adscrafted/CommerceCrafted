@@ -28,6 +28,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const transformUser = async (supabaseUser: User): Promise<AuthUser | null> => {
     try {
       console.log('transformUser called for:', supabaseUser.email, 'ID:', supabaseUser.id)
+      console.log('Starting database query...')
       
       // Get user data from our custom users table
       const { data: userData, error } = await supabase
@@ -35,6 +36,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .select('*')
         .eq('id', supabaseUser.id)
         .single()
+      
+      console.log('Database query completed. Error:', error, 'Data:', userData)
 
       if (error) {
         // Log the specific error
@@ -43,13 +46,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // For admin user, we know they exist, so fetch by email instead
         if (supabaseUser.email === 'anthony@adscrafted.com' || supabaseUser.email === 'admin@commercecrafted.com') {
+          console.log('Trying email lookup for admin user:', supabaseUser.email)
           const { data: userByEmail, error: emailError } = await supabase
             .from('users')
             .select('*')
             .eq('email', supabaseUser.email)
             .single()
+          
+          console.log('Email lookup result. Error:', emailError, 'Data:', userByEmail)
             
           if (!emailError && userByEmail) {
+            console.log('Found user by email, returning transformed user')
             return {
               id: userByEmail.id,
               email: userByEmail.email,
@@ -72,9 +79,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Fallback to auth metadata
         console.warn('User not found in users table, using auth metadata')
+        console.log('Supabase user metadata:', supabaseUser.user_metadata)
         const role = (supabaseUser.user_metadata?.role as UserRole) || 'USER'
+        console.log('Using fallback role:', role)
         
-        return {
+        const fallbackUser = {
           id: supabaseUser.id,
           email: supabaseUser.email!,
           name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
@@ -87,13 +96,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           emailSubscribed: false,
           stripeCustomerId: null,
         }
+        console.log('Created fallback user:', fallbackUser)
+        return fallbackUser
       }
 
       if (!userData) {
+        console.log('No userData found, returning null')
         return null
       }
 
-      return {
+      console.log('Found userData, creating user object:', userData)
+      const transformedUser = {
         id: userData.id,
         email: userData.email,
         name: userData.name,
@@ -110,6 +123,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         emailSubscribed: userData.email_subscribed,
         stripeCustomerId: userData.stripe_customer_id,
       }
+      console.log('Returning transformed user:', transformedUser)
+      return transformedUser
     } catch (error) {
       console.error('Error transforming user:', error)
       return null
