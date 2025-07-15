@@ -696,7 +696,7 @@ export default function HomePage() {
                     <div className="flex flex-col space-y-4">
                       <div className="flex items-start space-x-4">
                         <Image
-                          src={product.images?.[0] || product.imageUrl || 'https://via.placeholder.com/80x80?text=Product'}
+                          src={product.images?.[0] || product.imageUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=80&h=80&fit=crop'}
                           alt={product.title}
                           width={80}
                           height={80}

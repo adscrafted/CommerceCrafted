@@ -3,7 +3,6 @@
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-import { useAuth } from '@/lib/supabase/auth-context'
 import { useRouter } from 'next/navigation'
 import React, { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -38,8 +37,62 @@ interface ProductPageProps {
   params: Promise<{ slug: string }>
 }
 
-// Mock data for the daily product
-const dailyProductData = {
+// Helper function to extract ASIN from slug
+const extractAsinFromSlug = (slug: string): string => {
+  // Slug format: "smart-bluetooth-sleep-mask-with-built-in-speakers"
+  // We need to map this to ASIN. For now, we'll use a mapping or extract from the end
+  const slugToAsinMap: { [key: string]: string } = {
+    'smart-bluetooth-sleep-mask-with-built-in-speakers': 'B08MVBRNKV'
+  }
+  return slugToAsinMap[slug] || 'B08MVBRNKV' // fallback to our known ASIN
+}
+
+// Function to fetch niche data from database
+const fetchNicheData = async (slug: string) => {
+  try {
+    console.log('Fetching niche data for slug:', slug)
+    const response = await fetch(`/api/niches/${slug}/data`, {
+      cache: 'no-cache' // Ensure fresh data
+    })
+    
+    if (!response.ok) {
+      console.error('Failed to fetch niche:', response.status, response.statusText)
+      return null
+    }
+    
+    const nicheData = await response.json()
+    console.log('Niche data fetched successfully:', nicheData.niche?.name)
+    return nicheData
+  } catch (error) {
+    console.error('Error fetching niche data:', error)
+    return null
+  }
+}
+
+// Function to fetch product from database
+const fetchProductData = async (asin: string) => {
+  try {
+    console.log('Fetching product data for ASIN:', asin)
+    const response = await fetch(`/api/database/products/${asin}`, {
+      cache: 'no-cache' // Ensure fresh data
+    })
+    
+    if (!response.ok) {
+      console.error('Failed to fetch product:', response.status, response.statusText)
+      return null
+    }
+    
+    const productData = await response.json()
+    console.log('Product data fetched successfully:', productData.title)
+    return productData
+  } catch (error) {
+    console.error('Error fetching product data:', error)
+    return null
+  }
+}
+
+// Fallback mock data in case database fetch fails
+const fallbackProductData = {
   id: 'daily_product_1',
   title: 'Smart Bluetooth Sleep Mask with Built-in Speakers',
   subtitle: 'Revolutionary sleep technology combining comfort with audio entertainment',
@@ -164,10 +217,11 @@ const AnalysisScoreCard = ({
 }
 
 export default function ProductPage({ params }: ProductPageProps) {
-  const { user, session, loading: authLoading } = useAuth()
+  // Remove auth dependency since this is now a public page
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [slug, setSlug] = useState<string>('')
+  const [productData, setProductData] = useState<any>(null)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
@@ -176,8 +230,47 @@ export default function ProductPage({ params }: ProductPageProps) {
   useEffect(() => {
     const loadData = async () => {
       const resolvedParams = await params
-      setSlug(resolvedParams.slug)
-      setTimeout(() => setLoading(false), 500)
+      const currentSlug = resolvedParams.slug
+      setSlug(currentSlug)
+      
+      // First try to fetch niche data
+      const nicheData = await fetchNicheData(currentSlug)
+      
+      if (nicheData && nicheData.niche) {
+        console.log('Using niche data with real product image')
+        // Transform niche data to match our product data structure
+        setProductData({
+          ...fallbackProductData,
+          title: nicheData.niche.name,
+          mainImage: nicheData.niche.mainImage,
+          opportunityScore: Math.round(nicheData.niche.avgOpportunityScore || 87),
+          financialData: {
+            ...fallbackProductData.financialData,
+            avgSellingPrice: nicheData.niche.avgPrice || 29.99,
+            monthlyProjections: {
+              revenue: nicheData.niche.totalRevenue || 52000
+            }
+          },
+          // Store the full niche data for use in child pages
+          _nicheData: nicheData
+        })
+      } else {
+        // Fallback to ASIN-based fetch
+        const asin = extractAsinFromSlug(currentSlug)
+        console.log('Extracted ASIN:', asin, 'from slug:', currentSlug)
+        
+        const fetchedProduct = await fetchProductData(asin)
+        
+        if (fetchedProduct) {
+          console.log('Using database product data')
+          setProductData(fetchedProduct)
+        } else {
+          console.log('Falling back to mock data')
+          setProductData(fallbackProductData)
+        }
+      }
+      
+      setLoading(false)
     }
 
     loadData()
@@ -216,8 +309,8 @@ export default function ProductPage({ params }: ProductPageProps) {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: dailyProductData.title,
-          text: `Check out this Amazon product opportunity with a ${dailyProductData.opportunityScore} opportunity score!`,
+          title: currentProduct.title,
+          text: `Check out this Amazon product opportunity with a ${currentProduct.opportunityScore} opportunity score!`,
           url: window.location.href
         })
       } else {
@@ -237,7 +330,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     }
   }
 
-  if (loading || authLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -245,18 +338,18 @@ export default function ProductPage({ params }: ProductPageProps) {
     )
   }
 
-  // Determine if user has access
-  const hasAccess = showDebugUnlocked || (user && session && (user.subscriptionTier !== 'free'))
+  // Since this is now a public page, always show access (or use debug toggle)
+  const hasAccess = true // Public page - always has access
   
-  // Show membership gate for completely unauthorized users
-  if (!showDebugUnlocked && (!user || !session)) {
-    return <MembershipGate productTitle={dailyProductData.title} productImage={dailyProductData.mainImage} />
-  }
+  // No membership gate needed for public pages
+  
+  // Use productData if available, otherwise fallback to mock data
+  const currentProduct = productData || fallbackProductData
 
   const analysisCards = [
     {
       title: 'Market Intelligence',
-      score: dailyProductData.scores.intelligence,
+      score: currentProduct.scores.intelligence,
       icon: MessageSquare,
       description: 'Reviews, sentiment & customer insights',
       href: `/products/${slug}/intelligence`,
@@ -270,7 +363,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     },
     {
       title: 'Demand Analysis',
-      score: dailyProductData.scores.demand,
+      score: currentProduct.scores.demand,
       icon: TrendingUp,
       description: 'Market size, search volume & customer segments',
       href: `/products/${slug}/demand`,
@@ -284,7 +377,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     },
     {
       title: 'Competition Analysis',
-      score: dailyProductData.scores.competition,
+      score: currentProduct.scores.competition,
       icon: Target,
       description: 'Competitor landscape & market positioning',
       href: `/products/${slug}/competition`,
@@ -298,7 +391,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     },
     {
       title: 'Keywords Analysis',
-      score: dailyProductData.scores.keywords,
+      score: currentProduct.scores.keywords,
       icon: Search,
       description: 'Keyword opportunities & search terms',
       href: `/products/${slug}/keywords`,
@@ -312,7 +405,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     },
     {
       title: 'Financial Analysis',
-      score: dailyProductData.scores.financial,
+      score: currentProduct.scores.financial,
       icon: DollarSign,
       description: 'Profitability, pricing & ROI projections',
       href: `/products/${slug}/financial`,
@@ -326,7 +419,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     },
     {
       title: 'Listing Optimization',
-      score: dailyProductData.scores.listing,
+      score: currentProduct.scores.listing,
       icon: FileText,
       description: 'Title, images, A+ content & video strategy',
       href: `/products/${slug}/listing`,
@@ -340,7 +433,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     },
     {
       title: 'Launch Strategy',
-      score: dailyProductData.scores.launch,
+      score: currentProduct.scores.launch,
       icon: Rocket,
       description: '90-day roadmap & growth tactics',
       href: `/products/${slug}/launch`,
@@ -378,11 +471,11 @@ export default function ProductPage({ params }: ProductPageProps) {
                   Daily Amazon Opportunity
                 </Badge>
                 <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  {dailyProductData.date}
+                  {currentProduct.date}
                 </Badge>
               </div>
-              <h1 className="text-4xl font-bold mb-4">{dailyProductData.title}</h1>
-              <p className="text-xl mb-6 text-blue-100">{dailyProductData.subtitle}</p>
+              <h1 className="text-4xl font-bold mb-4">{currentProduct.title}</h1>
+              <p className="text-xl mb-6 text-blue-100">{currentProduct.subtitle}</p>
               
               {/* Action Buttons */}
               <div className="flex gap-3">
@@ -411,8 +504,8 @@ export default function ProductPage({ params }: ProductPageProps) {
               <div className="relative inline-block">
                 <div className="w-80 h-80 relative">
                   <Image 
-                    src={dailyProductData.mainImage}
-                    alt={dailyProductData.title}
+                    src={currentProduct.mainImage}
+                    alt={currentProduct.title}
                     width={320}
                     height={320}
                     className="rounded-lg shadow-2xl w-full h-full object-cover"
@@ -433,13 +526,13 @@ export default function ProductPage({ params }: ProductPageProps) {
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <div className="text-2xl font-bold text-blue-600">
-                ${dailyProductData.financialData.monthlyProjections.revenue.toLocaleString()}
+                ${currentProduct.financialData.monthlyProjections.revenue.toLocaleString()}
               </div>
               <div className="text-sm text-gray-600">Est. Monthly Revenue</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-purple-600">
-                ${dailyProductData.financialData.avgSellingPrice}
+                ${currentProduct.financialData.avgSellingPrice}
               </div>
               <div className="text-sm text-gray-600">Avg. Selling Price</div>
             </div>
@@ -477,7 +570,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                   </div>
                   <div className="text-center">
                     <div className={`text-3xl font-bold text-indigo-600`}>
-                      {dailyProductData.opportunityScore}
+                      {currentProduct.opportunityScore}
                     </div>
                     <div className="text-xs text-gray-600">Overall Score</div>
                   </div>
@@ -485,7 +578,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <Progress value={dailyProductData.opportunityScore} className="h-2" />
+                  <Progress value={currentProduct.opportunityScore} className="h-2" />
                   <div className="grid md:grid-cols-2 gap-6 mt-4">
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-2">Strengths</h3>

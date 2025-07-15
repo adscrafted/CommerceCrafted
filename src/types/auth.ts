@@ -1,7 +1,7 @@
 // Authentication and authorization types
 import { User } from '@supabase/supabase-js'
 
-export type UserRole = 'USER' | 'ADMIN' | 'ANALYST'
+export type UserRole = 'USER' | 'ADMIN'
 
 export type SubscriptionTier = 'free' | 'pro' | 'enterprise'
 

@@ -2,10 +2,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { UserRole, SubscriptionTier } from '@/types/auth'
 
-// Role hierarchy: ADMIN > ANALYST > USER
+// Role hierarchy: ADMIN > USER
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  ADMIN: 3,
-  ANALYST: 2,
+  ADMIN: 2,
   USER: 1,
 }
 

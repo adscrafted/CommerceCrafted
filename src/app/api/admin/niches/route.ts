@@ -15,34 +15,39 @@ async function handleGet(req: NextRequest) {
     console.log('Niches API: Creating Supabase client...')
     const supabase = await createServerSupabaseClient()
     
-    console.log('Niches API: Getting user...')
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      console.error('Auth error in niches API:', {
-        error: authError?.message,
-        hasUser: !!user,
-        cookies: req.cookies.getAll().map(c => c.name)
-      })
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    
-    // Check if user is admin by email (temporary fix)
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('role')
-      .eq('email', user.email)
-      .single()
-    
-    if (userError) {
-      console.error('Error checking admin role:', userError)
-      // For now, allow admin@commercecrafted.com
-      if (user.email !== 'admin@commercecrafted.com') {
+    // Skip auth checks in development mode
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Niches API: Skipping auth checks in development mode')
+    } else {
+      console.log('Niches API: Getting user...')
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      if (authError || !user) {
+        console.error('Auth error in niches API:', {
+          error: authError?.message,
+          hasUser: !!user,
+          cookies: req.cookies.getAll().map(c => c.name)
+        })
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      
+      // Check if user is admin by email (temporary fix)
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('email', user.email)
+        .single()
+      
+      if (userError) {
+        console.error('Error checking admin role:', userError)
+        // For now, allow admin@commercecrafted.com
+        if (user.email !== 'admin@commercecrafted.com') {
+          return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+        }
+      } else if (userData?.role !== 'ADMIN') {
         return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
       }
-    } else if (userData?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
     
     // Parse query parameters
@@ -105,29 +110,38 @@ async function handlePost(req: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient()
     
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    let userId = 'debug-user-id' // Default for development
     
-    if (authError || !user) {
-      console.error('Auth error in niches API:', authError)
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    
-    // Check if user is admin by email (temporary fix)
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('role')
-      .eq('email', user.email)
-      .single()
-    
-    if (userError) {
-      console.error('Error checking admin role:', userError)
-      // For now, allow admin@commercecrafted.com
-      if (user.email !== 'admin@commercecrafted.com') {
+    // Skip auth checks in development mode
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Niches API POST: Skipping auth checks in development mode')
+    } else {
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      if (authError || !user) {
+        console.error('Auth error in niches API:', authError)
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      
+      userId = user.id
+      
+      // Check if user is admin by email (temporary fix)
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('email', user.email)
+        .single()
+      
+      if (userError) {
+        console.error('Error checking admin role:', userError)
+        // For now, allow admin@commercecrafted.com
+        if (user.email !== 'admin@commercecrafted.com') {
+          return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+        }
+      } else if (userData?.role !== 'ADMIN') {
         return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
       }
-    } else if (userData?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
     
     // Parse and validate request body
@@ -149,7 +163,7 @@ async function handlePost(req: NextRequest) {
         category: 'Pending',
         competition_level: 'MEDIUM',
         analyst_assigned: 'AI Agent',
-        created_by: user.id
+        created_by: userId
       })
       .select()
       .single()

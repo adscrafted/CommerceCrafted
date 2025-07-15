@@ -58,3 +58,6 @@ failed_batch_*.json
 
 # sensitive files
 google-service-key.json
+
+# Keepa API logs
+logs/

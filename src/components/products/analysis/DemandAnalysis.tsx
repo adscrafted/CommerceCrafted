@@ -791,7 +791,7 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
                 <span>Competitor Price Tracking</span>
               </CardTitle>
               <CardDescription>
-                Data source: Daily price monitoring of top 10 competitors
+                Data source: {data.demandData._priceHistory ? 'Keepa price history data' : 'Daily price monitoring of top 10 competitors'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -799,19 +799,45 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
                 {/* Current Market Pricing Stats */}
                 <div className="grid grid-cols-4 gap-4">
                   <div className="text-center p-3 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">$22.99</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      ${(() => {
+                        if (data.demandData._priceHistory?.length > 0) {
+                          const allPrices = data.demandData._priceHistory.flatMap((d: any) => [d.min, d.max, d.avg])
+                          return (allPrices.reduce((a: number, b: number) => a + b, 0) / allPrices.length).toFixed(2)
+                        }
+                        return '22.99'
+                      })()}
+                    </div>
                     <div className="text-sm text-gray-600">Market Average</div>
                   </div>
                   <div className="text-center p-3 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">$19.99</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      ${data.demandData._priceHistory?.length > 0 
+                        ? Math.min(...data.demandData._priceHistory.map((d: any) => d.min)).toFixed(2)
+                        : '19.99'}
+                    </div>
                     <div className="text-sm text-gray-600">Lowest Price</div>
                   </div>
                   <div className="text-center p-3 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">$29.99</div>
+                    <div className="text-2xl font-bold text-purple-600">
+                      ${data.demandData._priceHistory?.length > 0 
+                        ? Math.max(...data.demandData._priceHistory.map((d: any) => d.max)).toFixed(2)
+                        : '29.99'}
+                    </div>
                     <div className="text-sm text-gray-600">Highest Price</div>
                   </div>
                   <div className="text-center p-3 bg-orange-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">±$3.45</div>
+                    <div className="text-2xl font-bold text-orange-600">
+                      ±${(() => {
+                        if (data.demandData._priceHistory?.length > 0) {
+                          const prices = data.demandData._priceHistory.map((d: any) => d.avg)
+                          const avg = prices.reduce((a: number, b: number) => a + b, 0) / prices.length
+                          const variance = prices.reduce((a: number, b: number) => a + Math.pow(b - avg, 2), 0) / prices.length
+                          return Math.sqrt(variance).toFixed(2)
+                        }
+                        return '3.45'
+                      })()}
+                    </div>
                     <div className="text-sm text-gray-600">Price Volatility</div>
                   </div>
                 </div>
@@ -822,11 +848,14 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart 
-                        data={[
-                          { date: 'Jul', avg: 24.99, min: 21.99, max: 29.99 },
-                          { date: 'Aug', avg: 23.99, min: 20.99, max: 28.99 },
-                          { date: 'Sep', avg: 22.99, min: 19.99, max: 29.99 },
-                        ]} 
+                        data={data.demandData._priceHistory?.length > 0 
+                          ? data.demandData._priceHistory 
+                          : [
+                              { date: 'Jul', avg: 24.99, min: 21.99, max: 29.99 },
+                              { date: 'Aug', avg: 23.99, min: 20.99, max: 28.99 },
+                              { date: 'Sep', avg: 22.99, min: 19.99, max: 29.99 },
+                            ]
+                        } 
                         margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
@@ -845,36 +874,53 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-3">Top Competitors by Market Share</h4>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <span className="font-medium">MUSICOZY</span>
-                        <span className="text-sm text-gray-600 ml-2">42% market share</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-bold">$26.99</span>
-                        <span className="text-xs text-red-600 ml-2">↑ $2.00</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <span className="font-medium">Perytong</span>
-                        <span className="text-sm text-gray-600 ml-2">28% market share</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-bold">$24.99</span>
-                        <span className="text-xs text-green-600 ml-2">↓ $1.00</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <span className="font-medium">CozyPhones</span>
-                        <span className="text-sm text-gray-600 ml-2">18% market share</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-bold">$22.99</span>
-                        <span className="text-xs text-gray-600 ml-2">→ $0.00</span>
-                      </div>
-                    </div>
+                    {data.demandData._nicheProducts?.length > 0 ? (
+                      data.demandData._nicheProducts.slice(0, 3).map((product: any, index: number) => (
+                        <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <span className="font-medium">{product.title?.substring(0, 30)}...</span>
+                            <span className="text-sm text-gray-600 ml-2">#{product.bsr || 'N/A'} BSR</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold">${product.price || 'N/A'}</span>
+                            <span className="text-xs text-gray-600 ml-2">{product.reviewCount || 0} reviews</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <span className="font-medium">MUSICOZY</span>
+                            <span className="text-sm text-gray-600 ml-2">42% market share</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold">$26.99</span>
+                            <span className="text-xs text-red-600 ml-2">↑ $2.00</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <span className="font-medium">Perytong</span>
+                            <span className="text-sm text-gray-600 ml-2">28% market share</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold">$24.99</span>
+                            <span className="text-xs text-green-600 ml-2">↓ $1.00</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <span className="font-medium">CozyPhones</span>
+                            <span className="text-sm text-gray-600 ml-2">18% market share</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold">$22.99</span>
+                            <span className="text-xs text-gray-600 ml-2">→ $0.00</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

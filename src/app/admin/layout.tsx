@@ -29,6 +29,12 @@ export default function AdminLayout({
   const pathname = usePathname()
 
   React.useEffect(() => {
+    // Skip auth checks in development mode
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Admin layout: skipping auth checks in development mode')
+      return
+    }
+
     if (isLoading) return
 
     if (!isAuthenticated) {
@@ -42,16 +48,19 @@ export default function AdminLayout({
     }
   }, [user, isLoading, isAuthenticated, router])
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
+  // Skip loading and auth checks in development
+  if (process.env.NODE_ENV !== 'development') {
+    if (isLoading) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      )
+    }
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') {
-    return null
+    if (!isAuthenticated || user?.role !== 'ADMIN') {
+      return null
+    }
   }
 
   const handleSignOut = async () => {
@@ -81,7 +90,7 @@ export default function AdminLayout({
                 ADMIN
               </Badge>
               <div className="text-sm text-gray-600">
-                {user?.name || user?.email}
+                {user?.name || user?.email || (process.env.NODE_ENV === 'development' ? 'Debug Admin' : 'Unknown')}
               </div>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />

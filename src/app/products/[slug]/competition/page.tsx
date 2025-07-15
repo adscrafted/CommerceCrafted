@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/lib/supabase/auth-context'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Target } from 'lucide-react'
@@ -30,21 +30,26 @@ const productData = {
 }
 
 export default function CompetitionPage({ params }: CompetitionPageProps) {
-  const { data: session, status } = useSession()
+  const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [slug, setSlug] = useState<string>('')
 
   useEffect(() => {
     const loadData = async () => {
+      console.log('Competition page: Loading data...')
       const resolvedParams = await params
       setSlug(resolvedParams.slug)
-      setTimeout(() => setLoading(false), 500)
+      console.log('Competition page: Slug set to:', resolvedParams.slug)
+      setLoading(false)
     }
 
     loadData()
   }, [params])
 
-  if (loading || status === 'loading') {
+  console.log('Competition page: loading =', loading, 'authLoading =', authLoading)
+
+  // Only wait for page loading, not auth
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -52,14 +57,15 @@ export default function CompetitionPage({ params }: CompetitionPageProps) {
     )
   }
 
-  if (status === 'unauthenticated' || !session) {
-    return <MembershipGate productTitle={productData.title} productImage={productData.mainImage} />
-  }
+  // Authentication checks commented out for public access
+  // if (!user) {
+  //   return <MembershipGate productTitle={productData.title} productImage={productData.mainImage} />
+  // }
 
-  const userTier = session.user?.subscriptionTier || 'free'
-  if (userTier === 'free') {
-    return <MembershipGate productTitle={productData.title} productImage={productData.mainImage} />
-  }
+  // const userTier = user.subscriptionTier || 'free'
+  // if (userTier === 'free') {
+  //   return <MembershipGate productTitle={productData.title} productImage={productData.mainImage} />
+  // }
 
   const getScoreColor = (score: number) => {
     if (score >= 85) return 'text-green-600'

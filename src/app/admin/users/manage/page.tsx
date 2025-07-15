@@ -13,7 +13,7 @@ interface UserData {
   id: string
   email: string
   name: string
-  role: 'USER' | 'ADMIN' | 'ANALYST'
+  role: 'USER' | 'ADMIN'
   subscription_tier: string
   created_at: string
   last_login_at: string
@@ -56,7 +56,7 @@ export default function ManageUsersPage() {
 
       // Update local state
       setUsers(users.map(user => 
-        user.id === userId ? { ...user, role: newRole as 'USER' | 'ADMIN' | 'ANALYST' } : user
+        user.id === userId ? { ...user, role: newRole as 'USER' | 'ADMIN' } : user
       ))
 
       // Show success (you could add a toast here)
@@ -73,7 +73,6 @@ export default function ManageUsersPage() {
     switch (role) {
       case 'ADMIN':
         return <Shield className="h-4 w-4" />
-      case 'ANALYST':
         return <TrendingUp className="h-4 w-4" />
       default:
         return <User className="h-4 w-4" />
@@ -84,7 +83,6 @@ export default function ManageUsersPage() {
     switch (role) {
       case 'ADMIN':
         return 'bg-red-100 text-red-800'
-      case 'ANALYST':
         return 'bg-purple-100 text-purple-800'
       default:
         return 'bg-gray-100 text-gray-800'
@@ -154,12 +152,6 @@ export default function ManageUsersPage() {
                               <span>User</span>
                             </span>
                           </SelectItem>
-                          <SelectItem value="ANALYST">
-                            <span className="flex items-center space-x-2">
-                              <TrendingUp className="h-4 w-4" />
-                              <span>Analyst</span>
-                            </span>
-                          </SelectItem>
                           <SelectItem value="ADMIN">
                             <span className="flex items-center space-x-2">
                               <Shield className="h-4 w-4" />
@@ -193,17 +185,6 @@ export default function ManageUsersPage() {
             <div>
               <p className="text-sm font-medium">Regular User</p>
               <p className="text-sm text-gray-600">Can access products, create searches, and use basic features based on their subscription tier.</p>
-            </div>
-          </div>
-          
-          <div className="flex items-start space-x-3">
-            <Badge className="bg-purple-100 text-purple-800 mt-1">
-              <TrendingUp className="h-4 w-4 mr-1" />
-              ANALYST
-            </Badge>
-            <div>
-              <p className="text-sm font-medium">Analyst</p>
-              <p className="text-sm text-gray-600">Has access to advanced analytics, can create and manage product analyses, and view aggregated data.</p>
             </div>
           </div>
           

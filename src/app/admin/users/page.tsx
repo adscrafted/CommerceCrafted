@@ -129,8 +129,6 @@ export default function UsersPage() {
     switch (role) {
       case 'ADMIN':
         return <Badge className="bg-red-100 text-red-800"><Shield className="h-3 w-3 mr-1" />Admin</Badge>
-      case 'ANALYST':
-        return <Badge className="bg-purple-100 text-purple-800"><TrendingUp className="h-3 w-3 mr-1" />Analyst</Badge>
       default:
         return <Badge className="bg-gray-100 text-gray-800"><UserIcon className="h-3 w-3 mr-1" />User</Badge>
     }
@@ -220,7 +218,6 @@ export default function UsersPage() {
                   <SelectItem value="all">All Roles</SelectItem>
                   <SelectItem value="USER">User</SelectItem>
                   <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="ANALYST">Analyst</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -325,12 +322,6 @@ export default function UsersPage() {
                                 <span className="flex items-center space-x-2">
                                   <UserIcon className="h-4 w-4" />
                                   <span>User</span>
-                                </span>
-                              </SelectItem>
-                              <SelectItem value="ANALYST">
-                                <span className="flex items-center space-x-2">
-                                  <TrendingUp className="h-4 w-4" />
-                                  <span>Analyst</span>
                                 </span>
                               </SelectItem>
                               <SelectItem value="ADMIN">

@@ -40,7 +40,7 @@ export const useRole = () => {
   }
   
   const isAdmin = () => hasRole('ADMIN')
-  const isAnalyst = () => hasRole(['ADMIN', 'ANALYST'])
+  const isAnalyst = () => hasRole('ADMIN') // Analyst role removed, only admin has analyst permissions
   const isUser = () => hasRole('USER')
   
   return {

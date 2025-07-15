@@ -43,6 +43,14 @@ export async function middleware(request: NextRequest) {
     '/privacy',
     '/test-auth',
     '/debug-api',
+    '/product-of-the-day',
+    '/database',
+    '/trends',
+    '/features',
+    '/terms-of-service',
+    '/privacy-policy',
+    '/account',
+    '/products',
   ]
 
   const { pathname } = request.nextUrl
@@ -61,17 +69,23 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
-  // Protected routes
-  if (!user) {
-    // Redirect to sign in
-    const signInUrl = new URL('/auth/signin', request.url)
-    signInUrl.searchParams.set('callbackUrl', pathname)
-    return NextResponse.redirect(signInUrl)
-  }
-
-  // Admin-only routes
+  // Admin-only routes - check this BEFORE general auth check
   if (pathname.startsWith('/admin')) {
-    console.log('Middleware: checking admin access for user:', user.email)
+    console.log('Middleware: checking admin access for user:', user?.email || 'no user')
+    
+    // In development, allow bypass
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Middleware: allowing admin access in development mode')
+      return supabaseResponse
+    }
+    
+    if (!user) {
+      // Redirect to sign in for admin
+      const signInUrl = new URL('/auth/signin', request.url)
+      signInUrl.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(signInUrl)
+    }
+    
     // Check if user is admin
     const { data: userData } = await supabase
       .from('users')
@@ -98,6 +112,15 @@ export async function middleware(request: NextRequest) {
     }
     
     console.log('Middleware: allowing admin access')
+    return supabaseResponse
+  }
+
+  // Protected routes (non-admin)
+  if (!user) {
+    // Redirect to sign in
+    const signInUrl = new URL('/auth/signin', request.url)
+    signInUrl.searchParams.set('callbackUrl', pathname)
+    return NextResponse.redirect(signInUrl)
   }
 
   return supabaseResponse

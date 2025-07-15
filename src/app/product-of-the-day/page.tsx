@@ -227,7 +227,7 @@ const getDailyFeature = () => {
 
 
 export default function ProductOfTheDayPage() {
-  const { user, session, loading: authLoading } = useAuth()
+  // Remove auth dependency since this is a public page
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [showScrollTop, setShowScrollTop] = useState(false)
@@ -300,7 +300,7 @@ export default function ProductOfTheDayPage() {
     }
   }
 
-  if (loading || authLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

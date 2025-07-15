@@ -115,7 +115,7 @@ export const TrendTableRow = React.memo(({ trend, getAmazonSearchUrl, getTrendDa
             <div key={i} className="text-center">
               <div className="w-10 h-10 bg-gray-100 rounded overflow-hidden mb-1 mx-auto">
                 <img
-                  src={`https://via.placeholder.com/40x40/e2e8f0/64748b?text=${asin.asin.slice(-3)}`}
+                  src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=40&h=40&fit=crop"
                   alt={asin.asin}
                   className="w-full h-full object-cover"
                   loading="lazy"

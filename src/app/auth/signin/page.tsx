@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAuthActions, useAuthState } from '@/lib/supabase/hooks'
+import { supabase } from '@/lib/supabase/client'
 import {
   LogIn,
   Mail,
@@ -31,6 +32,7 @@ function SignInComponent() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [planPrice, setPlanPrice] = useState<string | null>(null)
   const [hasRedirected, setHasRedirected] = useState(false)
+  const [skipAutoRedirect, setSkipAutoRedirect] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const { signIn } = useAuthActions()
@@ -62,8 +64,14 @@ function SignInComponent() {
       currentPath: window.location.pathname
     })
     
+    // Skip auto-redirect if hasRedirected is already set (from auto-login) or skipAutoRedirect is true
+    if (hasRedirected || skipAutoRedirect) {
+      console.log('Skipping auto-redirect, hasRedirected:', hasRedirected, 'skipAutoRedirect:', skipAutoRedirect)
+      return
+    }
+    
     // Prevent redirect loops - don't redirect if we're already on the target page
-    if (isAuthenticated && user && !hasRedirected) {
+    if (isAuthenticated && user) {
       const redirectUrl = searchParams.get('callbackUrl') || '/dashboard'
       const currentPath = window.location.pathname
       
@@ -116,6 +124,20 @@ function SignInComponent() {
       setError('An error occurred. Please try again.')
       setIsLoading(false)
     }
+  }
+
+  const handleAutoLogin = () => {
+    console.log('Bypass auto-login - going directly to admin...')
+    
+    // Just go directly to admin page - bypass all auth
+    const redirectUrl = searchParams.get('callbackUrl') || '/admin'
+    console.log('Direct redirect to:', redirectUrl)
+    
+    // Set a flag in localStorage so the admin page knows this is a debug access
+    localStorage.setItem('debug_admin_access', 'true')
+    
+    // Go directly
+    window.location.href = redirectUrl
   }
 
 
@@ -174,6 +196,31 @@ function SignInComponent() {
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
+            )}
+
+            {/* Debug Auto-Login */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium text-red-800">🚨 Debug Mode</h4>
+                    <p className="text-xs text-red-700">Auto-login as admin</p>
+                  </div>
+                  <Button 
+                    type="button"
+                    onClick={handleAutoLogin} 
+                    disabled={isLoading}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      '🔐 Auto-Login'
+                    )}
+                  </Button>
+                </div>
+              </div>
             )}
 
             {/* Sign In Form */}
