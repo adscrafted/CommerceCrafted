@@ -54,13 +54,14 @@ function SignInComponent() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    console.log('Auth state in signin page:', { 
+    console.log('[useEffect] Auth state in signin page:', { 
       isAuthenticated, 
       user: user ? { email: user.email, role: user.role } : null, 
       loading: !user && !isAuthenticated,
       authChecked: true,
       hasRedirected,
-      currentPath: window.location.pathname
+      currentPath: window.location.pathname,
+      isLoading
     })
     
     // Skip auto-redirect if hasRedirected is already set
@@ -108,22 +109,33 @@ function SignInComponent() {
     console.log('Starting sign in...')
 
     try {
+      console.log('Calling signIn function...')
       const result = await signIn(email, password)
       console.log('Sign in result:', result)
+      console.log('Result type:', typeof result)
+      console.log('Result keys:', Object.keys(result))
 
       if (result.error) {
         console.error('Sign in error:', result.error)
         setError(result.error)
         setIsLoading(false)
       } else if (result.success) {
-        console.log('Sign in successful, redirecting...')
+        console.log('Sign in successful, user:', result.user)
+        console.log('Preparing to redirect...')
         // Force redirect for admin users
         setTimeout(() => {
+          console.log('Executing redirect to /admin')
           router.push('/admin')
+          console.log('Router.push called')
         }, 500)
+      } else {
+        console.error('Unexpected result structure:', result)
+        setError('An unexpected error occurred')
+        setIsLoading(false)
       }
     } catch (error) {
       console.error('Sign in exception:', error)
+      console.error('Exception stack:', error.stack)
       setError('An error occurred. Please try again.')
       setIsLoading(false)
     }

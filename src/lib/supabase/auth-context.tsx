@@ -161,19 +161,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.log('Transformed user:', authUser)
             if (authUser) {
               console.log('Setting user state...')
+              console.log('Current user state before update:', user)
+              console.log('Current loading state before update:', loading)
+              
               setUser(authUser)
               setSession({
                 user: authUser,
                 supabaseUser: session.user
               })
+              
               console.log('User state set successfully')
+              console.log('New user state:', authUser)
               
               // Force loading to false to trigger re-render
+              console.log('Setting loading to false...')
               setLoading(false)
               
               // Skip updating last login for now to avoid issues
             } else {
               console.error('Failed to transform user')
+              console.log('Setting loading to false due to transform failure...')
               setLoading(false)
             }
           }
@@ -204,9 +211,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       console.log('Sign in successful:', data.user?.email)
+      console.log('Sign in data:', data)
       // The auth state change listener will handle updating the user state
       // Return success immediately
-      return { success: true }
+      return { success: true, user: data.user }
     } catch (error) {
       console.error('Sign in exception:', error)
       return { error: 'An unexpected error occurred' }
