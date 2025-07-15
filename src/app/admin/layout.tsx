@@ -29,12 +29,6 @@ export default function AdminLayout({
   const pathname = usePathname()
 
   React.useEffect(() => {
-    // Check for demo admin bypass
-    const demoBypass = localStorage.getItem('demo_admin_bypass')
-    if (demoBypass === 'true') {
-      console.log('Admin layout: demo bypass mode enabled')
-      return
-    }
 
     // Skip auth checks in development mode
     if (process.env.NODE_ENV === 'development') {
@@ -55,11 +49,8 @@ export default function AdminLayout({
     }
   }, [user, isLoading, isAuthenticated, router])
 
-  // Check for demo bypass
-  const demoBypass = typeof window !== 'undefined' && localStorage.getItem('demo_admin_bypass') === 'true'
-
-  // Skip loading and auth checks in development or demo mode
-  if (process.env.NODE_ENV !== 'development' && !demoBypass) {
+  // Skip loading and auth checks in development
+  if (process.env.NODE_ENV !== 'development') {
     if (isLoading) {
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -100,7 +91,7 @@ export default function AdminLayout({
                 ADMIN
               </Badge>
               <div className="text-sm text-gray-600">
-                {user?.name || user?.email || (process.env.NODE_ENV === 'development' || demoBypass ? 'Demo Admin' : 'Unknown')}
+                {user?.name || user?.email || (process.env.NODE_ENV === 'development' ? 'Dev Admin' : 'Unknown')}
               </div>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />

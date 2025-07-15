@@ -35,7 +35,7 @@ function SignInComponent() {
   const [skipAutoRedirect, setSkipAutoRedirect] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { signIn, signUp } = useAuthActions()
+  const { signIn } = useAuthActions()
   const { user, isAuthenticated } = useAuthState()
 
   useEffect(() => {
@@ -126,67 +126,6 @@ function SignInComponent() {
     }
   }
 
-  const handleAutoLogin = async () => {
-    console.log('Auto-login with admin credentials...')
-    setIsLoading(true)
-    setError('')
-    
-    const adminEmail = 'anthony@adscrafted.com'
-    const adminPassword = 'admin123'
-    
-    try {
-      // First try to sign in
-      console.log('Attempting sign in...')
-      const signInResult = await signIn(adminEmail, adminPassword)
-      console.log('Sign in result:', signInResult)
-
-      if (signInResult.error) {
-        // If sign in fails, try to create the admin user first
-        if (signInResult.error.includes('Invalid login credentials') || 
-            signInResult.error.includes('User not found')) {
-          console.log('Admin user not found, creating...')
-          
-          const signUpResult = await signUp(adminEmail, adminPassword, {
-            name: 'Admin User',
-            role: 'ADMIN'
-          })
-          console.log('Sign up result:', signUpResult)
-          
-          if (signUpResult.error) {
-            console.error('Sign up error:', signUpResult.error)
-            setError('Failed to create admin user: ' + signUpResult.error)
-            setIsLoading(false)
-            return
-          }
-          
-          // After successful signup, try to sign in again
-          console.log('Admin user created, signing in...')
-          const retrySignIn = await signIn(adminEmail, adminPassword)
-          
-          if (retrySignIn.error) {
-            console.error('Retry sign in error:', retrySignIn.error)
-            setError('Auto-login failed after creating user: ' + retrySignIn.error)
-            setIsLoading(false)
-            return
-          }
-        } else {
-          console.error('Other sign in error:', signInResult.error)
-          setError('Auto-login failed: ' + signInResult.error)
-          setIsLoading(false)
-          return
-        }
-      }
-      
-      console.log('Auto-login successful, waiting for auth state...')
-      setHasRedirected(true) // Prevent double redirects
-      // Let the useEffect handle the redirect
-      
-    } catch (error) {
-      console.error('Auto-login exception:', error)
-      setError('Auto-login failed. Please try manual login.')
-      setIsLoading(false)
-    }
-  }
 
 
   return (
@@ -246,43 +185,6 @@ function SignInComponent() {
               </Alert>
             )}
 
-            {/* Debug Auto-Login */}
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-medium text-red-800">🚨 Debug Mode</h4>
-                  <p className="text-xs text-red-700">Auto-login as admin</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    type="button"
-                    onClick={handleAutoLogin} 
-                    disabled={isLoading}
-                    variant="destructive"
-                    size="sm"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      '🔐 Auto-Login'
-                    )}
-                  </Button>
-                  <Button 
-                    type="button"
-                    onClick={() => {
-                      // Direct bypass for demo
-                      localStorage.setItem('demo_admin_bypass', 'true')
-                      window.location.href = '/admin'
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="border-red-300 text-red-700 hover:bg-red-100"
-                  >
-                    🚀 Demo Admin
-                  </Button>
-                </div>
-              </div>
-            </div>
 
             {/* Sign In Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
