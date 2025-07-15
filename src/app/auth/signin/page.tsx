@@ -253,19 +253,34 @@ function SignInComponent() {
                   <h4 className="text-sm font-medium text-red-800">🚨 Debug Mode</h4>
                   <p className="text-xs text-red-700">Auto-login as admin</p>
                 </div>
-                <Button 
-                  type="button"
-                  onClick={handleAutoLogin} 
-                  disabled={isLoading}
-                  variant="destructive"
-                  size="sm"
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    '🔐 Auto-Login'
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button"
+                    onClick={handleAutoLogin} 
+                    disabled={isLoading}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      '🔐 Auto-Login'
+                    )}
+                  </Button>
+                  <Button 
+                    type="button"
+                    onClick={() => {
+                      // Direct bypass for demo
+                      localStorage.setItem('demo_admin_bypass', 'true')
+                      window.location.href = '/admin'
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="border-red-300 text-red-700 hover:bg-red-100"
+                  >
+                    🚀 Demo Admin
+                  </Button>
+                </div>
               </div>
             </div>
 

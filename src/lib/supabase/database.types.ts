@@ -331,9 +331,70 @@ export interface Database {
           }
         ]
       }
+      keepa_review_history: {
+        Row: {
+          id: string
+          product_id: string
+          asin: string
+          review_count: number | null
+          rating: number | null
+          review_count_amazon: number | null
+          rating_amazon: number | null
+          timestamp: string
+          keepa_timestamp: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          asin: string
+          review_count?: number | null
+          rating?: number | null
+          review_count_amazon?: number | null
+          rating_amazon?: number | null
+          timestamp: string
+          keepa_timestamp?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          asin?: string
+          review_count?: number | null
+          rating?: number | null
+          review_count_amazon?: number | null
+          rating_amazon?: number | null
+          timestamp?: string
+          keepa_timestamp?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keepa_review_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      latest_review_data: {
+        Row: {
+          product_id: string
+          asin: string
+          review_count: number | null
+          rating: number | null
+          review_count_amazon: number | null
+          rating_amazon: number | null
+          timestamp: string
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

@@ -72,7 +72,7 @@
     "crypto-js": "^4.2.0",
     "d3": "^7.9.0",
     "date-fns": "^4.1.0",
-    "dotenv": "^17.0.1",
+    "dotenv": "^17.2.0",
     "ga-gtag": "^1.2.0",
     "lucide-react": "^0.522.0",
     "mixpanel-browser": "^2.65.0",

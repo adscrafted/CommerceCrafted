@@ -32,11 +32,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Database Architecture
 The database uses a comprehensive schema for Amazon product analysis:
-- **Users** with role-based access (USER, ADMIN, ANALYST) and subscription tiers
-- **Products** with Amazon-specific data (ASIN, BSR, ratings, reviews)
-- **ProductAnalysis** with 5-score system (opportunity, competition, demand, feasibility, timing)
-- **Keywords** with search volume and competition data
-- **DailyFeature** for homepage featured products
+
+**Core Tables:**
+- **users** - Authentication, profiles, and subscription management
+- **products** - Amazon product catalog with ASIN, BSR, ratings, reviews
+- **niches** - User-created product collections for analysis
+- **niche_products** - Products within niches
+- **analysis_runs** - Tracking analysis job execution
+- **product_analyses** - 5-score system (opportunity, competition, demand, feasibility, timing)
+- **daily_features** - Homepage featured products
+
+**Authentication:**
+- **email_verification_tokens** - Email verification
+- **password_reset_tokens** - Password reset functionality
+
+**External API Integration:**
+- **amazon_api_cache** - Caching Amazon API responses
+- **amazon_reports** - SP-API report tracking
+- **keepa_price_history** - Historical price data from Keepa
+- **keepa_sales_rank_history** - Sales rank history from Keepa
+- **keepa_review_history** - Review count and rating history from Keepa
+
+**Features:**
+- **subscription_usage** - API usage tracking and limits
+- **customer_reviews** - Product review data
+- **social_insights** - Reddit/social media insights
+- **product_queue_projects** - Product queue management
+- **product_keywords** - Keyword data linked to products and projects
 
 ### Project Structure
 ```
@@ -108,15 +130,11 @@ The project is being enhanced to replicate IdeaBrowser.com functionality for Ama
 3. **Advanced Analytics**: Predictive modeling, trend analysis, and automated reporting
 4. **Deep Research Features**: Multi-dimensional analysis including financial modeling and launch strategies
 
-### New Database Models (Planned)
-- `KeywordAnalysis` - Primary keywords, long-tail opportunities, seasonal trends, PPC metrics
-- `PPCStrategy` - Launch costs, bid ranges, campaign structure, ACoS projections
-- `InventoryAnalysis` - Order quantities, demand forecasting, supplier analysis
-- `DemandAnalysis` - Market size, growth trends, customer behavior
-- `CompetitorAnalysis` - Top competitors, price analysis, market share data
-- `FinancialModel` - ROI calculations, cash flow projections, scenario analysis
-- `AIResearchSession` - Interactive AI conversations and insights
-- `TrendAnalysis` - Market trend tracking and opportunity identification
+### Database Cleanup Notes
+Recently cleaned up unused tables:
+- Removed `saved_products`, `keywords`, `api_call_logs`, `api_usage`
+- Removed entire `keyword_groups` feature (replaced by `product_keywords`)
+- Cleaned up type definitions and removed unused API routes
 
 ### Enhanced Features
 - **Product of the Day**: IdeaBrowser-style comprehensive daily analysis

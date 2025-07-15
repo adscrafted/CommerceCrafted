@@ -48,28 +48,11 @@ export interface Database {
         Row: ProductAnalysis
         Insert: ProductAnalysisInsert
         Update: ProductAnalysisUpdate
-      }
-      keywords: {
-        Row: Keyword
-        Insert: KeywordInsert
-        Update: KeywordUpdate
-      }
-      product_keywords: {
-        Row: ProductKeyword
-        Insert: ProductKeywordInsert
-        Update: ProductKeywordUpdate
-      }
-      daily_features: {
+      }product_daily_features: {
         Row: DailyFeature
         Insert: DailyFeatureInsert
         Update: DailyFeatureUpdate
-      }
-      saved_products: {
-        Row: SavedProduct
-        Insert: SavedProductInsert
-        Update: SavedProductUpdate
-      }
-      keyword_analyses: {
+      }keyword_analyses: {
         Row: KeywordAnalysis
         Insert: KeywordAnalysisInsert
         Update: KeywordAnalysisUpdate

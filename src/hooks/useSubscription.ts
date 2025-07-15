@@ -114,19 +114,19 @@ export function useSubscription() {
       free: {
         product_analyses: 5,
         ai_queries: 0,
-        saved_products: 10,
+        niches: 3,
         exports: 0,
       },
       pro: {
         product_analyses: 500,
         ai_queries: 1000,
-        saved_products: 1000,
+        niches: 50,
         exports: 100,
       },
       enterprise: {
         product_analyses: -1,
         ai_queries: -1,
-        saved_products: -1,
+        niches: -1,
         exports: -1,
       },
     }

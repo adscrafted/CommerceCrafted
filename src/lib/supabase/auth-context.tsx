@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('Trying alternative lookup by email...')
         
         // For admin user, we know they exist, so fetch by email instead
-        if (supabaseUser.email === 'admin@commercecrafted.com') {
+        if (supabaseUser.email === 'anthony@adscrafted.com' || supabaseUser.email === 'admin@commercecrafted.com') {
           const { data: userByEmail, error: emailError } = await supabase
             .from('users')
             .select('*')
@@ -209,14 +209,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, password: string, metadata?: { name?: string; role?: string }) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            name,
+            name: metadata?.name || email.split('@')[0],
+            role: metadata?.role || 'USER',
           },
         },
       })
@@ -233,10 +234,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             {
               id: data.user.id,
               email: data.user.email!,
-              name: name,
-              role: 'USER',
-              subscription_tier: 'free',
-              email_verified: false,
+              name: metadata?.name || data.user.email!.split('@')[0],
+              role: metadata?.role || 'USER',
+              subscription_tier: metadata?.role === 'ADMIN' ? 'enterprise' : 'free',
+              email_verified: metadata?.role === 'ADMIN' ? true : false,
               is_active: true,
               email_subscribed: true,
             },
@@ -250,6 +251,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       return {}
     } catch (error) {
+      console.error('Sign up exception:', error)
       return { error: 'An unexpected error occurred' }
     }
   }
