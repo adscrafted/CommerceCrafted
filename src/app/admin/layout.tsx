@@ -29,6 +29,7 @@ export default function AdminLayout({
   const pathname = usePathname()
 
   React.useEffect(() => {
+    console.log('Admin layout auth check:', { isLoading, isAuthenticated, userRole: user?.role })
 
     // Skip auth checks in development mode
     if (process.env.NODE_ENV === 'development') {
@@ -39,14 +40,18 @@ export default function AdminLayout({
     if (isLoading) return
 
     if (!isAuthenticated) {
+      console.log('Admin layout: Not authenticated, redirecting to signin')
       router.push('/auth/signin')
       return
     }
 
     if (user?.role !== 'ADMIN') {
+      console.log('Admin layout: Not admin role, redirecting to home')
       router.push('/')
       return
     }
+    
+    console.log('Admin layout: Auth check passed')
   }, [user, isLoading, isAuthenticated, router])
 
   // Skip loading and auth checks in development

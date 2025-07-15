@@ -32,7 +32,6 @@ function SignInComponent() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [planPrice, setPlanPrice] = useState<string | null>(null)
   const [hasRedirected, setHasRedirected] = useState(false)
-  const [skipAutoRedirect, setSkipAutoRedirect] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const { signIn } = useAuthActions()
@@ -64,9 +63,9 @@ function SignInComponent() {
       currentPath: window.location.pathname
     })
     
-    // Skip auto-redirect if hasRedirected is already set (from auto-login) or skipAutoRedirect is true
-    if (hasRedirected || skipAutoRedirect) {
-      console.log('Skipping auto-redirect, hasRedirected:', hasRedirected, 'skipAutoRedirect:', skipAutoRedirect)
+    // Skip auto-redirect if hasRedirected is already set
+    if (hasRedirected) {
+      console.log('Skipping auto-redirect, hasRedirected:', hasRedirected)
       return
     }
     
@@ -88,17 +87,17 @@ function SignInComponent() {
       
       setTimeout(() => {
         if (selectedPlan && planPrice) {
-          window.location.href = `/billing?plan=${selectedPlan}&price=${planPrice}`
+          router.push(`/billing?plan=${selectedPlan}&price=${planPrice}`)
         } else if (user.role === 'ADMIN') {
           const adminRedirect = redirectUrl.includes('admin') ? redirectUrl : '/admin'
           console.log('Redirecting admin to:', adminRedirect)
-          window.location.href = adminRedirect
+          router.push(adminRedirect)
         } else {
-          window.location.href = redirectUrl
+          router.push(redirectUrl)
         }
       }, 100)
     }
-  }, [isAuthenticated, user, selectedPlan, planPrice, searchParams, hasRedirected])
+  }, [isAuthenticated, user, selectedPlan, planPrice, searchParams, hasRedirected, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -117,7 +116,8 @@ function SignInComponent() {
         setIsLoading(false)
       } else {
         console.log('Sign in successful, waiting for auth state...')
-        // Let the useEffect handle the redirect to avoid double redirects
+        // Don't set loading to false here - let the redirect happen first
+        // The useEffect will handle the redirect
       }
     } catch (error) {
       console.error('Sign in exception:', error)
