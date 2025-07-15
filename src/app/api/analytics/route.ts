@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getServerSupabase } from '@/lib/supabase-server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Store analytics event in database
+    const supabase = getServerSupabase()
     await supabase.from('analytics_events').insert({
       event,
       properties: properties ? JSON.stringify(properties) : null,

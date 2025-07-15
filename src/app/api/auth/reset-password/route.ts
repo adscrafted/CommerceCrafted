@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { verifyPasswordResetToken, markPasswordResetTokenAsUsed } from '@/lib/tokens'
-import { supabase } from '@/lib/supabase'
+import { getServerSupabase } from '@/lib/supabase-server'
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),

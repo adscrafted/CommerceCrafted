@@ -2,7 +2,7 @@
 // Returns detailed product information with analysis
 
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getServerSupabase } from '@/lib/supabase-server'
 import { Product } from '@/types/api'
 
 interface RouteParams {

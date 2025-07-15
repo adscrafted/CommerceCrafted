@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createPasswordResetToken } from '@/lib/tokens'
 import { emailService } from '@/lib/email'
-import { supabase } from '@/lib/supabase'
+import { getServerSupabase } from '@/lib/supabase-server'
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),

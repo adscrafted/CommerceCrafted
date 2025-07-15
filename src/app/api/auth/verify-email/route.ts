@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyEmailToken } from '@/lib/tokens'
 import { emailService } from '@/lib/email'
-import { supabase } from '@/lib/supabase'
+import { getServerSupabase } from '@/lib/supabase-server'
 
 export async function GET(request: NextRequest) {
   try {

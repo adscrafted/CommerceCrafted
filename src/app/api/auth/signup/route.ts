@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { supabase } from '@/lib/supabase'
+import { getServerSupabase } from '@/lib/supabase-server'
 import { z } from 'zod'
 import { createEmailVerificationToken } from '@/lib/tokens'
 import { emailService } from '@/lib/email'
