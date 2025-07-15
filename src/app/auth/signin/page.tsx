@@ -199,29 +199,27 @@ function SignInComponent() {
             )}
 
             {/* Debug Auto-Login */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-red-800">🚨 Debug Mode</h4>
-                    <p className="text-xs text-red-700">Auto-login as admin</p>
-                  </div>
-                  <Button 
-                    type="button"
-                    onClick={handleAutoLogin} 
-                    disabled={isLoading}
-                    variant="destructive"
-                    size="sm"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      '🔐 Auto-Login'
-                    )}
-                  </Button>
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-medium text-red-800">🚨 Debug Mode</h4>
+                  <p className="text-xs text-red-700">Auto-login as admin</p>
                 </div>
+                <Button 
+                  type="button"
+                  onClick={handleAutoLogin} 
+                  disabled={isLoading}
+                  variant="destructive"
+                  size="sm"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    '🔐 Auto-Login'
+                  )}
+                </Button>
               </div>
-            )}
+            </div>
 
             {/* Sign In Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
