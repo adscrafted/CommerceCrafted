@@ -37,6 +37,17 @@ function SignInComponent() {
   const { signIn } = useAuthActions()
   const { user, isAuthenticated } = useAuthState()
 
+  // Force redirect for admin users - simple approach
+  React.useEffect(() => {
+    if (user?.role === 'ADMIN' && !hasRedirected) {
+      console.log('FORCE REDIRECT: Admin user detected, redirecting to admin panel')
+      setHasRedirected(true)
+      setTimeout(() => {
+        window.location.href = '/admin'
+      }, 500)
+    }
+  }, [user, hasRedirected])
+
   useEffect(() => {
     const urlMessage = searchParams.get('message')
     const plan = searchParams.get('plan')
