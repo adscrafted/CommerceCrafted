@@ -80,54 +80,23 @@ export async function middleware(request: NextRequest) {
   // Admin-only routes - check this BEFORE general auth check
   if (pathname.startsWith('/admin')) {
     console.log('Middleware: checking admin access for user:', user?.email || 'no user')
-    console.log('Middleware: user object:', user)
-    console.log('Middleware: pathname:', pathname)
-    console.log('Middleware: NODE_ENV:', process.env.NODE_ENV)
-    
-    // TEMPORARILY allow all admin access for debugging
-    console.log('Middleware: TEMPORARILY allowing admin access for debugging')
-    return supabaseResponse
-    
-    // In development, allow bypass
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Middleware: allowing admin access in development mode')
-      return supabaseResponse
-    }
     
     if (!user) {
-      // Redirect to sign in for admin
+      console.log('Middleware: no user, redirecting to signin')
       const signInUrl = new URL('/auth/signin', request.url)
       signInUrl.searchParams.set('callbackUrl', pathname)
       return NextResponse.redirect(signInUrl)
     }
     
-    // Check if user is admin
-    const { data: userData } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    console.log('Middleware: userData:', userData)
-
-    if (userData?.role !== 'ADMIN') {
-      // Also check by email as fallback
-      const { data: userByEmail } = await supabase
-        .from('users')
-        .select('role')
-        .eq('email', user.email!)
-        .single()
-      
-      console.log('Middleware: userByEmail fallback:', userByEmail)
-      
-      if (userByEmail?.role !== 'ADMIN') {
-        console.log('Middleware: redirecting non-admin user')
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-      }
+    // Allow known admin email without database checks
+    if (user.email === 'anthony@adscrafted.com') {
+      console.log('Middleware: allowing known admin user:', user.email)
+      return supabaseResponse
     }
     
-    console.log('Middleware: allowing admin access')
-    return supabaseResponse
+    // For other users, redirect to dashboard
+    console.log('Middleware: non-admin user, redirecting to dashboard')
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   // Protected routes (non-admin)

@@ -37,17 +37,6 @@ function SignInComponent() {
   const { signIn } = useAuthActions()
   const { user, isAuthenticated } = useAuthState()
 
-  // Force redirect for admin users - simple approach
-  React.useEffect(() => {
-    if (user?.role === 'ADMIN' && !hasRedirected) {
-      console.log('FORCE REDIRECT: Admin user detected, redirecting to admin panel')
-      setHasRedirected(true)
-      setTimeout(() => {
-        window.location.href = '/admin'
-      }, 500)
-    }
-  }, [user, hasRedirected])
-
   useEffect(() => {
     const urlMessage = searchParams.get('message')
     const plan = searchParams.get('plan')
@@ -62,11 +51,6 @@ function SignInComponent() {
       setPlanPrice(price)
     }
   }, [searchParams])
-
-  // DISABLED: Auto-redirect logic to prevent infinite loops
-  // useEffect(() => {
-  //   // Redirect logic disabled
-  // }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -89,16 +73,15 @@ function SignInComponent() {
         setIsLoading(false)
       } else if (result.success) {
         console.log('Sign in successful, user:', result.user)
-        console.log('Preparing to redirect...')
-        // Immediately hide loading state to prevent UI blocking
         setIsLoading(false)
         
-        // Wait for auth state to propagate, then redirect
-        setTimeout(() => {
-          console.log('Executing redirect to /admin')
-          window.location.href = '/admin'
-          console.log('Window.location redirect called')
-        }, 1000)
+        // Simple redirect for admin users
+        if (email === 'anthony@adscrafted.com') {
+          console.log('Redirecting admin user to admin panel')
+          setTimeout(() => {
+            window.location.href = '/admin'
+          }, 500)
+        }
       } else {
         console.error('Unexpected result structure:', result)
         setError('An unexpected error occurred')
@@ -248,21 +231,6 @@ function SignInComponent() {
               </Button>
             </form>
 
-
-            {/* Manual Admin Access Button - TEMPORARY */}
-            {user?.role === 'ADMIN' && (
-              <div className="text-center">
-                <Button
-                  onClick={() => {
-                    console.log('Manual redirect to admin')
-                    window.location.href = '/admin'
-                  }}
-                  className="w-full bg-red-600 hover:bg-red-700"
-                >
-                  Access Admin Panel
-                </Button>
-              </div>
-            )}
 
             {/* Sign Up Link */}
             <div className="text-center">
