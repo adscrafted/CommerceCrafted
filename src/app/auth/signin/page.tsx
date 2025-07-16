@@ -52,8 +52,26 @@ function SignInComponent() {
     }
   }, [searchParams])
 
+  // Redirect authenticated admin users
+  useEffect(() => {
+    console.log('=== CHECKING AUTH STATE ===')
+    console.log('isAuthenticated:', isAuthenticated)
+    console.log('user:', user)
+    console.log('user.role:', user?.role)
+    console.log('user.email:', user?.email)
+    
+    if (isAuthenticated && user?.email === 'anthony@adscrafted.com') {
+      console.log('=== REDIRECTING AUTHENTICATED ADMIN ===')
+      window.location.href = '/admin'
+    }
+  }, [isAuthenticated, user])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('=== FORM SUBMITTED ===')
+    console.log('Email:', email)
+    console.log('Password length:', password.length)
+    
     setIsLoading(true)
     setError('')
     setHasRedirected(false) // Reset redirect flag for new sign-in attempt
