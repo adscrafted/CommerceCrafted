@@ -251,7 +251,7 @@ export default function ProductQueueTab() {
   const deleteNiche = async (nicheId: string, e: React.MouseEvent) => {
     e.stopPropagation() // Prevent row click
     
-    if (!confirm('Are you sure you want to delete this product group?')) return
+    if (!confirm('Are you sure you want to delete this niche group?')) return
     
     try {
       const { error } = await supabase
@@ -263,7 +263,7 @@ export default function ProductQueueTab() {
       await loadNiches()
     } catch (error) {
       console.error('Error deleting niche:', error)
-      alert('Failed to delete product group')
+      alert('Failed to delete niche group')
     }
   }
 
@@ -345,21 +345,21 @@ export default function ProductQueueTab() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Product Queue Management</CardTitle>
+              <CardTitle>Niche Queue Management</CardTitle>
               <CardDescription>
-                {formatNumber(totalCount)} total product groups • {formatNumber(processingCount)} processing
+                {formatNumber(totalCount)} total niche groups • {formatNumber(processingCount)} processing
               </CardDescription>
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Product Group
+                  Add Niche
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Create Product Group</DialogTitle>
+                  <DialogTitle>Create Niche Group</DialogTitle>
                   <DialogDescription>
                     Analyze multiple related products together by adding their ASINs
                   </DialogDescription>
@@ -414,7 +414,7 @@ export default function ProductQueueTab() {
                     {isCreating ? (
                       <>
                         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Creating Product Group...
+                        Creating Niche Group...
                       </>
                     ) : (
                       <>
@@ -567,7 +567,7 @@ export default function ProductQueueTab() {
             ) : niches.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-12">
-                  <p className="text-gray-500">No product groups found</p>
+                  <p className="text-gray-500">No niche groups found</p>
                 </TableCell>
               </TableRow>
             ) : (
@@ -672,7 +672,7 @@ export default function ProductQueueTab() {
             <DialogHeader>
               <DialogTitle>{selectedNiche.niche_name}</DialogTitle>
               <DialogDescription>
-                Detailed analysis for this product group
+                Detailed analysis for this niche group
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6 mt-4">
