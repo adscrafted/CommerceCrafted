@@ -52,52 +52,10 @@ function SignInComponent() {
     }
   }, [searchParams])
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    console.log('[useEffect] Auth state in signin page:', { 
-      isAuthenticated, 
-      user: user ? { email: user.email, role: user.role } : null, 
-      loading: !user && !isAuthenticated,
-      authChecked: true,
-      hasRedirected,
-      currentPath: window.location.pathname,
-      isLoading
-    })
-    
-    // Skip auto-redirect if hasRedirected is already set
-    if (hasRedirected) {
-      console.log('Skipping auto-redirect, hasRedirected:', hasRedirected)
-      return
-    }
-    
-    // Prevent redirect loops - don't redirect if we're already on the target page
-    if (isAuthenticated && user) {
-      const redirectUrl = searchParams.get('callbackUrl') || '/dashboard'
-      const currentPath = window.location.pathname
-      
-      // Check if we're already on the target page
-      if (currentPath === redirectUrl || 
-          (user.role === 'ADMIN' && currentPath === '/admin') ||
-          (currentPath === '/dashboard')) {
-        console.log('Already on target page, not redirecting')
-        return
-      }
-      
-      console.log('User authenticated, redirecting...')
-      setHasRedirected(true)
-      
-      setTimeout(() => {
-        if (selectedPlan && planPrice) {
-          window.location.href = `/billing?plan=${selectedPlan}&price=${planPrice}`
-        } else if (user.role === 'ADMIN') {
-          console.log('Force redirecting admin to /admin')
-          window.location.href = '/admin'
-        } else {
-          window.location.href = redirectUrl
-        }
-      }, 100)
-    }
-  }, [isAuthenticated, user, selectedPlan, planPrice, searchParams, hasRedirected, router])
+  // DISABLED: Auto-redirect logic to prevent infinite loops
+  // useEffect(() => {
+  //   // Redirect logic disabled
+  // }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -123,13 +81,13 @@ function SignInComponent() {
         console.log('Preparing to redirect...')
         // Immediately hide loading state to prevent UI blocking
         setIsLoading(false)
-        // Force redirect for admin users
+        
+        // Wait for auth state to propagate, then redirect
         setTimeout(() => {
           console.log('Executing redirect to /admin')
-          // Use window.location for guaranteed redirect
           window.location.href = '/admin'
           console.log('Window.location redirect called')
-        }, 100)
+        }, 1000)
       } else {
         console.error('Unexpected result structure:', result)
         setError('An unexpected error occurred')
