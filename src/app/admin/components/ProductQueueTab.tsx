@@ -516,74 +516,37 @@ export default function ProductQueueTab() {
                   <SortIcon field="niche_name" />
                 </div>
               </TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-gray-50"
-                onClick={() => handleSort('total_products')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Products</span>
-                  <SortIcon field="total_products" />
-                </div>
+              <TableHead className="text-center">
+                # of ASINs
               </TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-gray-50"
-                onClick={() => handleSort('status')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Status</span>
-                  <SortIcon field="status" />
-                </div>
+              <TableHead className="text-center">
+                # of Keywords
               </TableHead>
-              <TableHead>Progress</TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-gray-50"
-                onClick={() => handleSort('avg_opportunity_score')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Opportunity</span>
-                  <SortIcon field="avg_opportunity_score" />
-                </div>
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-gray-50"
-                onClick={() => handleSort('avg_competition_score')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Competition</span>
-                  <SortIcon field="avg_competition_score" />
-                </div>
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-gray-50"
-                onClick={() => handleSort('total_monthly_revenue')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Monthly Rev</span>
-                  <SortIcon field="total_monthly_revenue" />
-                </div>
+              <TableHead className="text-center">
+                # of Reviews
               </TableHead>
               <TableHead 
                 className="cursor-pointer hover:bg-gray-50"
                 onClick={() => handleSort('created_at')}
               >
                 <div className="flex items-center space-x-1">
-                  <span>Created</span>
+                  <span>Created Date</span>
                   <SortIcon field="created_at" />
                 </div>
               </TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12">
+                <TableCell colSpan={6} className="text-center py-12">
                   <RefreshCw className="h-8 w-8 animate-spin mx-auto text-gray-400" />
                 </TableCell>
               </TableRow>
             ) : niches.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12">
+                <TableCell colSpan={6} className="text-center py-12">
                   <p className="text-gray-500">No niche groups found</p>
                 </TableCell>
               </TableRow>
@@ -591,47 +554,36 @@ export default function ProductQueueTab() {
               niches.map((niche) => (
                 <TableRow key={niche.id} className="hover:bg-gray-50">
                   <TableCell className="font-medium">{niche.niche_name}</TableCell>
-                  <TableCell>{niche.total_products}</TableCell>
-                  <TableCell>{getStatusBadge(niche.status)}</TableCell>
-                  <TableCell>
-                    {niche.status === 'processing' && niche.processing_progress ? (
-                      <div className="w-24">
-                        <Progress value={niche.processing_progress.percentage} className="h-2" />
-                        <p className="text-xs text-gray-500 mt-1">
-                          {niche.processing_progress.current}/{niche.processing_progress.total}
-                        </p>
-                      </div>
-                    ) : (
-                      '-'
-                    )}
+                  <TableCell className="text-center">{niche.total_products || 0}</TableCell>
+                  <TableCell className="text-center">
+                    {niche.total_keywords || 0}
                   </TableCell>
-                  <TableCell>
-                    {niche.avg_opportunity_score ? (
-                      <span className="font-semibold">{niche.avg_opportunity_score.toFixed(1)}</span>
-                    ) : '-'}
+                  <TableCell className="text-center">
+                    {formatNumber(niche.total_reviews)}
                   </TableCell>
-                  <TableCell>
-                    {niche.avg_competition_score ? (
-                      <span className="font-semibold">{niche.avg_competition_score.toFixed(1)}</span>
-                    ) : '-'}
-                  </TableCell>
-                  <TableCell>{formatCurrency(niche.total_monthly_revenue)}</TableCell>
                   <TableCell className="text-sm text-gray-500">
                     {formatDate(niche.created_at)}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center justify-center gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setSelectedNiche(niche)}
+                        onClick={() => {
+                          // Convert niche name to slug format
+                          const slug = niche.niche_name
+                            .toLowerCase()
+                            .replace(/[^a-z0-9]+/g, '-')
+                            .replace(/^-+|-+$/g, '');
+                          window.location.href = `/products/${slug}?nicheId=${niche.id}`
+                        }}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => window.location.href = `/admin/products/edit/${niche.id}`}
+                        onClick={() => window.location.href = `/admin/niche/edit/${niche.id}`}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -641,7 +593,7 @@ export default function ProductQueueTab() {
                         onClick={(e) => deleteNiche(niche.id, e)}
                         disabled={niche.status === 'processing'}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
                     </div>
                   </TableCell>
