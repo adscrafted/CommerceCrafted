@@ -358,71 +358,88 @@ export default function ProductQueueTab() {
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Create Niche Group</DialogTitle>
-                  <DialogDescription>
+                <DialogHeader className="pb-6">
+                  <DialogTitle className="text-xl font-semibold">Create Niche Group</DialogTitle>
+                  <DialogDescription className="text-gray-600 mt-2">
                     Analyze multiple related products together by adding their ASINs
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 mt-4">
-                  <div>
-                    <Label htmlFor="niche-name">Group Name</Label>
+                
+                <div className="space-y-6">
+                  {/* Group Name */}
+                  <div className="space-y-3">
+                    <Label htmlFor="niche-name" className="text-sm font-medium text-gray-700">
+                      Group Name
+                    </Label>
                     <Input
                       id="niche-name"
                       placeholder="e.g., Smart Sleep Products"
                       value={newNiche.name}
                       onChange={(e) => setNewNiche({ ...newNiche, name: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="asins">ASINs (comma, space, or newline separated)</Label>
+
+                  {/* ASINs */}
+                  <div className="space-y-3">
+                    <Label htmlFor="asins" className="text-sm font-medium text-gray-700">
+                      ASINs
+                    </Label>
                     <Textarea
                       id="asins"
                       placeholder="B08MVBRNKV, B07ZPKBL9V, B08N5WRWNW"
                       rows={6}
                       value={newNiche.asins}
                       onChange={(e) => setNewNiche({ ...newNiche, asins: e.target.value })}
-                      className="font-mono text-sm"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono text-sm resize-none"
                     />
-                    <p className="text-sm text-gray-500 mt-1">
-                      Enter ASINs separated by commas, spaces, or new lines
+                    <p className="text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded-md">
+                      💡 Enter ASINs separated by commas, spaces, or new lines
                     </p>
                   </div>
-                  <div>
-                    <Label htmlFor="marketplace">Marketplace</Label>
+
+                  {/* Marketplace */}
+                  <div className="space-y-3">
+                    <Label htmlFor="marketplace" className="text-sm font-medium text-gray-700">
+                      Marketplace
+                    </Label>
                     <select
                       id="marketplace"
-                      className="w-full border rounded-md px-3 py-2"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
                       value={newNiche.marketplace}
                       onChange={(e) => setNewNiche({ ...newNiche, marketplace: e.target.value })}
                     >
-                      <option value="US">United States</option>
-                      <option value="CA">Canada</option>
-                      <option value="UK">United Kingdom</option>
-                      <option value="DE">Germany</option>
-                      <option value="FR">France</option>
-                      <option value="ES">Spain</option>
-                      <option value="IT">Italy</option>
-                      <option value="JP">Japan</option>
+                      <option value="US">🇺🇸 United States</option>
+                      <option value="CA">🇨🇦 Canada</option>
+                      <option value="UK">🇬🇧 United Kingdom</option>
+                      <option value="DE">🇩🇪 Germany</option>
+                      <option value="FR">🇫🇷 France</option>
+                      <option value="ES">🇪🇸 Spain</option>
+                      <option value="IT">🇮🇹 Italy</option>
+                      <option value="JP">🇯🇵 Japan</option>
                     </select>
                   </div>
-                  <Button
-                    onClick={createNiche}
-                    disabled={isCreating}
-                    className="w-full"
-                  >
-                    {isCreating ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Creating Niche Group...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create and Start Analysis
-                      </>
-                    )}
-                  </Button>
+
+                  {/* Submit Button */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <Button
+                      onClick={createNiche}
+                      disabled={isCreating}
+                      className="w-full h-12 text-base font-medium bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                    >
+                      {isCreating ? (
+                        <>
+                          <RefreshCw className="h-5 w-5 mr-3 animate-spin" />
+                          Creating Niche Group...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-5 w-5 mr-3" />
+                          Create and Start Analysis
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
