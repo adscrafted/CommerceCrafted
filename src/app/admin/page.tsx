@@ -1,120 +1,71 @@
 'use client'
 
-import React, { Suspense, useState, useEffect, useMemo } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Home, Users, BarChart3, Loader2 } from 'lucide-react'
+import React from 'react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Home, Users, BarChart3, ArrowRight } from 'lucide-react'
 
-// Import the individual tab components
-import ProductQueueTab from './components/ProductQueueTab'
-import UsersTab from './components/UsersTab'
-import AnalyticsTab from './components/AnalyticsTab'
-
-// Tab configuration
-const TABS = [
+// Navigation configuration
+const ADMIN_SECTIONS = [
   {
-    value: 'products',
-    label: 'Product Queue',
+    href: '/admin/niche',
+    label: 'Niche',
+    description: 'Manage product research niches and opportunities',
     icon: Home,
-    component: ProductQueueTab
+    color: 'bg-blue-500'
   },
   {
-    value: 'users',
+    href: '/admin/users',
     label: 'Users',
+    description: 'Manage user accounts, roles, and subscriptions',
     icon: Users,
-    component: UsersTab
+    color: 'bg-green-500'
   },
   {
-    value: 'analytics',
+    href: '/admin/analytics',
     label: 'Analytics',
+    description: 'View system analytics, user metrics, and performance data',
     icon: BarChart3,
-    component: AnalyticsTab
+    color: 'bg-purple-500'
   }
 ]
 
-function AdminDashboardContent() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const currentTab = searchParams.get('tab') || 'products'
-  const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set([currentTab]))
-  
-  // Pre-load the current tab
-  useEffect(() => {
-    setLoadedTabs(prev => new Set([...prev, currentTab]))
-  }, [currentTab])
-  
-  const handleTabChange = (value: string) => {
-    // Update URL without navigation
-    const newUrl = `/admin?tab=${value}`
-    window.history.replaceState({ ...window.history.state }, '', newUrl)
-    
-    // Mark tab as loaded
-    setLoadedTabs(prev => new Set([...prev, value]))
-  }
-
-  // Memoize tab content to prevent re-renders
-  const tabContent = useMemo(() => {
-    return TABS.map((tab) => {
-      const Component = tab.component
-      const isLoaded = loadedTabs.has(tab.value)
-      const isActive = currentTab === tab.value
-      
-      return (
-        <TabsContent 
-          key={tab.value} 
-          value={tab.value} 
-          className={!isActive ? 'hidden' : ''}
-          forceMount={isLoaded}
-        >
-          {isLoaded ? <Component /> : null}
-        </TabsContent>
-      )
-    })
-  }, [currentTab, loadedTabs])
-
+export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-600">Manage products, users, and view analytics</p>
+        <p className="text-gray-600">Select a section to manage</p>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 max-w-2xl">
-          {TABS.map((tab) => {
-            const Icon = tab.icon
-            return (
-              <TabsTrigger 
-                key={tab.value} 
-                value={tab.value} 
-                className="flex items-center space-x-2"
-              >
-                <Icon className="h-4 w-4" />
-                <span>{tab.label}</span>
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
-
-        {tabContent}
-      </Tabs>
-    </div>
-  )
-}
-
-export default function AdminDashboard() {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto py-8">
-        <Suspense fallback={
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        }>
-          <AdminDashboardContent />
-        </Suspense>
+      {/* Navigation Cards */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {ADMIN_SECTIONS.map((section) => {
+          const Icon = section.icon
+          return (
+            <Card key={section.href} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2 rounded-lg ${section.color} text-white`}>
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <CardTitle className="text-xl">{section.label}</CardTitle>
+                </div>
+                <CardDescription>{section.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href={section.href}>
+                  <Button className="w-full" variant="outline">
+                    Open {section.label}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
     </div>
   )

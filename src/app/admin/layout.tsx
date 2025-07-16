@@ -13,7 +13,8 @@ import {
   Shield,
   LogOut,
   Home,
-  ChevronRight
+  ChevronRight,
+  ArrowLeft
 } from 'lucide-react'
 
 // Navigation removed - using tabs in the main admin page instead
@@ -78,7 +79,9 @@ export default function AdminLayout({
     router.push('/')
   }
 
-  // const currentPage = navigation.find(item => item.href === pathname)
+  // Check if we're on a sub-page
+  const isSubPage = pathname !== '/admin'
+  const pageTitle = isSubPage ? pathname.split('/').pop()?.charAt(0).toUpperCase() + pathname.split('/').pop()?.slice(1) : null
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -92,9 +95,26 @@ export default function AdminLayout({
                 <span className="text-xl font-bold text-gray-900">Admin Portal</span>
               </div>
               
+              {/* Breadcrumb for sub-pages */}
+              {isSubPage && (
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="capitalize">{pageTitle}</span>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center space-x-4">
+              {/* Back to Dashboard button for sub-pages */}
+              {isSubPage && (
+                <Link href="/admin">
+                  <Button variant="ghost" size="sm">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </Button>
+                </Link>
+              )}
+              
               <Badge className="bg-red-100 text-red-800">
                 <Shield className="h-3 w-3 mr-1" />
                 ADMIN
@@ -110,7 +130,6 @@ export default function AdminLayout({
           </div>
         </div>
       </header>
-
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
