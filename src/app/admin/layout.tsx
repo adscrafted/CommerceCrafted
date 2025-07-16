@@ -79,10 +79,6 @@ export default function AdminLayout({
     router.push('/')
   }
 
-  // Check if we're on a sub-page
-  const isSubPage = pathname !== '/admin'
-  const pageTitle = isSubPage ? pathname.split('/').pop()?.charAt(0).toUpperCase() + pathname.split('/').pop()?.slice(1) : null
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -94,27 +90,9 @@ export default function AdminLayout({
                 <Shield className="h-6 w-6 text-red-600" />
                 <span className="text-xl font-bold text-gray-900">Admin Portal</span>
               </div>
-              
-              {/* Breadcrumb for sub-pages */}
-              {isSubPage && (
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
-                  <ChevronRight className="h-4 w-4" />
-                  <span className="capitalize">{pageTitle}</span>
-                </div>
-              )}
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* Back to Dashboard button for sub-pages */}
-              {isSubPage && (
-                <Link href="/admin">
-                  <Button variant="ghost" size="sm">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </Button>
-                </Link>
-              )}
-              
               <Badge className="bg-red-100 text-red-800">
                 <Shield className="h-3 w-3 mr-1" />
                 ADMIN
