@@ -126,56 +126,74 @@ export async function POST(request: NextRequest) {
       // Continue anyway, main data is saved
     }
     
-    // Write price history (last 50 entries)
+    // Write ALL price history entries
     if (transformedData.priceHistory.length > 0) {
-      console.log('8. Storing price history...')
-      const priceData = transformedData.priceHistory.slice(-50).map(entry => ({
+      console.log(`8. Storing price history (${transformedData.priceHistory.length} entries)...`)
+      const priceData = transformedData.priceHistory.map(entry => ({
         product_id: productId,
         timestamp: entry.timestamp.toISOString(),
         price: entry.value,
         price_type: 'AMAZON'
       }))
       
-      const { error: priceError } = await supabase
-        .from('keepa_price_history')
-        .upsert(priceData, {
-          onConflict: 'product_id,timestamp,price_type',
-          ignoreDuplicates: true
-        })
+      // Batch insert in chunks of 1000 to avoid database limits
+      const priceChunks = []
+      for (let i = 0; i < priceData.length; i += 1000) {
+        priceChunks.push(priceData.slice(i, i + 1000))
+      }
       
-      if (priceError) {
-        console.error('Price history error:', priceError)
-        // Continue anyway
+      for (const [index, chunk] of priceChunks.entries()) {
+        console.log(`   Inserting price chunk ${index + 1}/${priceChunks.length}...`)
+        const { error: priceError } = await supabase
+          .from('keepa_price_history')
+          .upsert(chunk, {
+            onConflict: 'product_id,timestamp,price_type',
+            ignoreDuplicates: true
+          })
+        
+        if (priceError) {
+          console.error('Price history error:', priceError)
+          // Continue anyway
+        }
       }
     }
     
-    // Write BSR history (last 50 entries)
+    // Write ALL BSR history entries
     if (transformedData.bsrHistory.length > 0) {
-      console.log('9. Storing BSR history...')
-      const bsrData = transformedData.bsrHistory.slice(-50).map(entry => ({
+      console.log(`9. Storing BSR history (${transformedData.bsrHistory.length} entries)...`)
+      const bsrData = transformedData.bsrHistory.map(entry => ({
         product_id: productId,
         timestamp: entry.timestamp.toISOString(),
         sales_rank: Math.round(entry.value),
         category: transformedData.category || 'Unknown'
       }))
       
-      const { error: bsrError } = await supabase
-        .from('keepa_sales_rank_history')
-        .upsert(bsrData, {
-          onConflict: 'product_id,timestamp,category',
-          ignoreDuplicates: true
-        })
+      // Batch insert in chunks of 1000 to avoid database limits
+      const bsrChunks = []
+      for (let i = 0; i < bsrData.length; i += 1000) {
+        bsrChunks.push(bsrData.slice(i, i + 1000))
+      }
       
-      if (bsrError) {
-        console.error('BSR history error:', bsrError)
-        // Continue anyway
+      for (const [index, chunk] of bsrChunks.entries()) {
+        console.log(`   Inserting BSR chunk ${index + 1}/${bsrChunks.length}...`)
+        const { error: bsrError } = await supabase
+          .from('keepa_sales_rank_history')
+          .upsert(chunk, {
+            onConflict: 'product_id,timestamp,category',
+            ignoreDuplicates: true
+          })
+        
+        if (bsrError) {
+          console.error('BSR history error:', bsrError)
+          // Continue anyway
+        }
       }
     }
 
-    // Write review history (last 50 entries)
+    // Write ALL review history entries
     if (transformedData.reviewHistory && transformedData.reviewHistory.length > 0) {
-      console.log('10. Storing review history...')
-      const reviewData = transformedData.reviewHistory.slice(-50).map(entry => ({
+      console.log(`10. Storing review history (${transformedData.reviewHistory.length} entries)...`)
+      const reviewData = transformedData.reviewHistory.map(entry => ({
         product_id: productId,
         asin: asin,
         review_count: entry.reviewCount || 0,
