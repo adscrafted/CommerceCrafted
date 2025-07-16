@@ -129,7 +129,7 @@ export class NicheProcessor {
   }
 
   /**
-   * Sync all data for a single ASIN using Keepa only
+   * Sync all data for a single ASIN using Keepa and Amazon Ads API
    */
   private async syncAsinData(asin: string) {
     try {
@@ -148,15 +148,23 @@ export class NicheProcessor {
       
       const keepaResult = await keepaResponse.json()
       
-      // Try to fetch additional data from other APIs (Ads API, OpenAI analysis)
-      // but skip SP-API since we're removing it from the niche workflow
+      // Try to fetch additional data from other APIs
       try {
-        // Call Ads API if available
-        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ads-api/sync/${asin}`, {
-          method: 'POST'
-        }).catch(error => {
-          console.warn('Ads API sync failed for ASIN:', asin, error)
+        // Call Amazon Ads API for keywords - this is the main new functionality
+        const adsResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/amazon/ads-api/keywords-bulk`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ asins: [asin] })
         })
+        
+        if (adsResponse.ok) {
+          const adsResult = await adsResponse.json()
+          console.log(`✓ Collected ${adsResult.keywords?.length || 0} keywords for ${asin}`)
+        } else {
+          console.warn('Amazon Ads API keywords failed for ASIN:', asin, adsResponse.statusText)
+        }
         
         // Call OpenAI analysis if available
         await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/openai/analyze/${asin}`, {
@@ -207,6 +215,9 @@ export class NicheProcessor {
   private async calculateNicheAnalytics(nicheId: string) {
     const supabase = await createServerSupabaseClient()
     
+    // Get niche ASINs
+    const nicheAsins = await this.getNicheAsins(nicheId)
+    
     // Get all products in the niche
     const { data: products, error } = await supabase
       .from('products')
@@ -219,14 +230,18 @@ export class NicheProcessor {
           feasibility_score,
           timing_score,
           financial_analysis
-        ),
-        keyword_analyses (*)
+        )
       `)
-      .in('asin', 
-        await this.getNicheAsins(nicheId)
-      )
+      .in('asin', nicheAsins)
 
     if (error || !products) return
+
+    // Get all keywords for products in this niche
+    const productIds = products.map(p => p.id)
+    const { data: keywords } = await supabase
+      .from('product_keywords')
+      .select('keyword, product_id')
+      .in('product_id', productIds)
 
     // Calculate aggregate metrics
     const totalProducts = products.length
@@ -251,15 +266,16 @@ export class NicheProcessor {
       avgPrice += product.price || 0
       avgBsr += product.bsr || 0
       totalReviews += product.review_count || 0
-      
-      // Collect keywords
-      const keywords = product.keyword_analyses?.[0]
-      if (keywords?.primary_keywords) {
-        keywords.primary_keywords.forEach((kw: any) => {
-          allKeywords.add(kw.keyword)
-        })
-      }
     })
+
+    // Collect unique keywords from product_keywords table
+    if (keywords) {
+      keywords.forEach(kw => {
+        if (kw.keyword) {
+          allKeywords.add(kw.keyword)
+        }
+      })
+    }
 
     // Calculate averages
     avgOpportunityScore = totalProducts > 0 ? avgOpportunityScore / totalProducts : 0
