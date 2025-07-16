@@ -28,7 +28,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const transformUser = async (supabaseUser: User): Promise<AuthUser | null> => {
     try {
       console.log('transformUser called for:', supabaseUser.email, 'ID:', supabaseUser.id)
-      console.log('Starting database query...')
+      
+      // For admin users, use email lookup directly to avoid ID mismatch issues
+      if (supabaseUser.email === 'anthony@adscrafted.com' || supabaseUser.email === 'admin@commercecrafted.com') {
+        console.log('Using direct email lookup for admin user')
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', supabaseUser.email)
+          .single()
+        
+        console.log('Admin email lookup result. Error:', error, 'Data:', userData)
+        
+        if (!error && userData) {
+          const transformedUser = {
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            role: userData.role as UserRole,
+            subscriptionTier: userData.subscription_tier as SubscriptionTier,
+            subscriptionExpiresAt: userData.subscription_expires_at 
+              ? new Date(userData.subscription_expires_at) 
+              : undefined,
+            emailVerified: userData.email_verified,
+            isActive: userData.is_active,
+            lastLoginAt: userData.last_login_at 
+              ? new Date(userData.last_login_at) 
+              : undefined,
+            emailSubscribed: userData.email_subscribed,
+            stripeCustomerId: userData.stripe_customer_id,
+          }
+          console.log('Returning admin user:', transformedUser)
+          return transformedUser
+        }
+      }
+      
+      console.log('Starting database query by ID...')
       
       // Get user data from our custom users table
       const { data: userData, error } = await supabase
@@ -44,38 +79,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('Error fetching user from database:', error)
         console.log('Trying alternative lookup by email...')
         
-        // For admin user, we know they exist, so fetch by email instead
-        if (supabaseUser.email === 'anthony@adscrafted.com' || supabaseUser.email === 'admin@commercecrafted.com') {
-          console.log('Trying email lookup for admin user:', supabaseUser.email)
-          const { data: userByEmail, error: emailError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', supabaseUser.email)
-            .single()
-          
-          console.log('Email lookup result. Error:', emailError, 'Data:', userByEmail)
-            
-          if (!emailError && userByEmail) {
-            console.log('Found user by email, returning transformed user')
-            return {
-              id: userByEmail.id,
-              email: userByEmail.email,
-              name: userByEmail.name,
-              role: userByEmail.role as UserRole,
-              subscriptionTier: userByEmail.subscription_tier as SubscriptionTier,
-              subscriptionExpiresAt: userByEmail.subscription_expires_at 
-                ? new Date(userByEmail.subscription_expires_at) 
-                : undefined,
-              emailVerified: userByEmail.email_verified,
-              isActive: userByEmail.is_active,
-              lastLoginAt: userByEmail.last_login_at 
-                ? new Date(userByEmail.last_login_at) 
-                : undefined,
-              emailSubscribed: userByEmail.email_subscribed,
-              stripeCustomerId: userByEmail.stripe_customer_id,
-            }
-          }
-        }
         
         // Fallback to auth metadata
         console.warn('User not found in users table, using auth metadata')
