@@ -59,12 +59,22 @@ function SignInComponent() {
     console.log('user:', user)
     console.log('user.role:', user?.role)
     console.log('user.email:', user?.email)
+    console.log('hasRedirected:', hasRedirected)
+    
+    // Prevent redirect loops
+    if (hasRedirected) {
+      console.log('Already redirected, skipping')
+      return
+    }
     
     if (isAuthenticated && user?.email === 'anthony@adscrafted.com') {
       console.log('=== REDIRECTING AUTHENTICATED ADMIN ===')
-      window.location.href = '/admin'
+      setHasRedirected(true)
+      setTimeout(() => {
+        window.location.href = '/admin'
+      }, 1000)
     }
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, user, hasRedirected])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

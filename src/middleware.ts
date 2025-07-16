@@ -83,8 +83,8 @@ export async function middleware(request: NextRequest) {
     
     if (!user) {
       console.log('Middleware: no user, redirecting to signin')
+      // Don't add callbackUrl to prevent redirect loops
       const signInUrl = new URL('/auth/signin', request.url)
-      signInUrl.searchParams.set('callbackUrl', pathname)
       return NextResponse.redirect(signInUrl)
     }
     
