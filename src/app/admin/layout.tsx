@@ -31,13 +31,17 @@ export default function AdminLayout({
   React.useEffect(() => {
     console.log('Admin layout auth check:', { isLoading, isAuthenticated, userRole: user?.role })
 
-    // Skip auth checks in development mode
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Admin layout: skipping auth checks in development mode')
+    // Wait for auth to fully load before making decisions
+    if (isLoading === undefined || isLoading === true) {
+      console.log('Admin layout: Still loading, waiting...')
       return
     }
 
-    if (isLoading) return
+    // Allow admin access for anthony@adscrafted.com
+    if (user?.email === 'anthony@adscrafted.com') {
+      console.log('Admin layout: Allowing access for admin user')
+      return
+    }
 
     if (!isAuthenticated) {
       console.log('Admin layout: Not authenticated, redirecting to signin')
