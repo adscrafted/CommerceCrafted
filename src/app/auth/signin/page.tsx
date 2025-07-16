@@ -52,29 +52,10 @@ function SignInComponent() {
     }
   }, [searchParams])
 
-  // Redirect authenticated admin users
-  useEffect(() => {
-    console.log('=== CHECKING AUTH STATE ===')
-    console.log('isAuthenticated:', isAuthenticated)
-    console.log('user:', user)
-    console.log('user.role:', user?.role)
-    console.log('user.email:', user?.email)
-    console.log('hasRedirected:', hasRedirected)
-    
-    // Prevent redirect loops
-    if (hasRedirected) {
-      console.log('Already redirected, skipping')
-      return
-    }
-    
-    if (isAuthenticated && user?.email === 'anthony@adscrafted.com') {
-      console.log('=== REDIRECTING AUTHENTICATED ADMIN ===')
-      setHasRedirected(true)
-      setTimeout(() => {
-        window.location.href = '/admin'
-      }, 1000)
-    }
-  }, [isAuthenticated, user, hasRedirected])
+  // DISABLED: Auto-redirect to prevent loops
+  // useEffect(() => {
+  //   // Auto-redirect logic disabled
+  // }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -260,18 +241,40 @@ function SignInComponent() {
             </form>
 
 
-            {/* Sign Up Link */}
-            <div className="text-center">
-              <p className="text-sm text-gray-600">
-                Don&apos;t have an account?{' '}
-                <Link
-                  href="/auth/signup"
-                  className="font-medium text-blue-600 hover:text-blue-500"
+            {/* Admin Panel Access */}
+            {isAuthenticated && user?.email === 'anthony@adscrafted.com' && (
+              <div className="text-center space-y-4">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-800 font-medium">✅ Signed in as Admin</p>
+                  <p className="text-green-600 text-sm">{user.email}</p>
+                </div>
+                <Button
+                  onClick={() => {
+                    console.log('Manual admin redirect')
+                    window.location.href = '/admin'
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  size="lg"
                 >
-                  Sign up for free
-                </Link>
-              </p>
-            </div>
+                  Go to Admin Panel →
+                </Button>
+              </div>
+            )}
+
+            {/* Sign Up Link */}
+            {!isAuthenticated && (
+              <div className="text-center">
+                <p className="text-sm text-gray-600">
+                  Don&apos;t have an account?{' '}
+                  <Link
+                    href="/auth/signup"
+                    className="font-medium text-blue-600 hover:text-blue-500"
+                  >
+                    Sign up for free
+                  </Link>
+                </p>
+              </div>
+            )}
 
           </CardContent>
         </Card>
