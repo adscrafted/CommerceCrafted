@@ -238,6 +238,21 @@ function SignInComponent() {
             </form>
 
 
+            {/* Manual Admin Access Button - TEMPORARY */}
+            {user?.role === 'ADMIN' && (
+              <div className="text-center">
+                <Button
+                  onClick={() => {
+                    console.log('Manual redirect to admin')
+                    window.location.href = '/admin'
+                  }}
+                  className="w-full bg-red-600 hover:bg-red-700"
+                >
+                  Access Admin Panel
+                </Button>
+              </div>
+            )}
+
             {/* Sign Up Link */}
             <div className="text-center">
               <p className="text-sm text-gray-600">
