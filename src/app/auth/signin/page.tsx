@@ -88,13 +88,12 @@ function SignInComponent() {
       
       setTimeout(() => {
         if (selectedPlan && planPrice) {
-          router.push(`/billing?plan=${selectedPlan}&price=${planPrice}`)
+          window.location.href = `/billing?plan=${selectedPlan}&price=${planPrice}`
         } else if (user.role === 'ADMIN') {
-          const adminRedirect = redirectUrl.includes('admin') ? redirectUrl : '/admin'
-          console.log('Redirecting admin to:', adminRedirect)
-          router.push(adminRedirect)
+          console.log('Force redirecting admin to /admin')
+          window.location.href = '/admin'
         } else {
-          router.push(redirectUrl)
+          window.location.href = redirectUrl
         }
       }, 100)
     }
