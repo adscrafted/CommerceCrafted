@@ -112,7 +112,7 @@ export default function LaunchPage({ params }: LaunchPageProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <nav className="flex text-sm text-gray-500">
           <Link href={`/products/${slug}`} className="hover:text-blue-600">
-            {mockProductData.title}
+            Product Analysis
           </Link>
           <span className="mx-2">/</span>
           <span className="text-gray-900">Launch Strategy</span>

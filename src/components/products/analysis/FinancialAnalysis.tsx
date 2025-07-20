@@ -4,6 +4,11 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Slider } from '@/components/ui/slider'
 import { 
   DollarSign,
   TrendingUp,
@@ -30,23 +35,88 @@ import {
   FileText,
   Shield,
   Wallet,
-  Scale
+  Scale,
+  Ruler,
+  Download,
+  Loader2,
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeft
 } from 'lucide-react'
 
 interface FinancialAnalysisProps {
   data: any
 }
 
+// Calculate FBA Tier Helper Function
+function calculateFBATier(dims: any) {
+  const { length, width, height, weight } = dims
+  
+  // Sort dimensions to get longest side first
+  const sortedDims = [length, width, height].sort((a, b) => b - a)
+  const [l, w, h] = sortedDims
+
+  // Check Small Standard
+  if (l <= 15 && w <= 12 && h <= 0.75 && weight <= 0.75) {
+    return { name: 'Small Standard', fee: 3.22 }
+  }
+
+  // Check Large Standard tiers
+  if (l <= 18 && w <= 14 && h <= 8 && weight <= 20) {
+    return { name: 'Large Standard 1', fee: 4.76 }
+  }
+
+  if (l <= 60 && w <= 30 && h <= 30 && weight <= 50) {
+    return { name: 'Large Standard 2', fee: 5.89 }
+  }
+
+  if (l <= 60 && w <= 30 && h <= 30 && weight <= 70) {
+    return { name: 'Large Standard 3', fee: 8.73 }
+  }
+
+  // Default to Large Bulky
+  return { name: 'Large Bulky', fee: 19.05 }
+}
+
 export default function FinancialAnalysis({ data }: FinancialAnalysisProps) {
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState('profitability')
   const financialData = data.financialData
+  
+  // Packaging Optimizer state
+  const [calcDimensions, setCalcDimensions] = useState({
+    length: 10,
+    width: 8,
+    height: 6,
+    weight: 1
+  })
+
+  // Enhanced Profitability state - get averages from database
+  const averageSellingPrice = data.competitors?.length > 0 
+    ? data.competitors.reduce((sum: number, comp: any) => sum + (comp.price || 0), 0) / data.competitors.length
+    : financialData?.unitEconomics?.sellingPrice || 25.99
+
+  const averageFbaFees = data.competitors?.length > 0
+    ? data.competitors.reduce((sum: number, comp: any) => sum + (comp.fee || 0), 0) / data.competitors.length
+    : data.productDetails?.fbaFee || 5.89
+
+  const [profitVariables, setProfitVariables] = useState({
+    sellingPrice: averageSellingPrice,
+    cogsPercent: 30, // Default 30% as requested
+    fbaFees: averageFbaFees,
+    avgCpc: 1.25, // Will be updated from keywords if available
+    ctr: 2.5, // Click through rate %
+    cvr: 15, // Conversion rate %
+    organicPercent: 70 // % of traffic that's organic
+  })
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(value)
   }
 
@@ -54,16 +124,100 @@ export default function FinancialAnalysis({ data }: FinancialAnalysisProps) {
     return `${value}%`
   }
 
+  // Profitability calculations
+  const grossProfit = profitVariables.sellingPrice - 
+    (profitVariables.sellingPrice * (profitVariables.cogsPercent / 100)) - 
+    profitVariables.fbaFees - 
+    (profitVariables.sellingPrice * 0.15) // Amazon referral fee
+
+  const grossMargin = (grossProfit / profitVariables.sellingPrice) * 100
+
+  // ACOS calculations (based on AdsCrafted reference)
+  const acosBreakeven = (grossProfit / profitVariables.sellingPrice) * 100
+  const projectedAcos = (profitVariables.avgCpc / (profitVariables.ctr / 100) / (profitVariables.cvr / 100)) / profitVariables.sellingPrice * 100
+
+  // Blended profitability (organic + PPC mix)
+  const organicProfitPerUnit = grossProfit
+  const ppcProfitPerUnit = grossProfit - (profitVariables.sellingPrice * (projectedAcos / 100))
+  const blendedProfitPerUnit = (organicProfitPerUnit * (profitVariables.organicPercent / 100)) + 
+    (ppcProfitPerUnit * ((100 - profitVariables.organicPercent) / 100))
+  const blendedMargin = (blendedProfitPerUnit / profitVariables.sellingPrice) * 100
+
+  // Scenario analysis
+  const scenarioAnalysis = {
+    worst: {
+      acos: Math.min(projectedAcos * 1.5, 100), // 50% worse ACOS
+      organicPercent: Math.max(profitVariables.organicPercent - 30, 0), // 30% less organic
+      profitPerUnit: 0,
+      margin: 0
+    },
+    conservative: {
+      acos: Math.min(projectedAcos * 1.2, 100), // 20% worse ACOS
+      organicPercent: Math.max(profitVariables.organicPercent - 15, 0), // 15% less organic
+      profitPerUnit: 0,
+      margin: 0
+    },
+    moderate: {
+      acos: projectedAcos, // Current projected ACOS
+      organicPercent: profitVariables.organicPercent, // Current organic %
+      profitPerUnit: 0,
+      margin: 0
+    }
+  }
+
+  // Calculate scenario profits
+  Object.keys(scenarioAnalysis).forEach(scenario => {
+    const s = scenarioAnalysis[scenario as keyof typeof scenarioAnalysis]
+    const scenarioOrganicProfit = organicProfitPerUnit * (s.organicPercent / 100)
+    const scenarioPpcProfit = (grossProfit - (profitVariables.sellingPrice * (s.acos / 100))) * ((100 - s.organicPercent) / 100)
+    s.profitPerUnit = scenarioOrganicProfit + scenarioPpcProfit
+    s.margin = (s.profitPerUnit / profitVariables.sellingPrice) * 100
+  })
+  
+  // Get packaging data from the product data - DATABASE ONLY
+  const currentDimensions = data.productDetails?.dimensions || {}
+  const currentFee = data.productDetails?.fbaFee || 0
+  
+  // Calculate optimized dimensions (10% reduction as example)
+  const optimizedDimensions = {
+    length: currentDimensions.length ? currentDimensions.length * 0.9 : 0,
+    width: currentDimensions.width ? currentDimensions.width * 0.9 : 0,
+    height: currentDimensions.height ? currentDimensions.height * 0.85 : 0,
+    weight: currentDimensions.weight ? currentDimensions.weight * 0.95 : 0
+  }
+  
+  const optimizedTier = calculateFBATier(optimizedDimensions)
+  const optimizedFee = optimizedTier.fee
+  const potentialSavings = currentFee > optimizedFee ? currentFee - optimizedFee : 0
+  
+  const packagingData = {
+    currentDimensions,
+    currentTier: data.productDetails?.fbaTier || '',
+    currentFee,
+    optimizedDimensions,
+    optimizedTier: optimizedTier.name,
+    optimizedFee,
+    potentialSavings,
+    annualSavings: potentialSavings * 12000, // Assuming 1000 units/month
+    optimizationScore: potentialSavings > 0 ? Math.round((potentialSavings / currentFee) * 100) : 0,
+    recommendations: potentialSavings > 0 ? [
+      `Reduce packaging dimensions by optimizing box size`,
+      `Current: ${currentDimensions.length}"L × ${currentDimensions.width}"W × ${currentDimensions.height}"H`,
+      `Target: ${optimizedDimensions.length.toFixed(1)}"L × ${optimizedDimensions.width.toFixed(1)}"W × ${optimizedDimensions.height.toFixed(1)}"H`,
+      `Potential savings of $${potentialSavings.toFixed(2)} per unit`
+    ] : ['Product is already optimally packaged'],
+    competitorAnalysis: data.competitors || []
+  }
+
   return (
     <div className="space-y-6">
       {/* Tab Navigation */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
         {[
-          { id: 'overview', label: 'Overview', icon: Eye },
           { id: 'profitability', label: 'Profitability', icon: DollarSign },
+          { id: 'packaging', label: 'Package Optimiser', icon: Package },
           { id: 'projections', label: 'Projections', icon: TrendingUp },
-          { id: 'investment', label: 'Investment & ROI', icon: Wallet },
-          { id: 'risk', label: 'Risk Analysis', icon: Shield }
+          { id: 'investment', label: 'Investment & ROI', icon: Wallet }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -80,224 +234,153 @@ export default function FinancialAnalysis({ data }: FinancialAnalysisProps) {
         ))}
       </div>
 
-      {/* Overview Tab */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* Key Metrics Overview */}
-          <div className="grid md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {formatCurrency(financialData.unitEconomics.netProfit)}
-                  </div>
-                  <div className="text-sm text-gray-600">Profit per Unit</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {formatPercent(financialData.unitEconomics.profitMargin)} margin
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {formatCurrency(financialData.monthlyProjections?.realistic?.revenue || 0)}
-                  </div>
-                  <div className="text-sm text-gray-600">Monthly Revenue (Realistic)</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {financialData.monthlyProjections?.realistic?.units || 0} units
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {formatPercent(financialData.roi.firstYearROI)}
-                  </div>
-                  <div className="text-sm text-gray-600">First Year ROI</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {financialData.roi.breakEvenMonths} mo break-even
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">
-                    {formatCurrency(financialData.investmentRequired.total)}
-                  </div>
-                  <div className="text-sm text-gray-600">Total Investment</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Initial capital
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Financial Health Check */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5 text-green-600" />
-                <span>Financial Health Score</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="relative inline-flex items-center justify-center">
-                    <div className="text-3xl font-bold text-green-600">87</div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-20 h-20 rounded-full border-8 border-green-500 opacity-20"></div>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-sm text-gray-600">Overall Score</div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-gray-600">Profitability</span>
-                      <span className="text-sm font-medium">Excellent</span>
-                    </div>
-                    <Progress value={85} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-gray-600">Cash Flow</span>
-                      <span className="text-sm font-medium">Good</span>
-                    </div>
-                    <Progress value={72} className="h-2" />
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-gray-600">ROI Potential</span>
-                      <span className="text-sm font-medium">Excellent</span>
-                    </div>
-                    <Progress value={90} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-gray-600">Risk Level</span>
-                      <span className="text-sm font-medium">Low</span>
-                    </div>
-                    <Progress value={25} className="h-2" />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {/* Profitability Tab */}
       {activeTab === 'profitability' && (
         <div className="space-y-6">
-          {/* Profitability Analysis */}
+          {/* Profitability Analysis with Sliders */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <DollarSign className="h-5 w-5 text-green-600" />
-                <span>Profitability Analysis</span>
+                <span>Dynamic Profitability Analysis</span>
               </CardTitle>
               <CardDescription>
-                Comprehensive breakdown of revenue, costs, and profit margins
+                Adjust variables to see real-time profit calculations
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Revenue & Profit Chart */}
+              <div className="space-y-6">
+                {/* Selling Price */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-4">Revenue & Profit Breakdown</h4>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-gray-600">Selling Price</span>
-                        <span className="text-lg font-semibold text-gray-900">{formatCurrency(financialData.unitEconomics.sellingPrice)}</span>
-                      </div>
-                      <Progress value={100} className="h-3 bg-blue-100" />
-                    </div>
-                    
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-gray-600">Product Cost</span>
-                        <span className="text-lg font-semibold text-red-600">-{formatCurrency(financialData.unitEconomics.productCost)}</span>
-                      </div>
-                      <Progress value={(financialData.unitEconomics.productCost / financialData.unitEconomics.sellingPrice) * 100} className="h-3 bg-red-100" />
-                    </div>
-                    
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-gray-600">Amazon Fees</span>
-                        <span className="text-lg font-semibold text-orange-600">-{formatCurrency(financialData.unitEconomics.amazonFees)}</span>
-                      </div>
-                      <Progress value={(financialData.unitEconomics.amazonFees / financialData.unitEconomics.sellingPrice) * 100} className="h-3 bg-orange-100" />
-                    </div>
-                    
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-gray-600">Shipping & Fulfillment</span>
-                        <span className="text-lg font-semibold text-purple-600">-{formatCurrency(financialData.unitEconomics.shippingCost)}</span>
-                      </div>
-                      <Progress value={(financialData.unitEconomics.shippingCost / financialData.unitEconomics.sellingPrice) * 100} className="h-3 bg-purple-100" />
-                    </div>
-                    
-                    <div className="border-t pt-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-semibold text-gray-700">Net Profit per Unit</span>
-                        <span className="text-xl font-bold text-green-600">{formatCurrency(financialData.unitEconomics.netProfit)}</span>
-                      </div>
-                      <div className="flex justify-between items-center mt-1">
-                        <span className="text-xs text-gray-500">Profit Margin</span>
-                        <span className="text-sm font-semibold text-green-600">{formatPercent(financialData.unitEconomics.profitMargin)}</span>
-                      </div>
-                    </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <Label>Average Selling Price</Label>
+                    <span className="text-lg font-semibold">{formatCurrency(profitVariables.sellingPrice)}</span>
                   </div>
+                  <Slider
+                    value={[profitVariables.sellingPrice]}
+                    onValueChange={(value) => setProfitVariables({...profitVariables, sellingPrice: value[0]})}
+                    min={10}
+                    max={200}
+                    step={0.01}
+                    className="mb-1"
+                  />
+                  <p className="text-xs text-gray-500">Based on average from all competitors</p>
                 </div>
-                
-                {/* Cost Structure Visualization */}
+
+                {/* COGS */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-4">Cost Structure Visualization</h4>
-                  <div className="relative h-64 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-gray-900 mb-2">
-                        {formatPercent(financialData.unitEconomics.profitMargin)}
-                      </div>
-                      <div className="text-sm text-gray-600">Net Margin</div>
-                    </div>
-                    {/* Simplified pie chart representation */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-48 h-48 rounded-full border-8 border-green-500 opacity-20"></div>
-                    </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <Label>Cost of Goods Sold (COGS)</Label>
+                    <span className="text-lg font-semibold text-red-600">
+                      {formatCurrency(profitVariables.sellingPrice * (profitVariables.cogsPercent / 100))} 
+                      <span className="text-sm ml-1">({profitVariables.cogsPercent}%)</span>
+                    </span>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-3 mt-4">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-red-500 rounded"></div>
-                      <span className="text-xs text-gray-600">Product Cost ({Math.round((financialData.unitEconomics.productCost / financialData.unitEconomics.sellingPrice) * 100)}%)</span>
+                  <Slider
+                    value={[profitVariables.cogsPercent]}
+                    onValueChange={(value) => setProfitVariables({...profitVariables, cogsPercent: value[0]})}
+                    min={10}
+                    max={60}
+                    step={0.1}
+                    className="mb-1"
+                  />
+                  <p className="text-xs text-gray-500">Default 30% of selling price</p>
+                </div>
+
+                {/* FBA Fees */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <Label>FBA Fees</Label>
+                    <span className="text-lg font-semibold text-orange-600">{formatCurrency(profitVariables.fbaFees)}</span>
+                  </div>
+                  <Slider
+                    value={[profitVariables.fbaFees]}
+                    onValueChange={(value) => setProfitVariables({...profitVariables, fbaFees: value[0]})}
+                    min={2}
+                    max={20}
+                    step={0.01}
+                    className="mb-1"
+                  />
+                  <p className="text-xs text-gray-500">Average from product dimensions</p>
+                </div>
+
+                {/* PPC Cost */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <Label>Average CPC (Pay Per Click)</Label>
+                    <span className="text-lg font-semibold text-purple-600">{formatCurrency(profitVariables.avgCpc)}</span>
+                  </div>
+                  <Slider
+                    value={[profitVariables.avgCpc]}
+                    onValueChange={(value) => setProfitVariables({...profitVariables, avgCpc: value[0]})}
+                    min={0.5}
+                    max={5}
+                    step={0.01}
+                    className="mb-1"
+                  />
+                  <p className="text-xs text-gray-500">Based on keyword competition</p>
+                </div>
+
+                {/* Referral Fee */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <Label>Amazon Referral Fee</Label>
+                    <span className="text-lg font-semibold text-yellow-600">
+                      {formatCurrency(profitVariables.sellingPrice * 0.15)} 
+                      <span className="text-sm ml-1">(15%)</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500">Fixed 15% for most categories</p>
+                </div>
+
+                {/* Profit Calculation */}
+                <div className="border-t pt-4 mt-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-3">Per Unit Economics</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Revenue</span>
+                          <span className="font-medium">{formatCurrency(profitVariables.sellingPrice)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">- COGS</span>
+                          <span className="font-medium text-red-600">
+                            {formatCurrency(profitVariables.sellingPrice * (profitVariables.cogsPercent / 100))}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">- FBA Fees</span>
+                          <span className="font-medium text-orange-600">{formatCurrency(profitVariables.fbaFees)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">- Referral Fee</span>
+                          <span className="font-medium text-yellow-600">
+                            {formatCurrency(profitVariables.sellingPrice * 0.15)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t">
+                          <span className="text-sm font-semibold">Gross Profit</span>
+                          <span className="font-bold text-green-600">{formatCurrency(grossProfit)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm font-semibold">Gross Margin</span>
+                          <span className="font-bold text-green-600">{formatPercent(grossMargin)}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-orange-500 rounded"></div>
-                      <span className="text-xs text-gray-600">Amazon Fees ({Math.round((financialData.unitEconomics.amazonFees / financialData.unitEconomics.sellingPrice) * 100)}%)</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-purple-500 rounded"></div>
-                      <span className="text-xs text-gray-600">Shipping ({Math.round((financialData.unitEconomics.shippingCost / financialData.unitEconomics.sellingPrice) * 100)}%)</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-green-500 rounded"></div>
-                      <span className="text-xs text-gray-600">Net Profit ({Math.round(financialData.unitEconomics.profitMargin)}%)</span>
+
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-3">ACOS Impact</h4>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-2xl font-bold text-center mb-2">
+                          {formatPercent(acosBreakeven)}
+                        </div>
+                        <p className="text-sm text-gray-600 text-center">ACOS Breakeven Point</p>
+                        <p className="text-xs text-gray-500 text-center mt-1">
+                          Above this ACOS, you lose money on PPC sales
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -305,36 +388,174 @@ export default function FinancialAnalysis({ data }: FinancialAnalysisProps) {
             </CardContent>
           </Card>
 
-          {/* FBA Fee Breakdown */}
+          {/* ACOS Forecast & Traffic Analysis */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Package className="h-5 w-5 text-orange-600" />
-                <span>Amazon FBA Fee Analysis</span>
+                <TrendingUp className="h-5 w-5 text-blue-600" />
+                <span>ACOS Forecast & Traffic Analysis</span>
               </CardTitle>
+              <CardDescription>
+                Predict profitability based on PPC performance and organic traffic
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="p-4 bg-orange-50 rounded-lg">
-                  <div className="text-lg font-semibold text-orange-600 mb-1">
-                    {formatCurrency(financialData.unitEconomics.amazonFees * 0.5)}
+              <div className="space-y-6">
+                {/* PPC Performance Inputs */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-4">PPC Performance Metrics</h4>
+                    
+                    {/* CTR */}
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <Label>Click-Through Rate (CTR)</Label>
+                        <span className="font-medium">{profitVariables.ctr}%</span>
+                      </div>
+                      <Slider
+                        value={[profitVariables.ctr]}
+                        onValueChange={(value) => setProfitVariables({...profitVariables, ctr: value[0]})}
+                        min={0.5}
+                        max={10}
+                        step={0.1}
+                      />
+                    </div>
+
+                    {/* CVR */}
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <Label>Conversion Rate (CVR)</Label>
+                        <span className="font-medium">{profitVariables.cvr}%</span>
+                      </div>
+                      <Slider
+                        value={[profitVariables.cvr]}
+                        onValueChange={(value) => setProfitVariables({...profitVariables, cvr: value[0]})}
+                        min={1}
+                        max={30}
+                        step={0.1}
+                      />
+                    </div>
+
+                    {/* Calculated ACOS */}
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600 mb-1">
+                        {formatPercent(projectedAcos)}
+                      </div>
+                      <p className="text-sm text-gray-700">Projected ACOS</p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {projectedAcos < acosBreakeven ? 
+                          `✅ Profitable (${formatPercent(acosBreakeven - projectedAcos)} margin)` : 
+                          `❌ Unprofitable (${formatPercent(projectedAcos - acosBreakeven)} over breakeven)`
+                        }
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-700">Referral Fee</div>
-                  <div className="text-xs text-gray-500">15% of selling price</div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-4">Traffic Mix</h4>
+                    
+                    {/* Organic vs PPC Split */}
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <Label>Organic Traffic %</Label>
+                        <span className="font-medium">{profitVariables.organicPercent}%</span>
+                      </div>
+                      <Slider
+                        value={[profitVariables.organicPercent]}
+                        onValueChange={(value) => setProfitVariables({...profitVariables, organicPercent: value[0]})}
+                        min={0}
+                        max={100}
+                        step={1}
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>PPC: {100 - profitVariables.organicPercent}%</span>
+                        <span>Organic: {profitVariables.organicPercent}%</span>
+                      </div>
+                    </div>
+
+                    {/* Blended Profitability */}
+                    <div className="p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600 mb-1">
+                        {formatCurrency(blendedProfitPerUnit)}
+                      </div>
+                      <p className="text-sm text-gray-700">Blended Profit per Unit</p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Margin: {formatPercent(blendedMargin)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <div className="text-lg font-semibold text-blue-600 mb-1">
-                    {formatCurrency(financialData.unitEconomics.amazonFees * 0.4)}
+
+                {/* Scenario Analysis */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-4">Profitability Scenarios</h4>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="p-4 border rounded-lg bg-red-50 border-red-200">
+                      <h5 className="font-medium text-red-900 mb-3">Worst Case</h5>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">ACOS</span>
+                          <span className="font-medium">{formatPercent(scenarioAnalysis.worst.acos)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Organic %</span>
+                          <span className="font-medium">{scenarioAnalysis.worst.organicPercent}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Profit/Unit</span>
+                          <span className="font-bold text-red-600">{formatCurrency(scenarioAnalysis.worst.profitPerUnit)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Margin</span>
+                          <span className="font-bold text-red-600">{formatPercent(scenarioAnalysis.worst.margin)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 border rounded-lg bg-yellow-50 border-yellow-200">
+                      <h5 className="font-medium text-yellow-900 mb-3">Conservative</h5>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">ACOS</span>
+                          <span className="font-medium">{formatPercent(scenarioAnalysis.conservative.acos)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Organic %</span>
+                          <span className="font-medium">{scenarioAnalysis.conservative.organicPercent}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Profit/Unit</span>
+                          <span className="font-bold text-yellow-600">{formatCurrency(scenarioAnalysis.conservative.profitPerUnit)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Margin</span>
+                          <span className="font-bold text-yellow-600">{formatPercent(scenarioAnalysis.conservative.margin)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 border rounded-lg bg-green-50 border-green-200">
+                      <h5 className="font-medium text-green-900 mb-3">Moderate</h5>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">ACOS</span>
+                          <span className="font-medium">{formatPercent(scenarioAnalysis.moderate.acos)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Organic %</span>
+                          <span className="font-medium">{scenarioAnalysis.moderate.organicPercent}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Profit/Unit</span>
+                          <span className="font-bold text-green-600">{formatCurrency(scenarioAnalysis.moderate.profitPerUnit)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Margin</span>
+                          <span className="font-bold text-green-600">{formatPercent(scenarioAnalysis.moderate.margin)}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-700">FBA Fulfillment</div>
-                  <div className="text-xs text-gray-500">Pick, pack & ship</div>
-                </div>
-                <div className="p-4 bg-purple-50 rounded-lg">
-                  <div className="text-lg font-semibold text-purple-600 mb-1">
-                    {formatCurrency(financialData.unitEconomics.amazonFees * 0.1)}
-                  </div>
-                  <div className="text-sm text-gray-700">Storage Fees</div>
-                  <div className="text-xs text-gray-500">Monthly storage</div>
                 </div>
               </div>
             </CardContent>
@@ -618,91 +839,391 @@ export default function FinancialAnalysis({ data }: FinancialAnalysisProps) {
         </div>
       )}
 
-      {/* Risk Analysis Tab */}
-      {activeTab === 'risk' && (
+
+      {/* Packaging Optimizer Tab */}
+      {activeTab === 'packaging' && (
         <div className="space-y-6">
-          {/* Risk Assessment */}
+          {/* Current vs Optimized Comparison */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Package className="h-5 w-5 text-orange-600" />
+                  <span>Current Packaging</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="text-center p-6 bg-orange-50 rounded-lg">
+                    <div className="text-3xl font-bold text-orange-600 mb-2">
+                      {packagingData.currentTier}
+                    </div>
+                    <div className="text-sm text-gray-600">FBA Size Tier</div>
+                    <div className="text-2xl font-bold text-gray-900 mt-3">
+                      {formatCurrency(packagingData.currentFee)}
+                    </div>
+                    <div className="text-sm text-gray-600">Per Unit FBA Fee</div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-gray-700">Current Dimensions</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2 bg-gray-50 rounded">
+                        <span className="text-xs text-gray-600">Length</span>
+                        <p className="font-medium">{packagingData.currentDimensions.length}"</p>
+                      </div>
+                      <div className="p-2 bg-gray-50 rounded">
+                        <span className="text-xs text-gray-600">Width</span>
+                        <p className="font-medium">{packagingData.currentDimensions.width}"</p>
+                      </div>
+                      <div className="p-2 bg-gray-50 rounded">
+                        <span className="text-xs text-gray-600">Height</span>
+                        <p className="font-medium">{packagingData.currentDimensions.height}"</p>
+                      </div>
+                      <div className="p-2 bg-gray-50 rounded">
+                        <span className="text-xs text-gray-600">Weight</span>
+                        <p className="font-medium">{packagingData.currentDimensions.weight} lbs</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-2 border-green-200">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <TrendingDown className="h-5 w-5 text-green-600" />
+                  <span>Optimized Packaging</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="text-center p-6 bg-green-50 rounded-lg">
+                    <div className="text-3xl font-bold text-green-600 mb-2">
+                      {packagingData.optimizedTier}
+                    </div>
+                    <div className="text-sm text-gray-600">Optimized FBA Tier</div>
+                    <div className="text-2xl font-bold text-gray-900 mt-3">
+                      {formatCurrency(packagingData.optimizedFee)}
+                    </div>
+                    <div className="text-sm text-gray-600">Per Unit FBA Fee</div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-gray-700">Optimized Dimensions</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2 bg-green-50 rounded">
+                        <span className="text-xs text-gray-600">Length</span>
+                        <p className="font-medium text-green-700">{packagingData.optimizedDimensions.length}"</p>
+                      </div>
+                      <div className="p-2 bg-green-50 rounded">
+                        <span className="text-xs text-gray-600">Width</span>
+                        <p className="font-medium text-green-700">{packagingData.optimizedDimensions.width}"</p>
+                      </div>
+                      <div className="p-2 bg-green-50 rounded">
+                        <span className="text-xs text-gray-600">Height</span>
+                        <p className="font-medium text-green-700">{packagingData.optimizedDimensions.height}"</p>
+                      </div>
+                      <div className="p-2 bg-green-50 rounded">
+                        <span className="text-xs text-gray-600">Weight</span>
+                        <p className="font-medium text-green-700">{packagingData.optimizedDimensions.weight} lbs</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Savings Overview */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Shield className="h-5 w-5 text-red-600" />
-                <span>Risk Analysis & Mitigation</span>
+                <DollarSign className="h-5 w-5 text-green-600" />
+                <span>Potential Savings</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">
+                    {formatCurrency(packagingData.potentialSavings)}
+                  </div>
+                  <div className="text-sm text-gray-600">Per Unit Savings</div>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {formatCurrency(packagingData.potentialSavings * 1000)}
+                  </div>
+                  <div className="text-sm text-gray-600">Monthly Savings (1k units)</div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {formatCurrency(packagingData.annualSavings)}
+                  </div>
+                  <div className="text-sm text-gray-600">Annual Savings</div>
+                </div>
+                <div className="text-center p-4 bg-orange-50 rounded-lg">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {packagingData.optimizationScore}%
+                  </div>
+                  <div className="text-sm text-gray-600">Optimization Score</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Optimization Recommendations */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <CheckCircle className="h-5 w-5 text-blue-600" />
+                <span>Optimization Recommendations</span>
               </CardTitle>
               <CardDescription>
-                Comprehensive risk assessment and mitigation strategies
+                Actionable steps to achieve the optimized packaging dimensions
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {financialData.riskAnalysis.risks.map((risk: any, index: number) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h4 className="font-semibold text-gray-900">{risk.type}</h4>
-                        <p className="text-sm text-gray-600 mt-1">{risk.description}</p>
-                      </div>
-                      <Badge 
-                        variant={risk.severity === 'high' ? 'destructive' : risk.severity === 'medium' ? 'default' : 'secondary'}
-                      >
-                        {risk.severity} risk
-                      </Badge>
+              <div className="space-y-3">
+                {packagingData.recommendations.map((rec: string, idx: number) => (
+                  <div key={idx} className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                      {idx + 1}
                     </div>
-                    <div className="mt-3">
-                      <span className="text-sm font-medium text-gray-700">Mitigation Strategy:</span>
-                      <p className="text-sm text-gray-600 mt-1">{risk.mitigation}</p>
-                    </div>
+                    <p className="text-gray-700">{rec}</p>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          {/* Risk Matrix */}
+          {/* Competitor Analysis */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Gauge className="h-5 w-5 text-orange-600" />
-                <span>Risk-Adjusted Returns</span>
+                <BarChart3 className="h-5 w-5 text-purple-600" />
+                <span>Competitor Packaging Analysis</span>
               </CardTitle>
+              <CardDescription>
+                Detailed comparison of competitor packaging dimensions and FBA fees
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="text-center p-6 border rounded-lg">
-                  <div className="text-3xl font-bold text-red-600 mb-2">
-                    {formatPercent(financialData.riskAnalysis.worstCase.roi)}
+              <div className="space-y-4">
+                {packagingData.competitorAnalysis.length > 0 ? packagingData.competitorAnalysis.map((competitor: any, idx: number) => {
+                  console.log('Competitor image:', competitor.image || competitor.imageUrl)
+                  return (
+                  <div key={idx} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="grid grid-cols-1 md:grid-cols-[120px,1fr,auto] gap-4 items-center">
+                      {/* Product Image */}
+                      <div className="flex justify-center">
+                        {competitor.imageUrl || competitor.image ? (
+                          <img 
+                            src={competitor.imageUrl || competitor.image} 
+                            alt={competitor.name || competitor.title}
+                            className="w-24 h-24 object-contain bg-gray-50 rounded-lg p-2"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=No+Image'
+                            }}
+                          />
+                        ) : (
+                          <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <Package className="w-12 h-12 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Product Details */}
+                      <div className="space-y-2 text-center md:text-left">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{competitor.name || competitor.title}</h4>
+                          <p className="text-xs text-gray-500">ASIN: {competitor.asin}</p>
+                        </div>
+                        
+                        {/* Dimensions Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          <div className="bg-gray-50 rounded p-2 text-center">
+                            <p className="text-xs text-gray-600">Length</p>
+                            <p className="font-medium text-sm">{competitor.dimensions?.length || 'N/A'}"</p>
+                          </div>
+                          <div className="bg-gray-50 rounded p-2 text-center">
+                            <p className="text-xs text-gray-600">Width</p>
+                            <p className="font-medium text-sm">{competitor.dimensions?.width || 'N/A'}"</p>
+                          </div>
+                          <div className="bg-gray-50 rounded p-2 text-center">
+                            <p className="text-xs text-gray-600">Height</p>
+                            <p className="font-medium text-sm">{competitor.dimensions?.height || 'N/A'}"</p>
+                          </div>
+                          <div className="bg-gray-50 rounded p-2 text-center">
+                            <p className="text-xs text-gray-600">Weight</p>
+                            <p className="font-medium text-sm">{competitor.dimensions?.weight || 'N/A'} lbs</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* FBA Info */}
+                      <div className="text-center space-y-1">
+                        <div className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                          competitor.tier === 'Small Standard' ? 'bg-green-100 text-green-700' :
+                          competitor.tier === 'Large Standard 1' ? 'bg-blue-100 text-blue-700' :
+                          'bg-orange-100 text-orange-700'
+                        }`}>
+                          {competitor.tier || 'Unknown Tier'}
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-gray-900">${(competitor.fee || 0).toFixed(2)}</p>
+                          <p className="text-xs text-gray-600">per unit</p>
+                        </div>
+                        {competitor.fee < packagingData.currentFee && (
+                          <div className="text-xs text-green-600 font-medium">
+                            ↓ ${(packagingData.currentFee - competitor.fee).toFixed(2)} less
+                          </div>
+                        )}
+                        {competitor.fee > packagingData.currentFee && (
+                          <div className="text-xs text-red-600 font-medium">
+                            ↑ ${(competitor.fee - packagingData.currentFee).toFixed(2)} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm font-medium text-gray-700">Worst Case ROI</div>
-                  <div className="text-xs text-gray-600 mt-1">25% probability</div>
+                  )
+                }) : (
+                  <div className="text-center p-8 text-gray-500">
+                    No competitor data available
+                  </div>
+                )}
+              </div>
+              
+              {/* Summary Stats */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-blue-50 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {packagingData.competitorAnalysis.filter((c: any) => c.fee < packagingData.currentFee).length}
+                  </div>
+                  <p className="text-sm text-gray-700">Competitors with lower fees</p>
                 </div>
-                
-                <div className="text-center p-6 border rounded-lg bg-blue-50">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">
-                    {formatPercent(financialData.riskAnalysis.expectedCase.roi)}
+                <div className="p-4 bg-green-50 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {formatCurrency(
+                      Math.min(...packagingData.competitorAnalysis.map((c: any) => c.fee))
+                    )}
                   </div>
-                  <div className="text-sm font-medium text-gray-700">Expected ROI</div>
-                  <div className="text-xs text-gray-600 mt-1">50% probability</div>
+                  <p className="text-sm text-gray-700">Lowest competitor fee</p>
                 </div>
-                
-                <div className="text-center p-6 border rounded-lg">
-                  <div className="text-3xl font-bold text-green-600 mb-2">
-                    {formatPercent(financialData.riskAnalysis.bestCase.roi)}
+                <div className="p-4 bg-purple-50 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {formatCurrency(
+                      packagingData.competitorAnalysis.reduce((sum: number, c: any) => sum + c.fee, 0) / 
+                      packagingData.competitorAnalysis.length
+                    )}
                   </div>
-                  <div className="text-sm font-medium text-gray-700">Best Case ROI</div>
-                  <div className="text-xs text-gray-600 mt-1">25% probability</div>
+                  <p className="text-sm text-gray-700">Average competitor fee</p>
                 </div>
               </div>
-
-              {/* Risk Score */}
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Overall Risk Score</span>
-                  <span className="text-2xl font-bold text-orange-600">{financialData.riskAnalysis.overallRiskScore}/10</span>
-                </div>
-                <Progress value={financialData.riskAnalysis.overallRiskScore * 10} className="h-3" />
-                <p className="text-xs text-gray-600 mt-2">
-                  This product has a {financialData.riskAnalysis.overallRiskScore <= 3 ? 'low' : financialData.riskAnalysis.overallRiskScore <= 6 ? 'medium' : 'high'} risk profile
-                  based on market competition, investment requirements, and demand volatility.
+              
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">
+                  <strong>Key Insight:</strong> Your current packaging costs {formatCurrency(packagingData.currentFee)} per unit. 
+                  {packagingData.competitorAnalysis.filter((c: any) => c.fee < packagingData.currentFee).length > 0 
+                    ? ` ${packagingData.competitorAnalysis.filter((c: any) => c.fee < packagingData.currentFee).length} competitor${packagingData.competitorAnalysis.filter((c: any) => c.fee < packagingData.currentFee).length > 1 ? 's have' : ' has'} achieved lower FBA fees through optimized packaging.`
+                    : ' You have one of the most competitive FBA fees in your category.'}
+                  {packagingData.optimizedFee < packagingData.currentFee && 
+                    ` By optimizing to ${packagingData.optimizedTier}, you could save ${formatCurrency(packagingData.potentialSavings)} per unit.`
+                  }
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Interactive Dimension Calculator */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Calculator className="h-5 w-5" />
+                <span>Dimension Impact Calculator</span>
+              </CardTitle>
+              <CardDescription>
+                See how dimension changes affect your FBA fees in real-time
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="calc-length">Length: {calcDimensions.length}"</Label>
+                      <Slider
+                        id="calc-length"
+                        min={1}
+                        max={60}
+                        step={0.1}
+                        value={[calcDimensions.length]}
+                        onValueChange={(value) => setCalcDimensions({...calcDimensions, length: value[0]})}
+                        className="mt-2"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="calc-width">Width: {calcDimensions.width}"</Label>
+                      <Slider
+                        id="calc-width"
+                        min={1}
+                        max={30}
+                        step={0.1}
+                        value={[calcDimensions.width]}
+                        onValueChange={(value) => setCalcDimensions({...calcDimensions, width: value[0]})}
+                        className="mt-2"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="calc-height">Height: {calcDimensions.height}"</Label>
+                      <Slider
+                        id="calc-height"
+                        min={0.1}
+                        max={30}
+                        step={0.1}
+                        value={[calcDimensions.height]}
+                        onValueChange={(value) => setCalcDimensions({...calcDimensions, height: value[0]})}
+                        className="mt-2"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="calc-weight">Weight: {calcDimensions.weight} lbs</Label>
+                      <Slider
+                        id="calc-weight"
+                        min={0.1}
+                        max={70}
+                        step={0.1}
+                        value={[calcDimensions.weight]}
+                        onValueChange={(value) => setCalcDimensions({...calcDimensions, weight: value[0]})}
+                        className="mt-2"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="p-6 bg-blue-50 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-4">Current FBA Tier</h4>
+                      <div className="text-2xl font-bold text-blue-700 mb-2">
+                        {calculateFBATier(calcDimensions).name}
+                      </div>
+                      <div className="text-lg text-gray-600">
+                        Fee: ${calculateFBATier(calcDimensions).fee.toFixed(2)} per unit
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-blue-200">
+                        <div className="text-sm text-gray-600">Monthly cost (1,000 units)</div>
+                        <div className="text-xl font-semibold text-gray-900">
+                          ${(calculateFBATier(calcDimensions).fee * 1000).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-4 bg-yellow-50 rounded-lg text-sm text-gray-700">
+                      <p className="font-medium mb-2">💡 Pro Tip:</p>
+                      <p>Small reductions in dimensions can lead to significant savings. Try adjusting the sliders to see if you can reach a lower FBA tier.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

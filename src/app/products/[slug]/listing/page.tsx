@@ -3,6 +3,7 @@
 import { useAuth } from '@/lib/supabase/auth-context'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { ArrowLeft, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,19 +19,40 @@ interface ListingPageProps {
 
 export default function ListingPage({ params }: ListingPageProps) {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [slug, setSlug] = useState<string>('')
+  const [productTitle, setProductTitle] = useState<string>('Product')
+  const [nicheName, setNicheName] = useState<string>('')
+  
+  // Get nicheId from search params
+  const nicheId = searchParams.get('nicheId')
 
   useEffect(() => {
     const loadData = async () => {
       const resolvedParams = await params
       setSlug(resolvedParams.slug)
       console.log('Listing page loading for slug:', resolvedParams.slug)
+      console.log('NicheId from query params:', nicheId)
+      
+      if (nicheId) {
+        try {
+          const response = await fetch(`/api/niches/${nicheId}/showcase`)
+          if (response.ok) {
+            const nicheData = await response.json()
+            setProductTitle(nicheData.title || 'Product')
+            setNicheName(nicheData.title || 'Product Collection')
+          }
+        } catch (error) {
+          console.error('Error fetching niche data:', error)
+        }
+      }
+      
       setLoading(false)
     }
 
     loadData()
-  }, [params])
+  }, [params, nicheId])
 
   if (loading) {
     return (
@@ -80,7 +102,7 @@ export default function ListingPage({ params }: ListingPageProps) {
                   <p className="text-base text-gray-600">Title, images, A+ content & video strategy</p>
                 </div>
               </div>
-              <Link href={`/products/${slug}`}>
+              <Link href={`/products/${slug}${nicheId ? `?nicheId=${nicheId}` : ''}`}>
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Overview
@@ -107,8 +129,8 @@ export default function ListingPage({ params }: ListingPageProps) {
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <nav className="flex text-sm text-gray-500">
-          <Link href={`/products/${slug}`} className="hover:text-blue-600">
-            {mockProductData.title}
+          <Link href={`/products/${slug}${nicheId ? `?nicheId=${nicheId}` : ''}`} className="hover:text-blue-600">
+            {nicheName || 'Product Analysis'}
           </Link>
           <span className="mx-2">/</span>
           <span className="text-gray-900">Listing Optimization</span>
@@ -119,7 +141,11 @@ export default function ListingPage({ params }: ListingPageProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
 
         {/* Listing Optimization Component */}
-        <ListingOptimization data={mockProductData} />
+        <ListingOptimization data={{
+          ...mockProductData,
+          nicheId: nicheId,
+          nicheName: nicheName
+        }} />
       </div>
     </div>
   )

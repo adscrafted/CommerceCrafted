@@ -3,6 +3,7 @@
 import { useAuth } from '@/lib/supabase/auth-context'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { ArrowLeft, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -17,8 +18,10 @@ interface IntelligencePageProps {
 
 export default function IntelligencePage({ params }: IntelligencePageProps) {
   const { user, loading: authLoading } = useAuth()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [slug, setSlug] = useState<string>('')
+  const nicheId = searchParams.get('nicheId')
 
   useEffect(() => {
     const loadData = async () => {
@@ -86,7 +89,7 @@ export default function IntelligencePage({ params }: IntelligencePageProps) {
                   <p className="text-base text-gray-600">Deep analysis of customer sentiment & niche dynamics</p>
                 </div>
               </div>
-              <Link href={`/products/${slug}`}>
+              <Link href={`/products/${slug}${nicheId ? `?nicheId=${nicheId}` : ''}`}>
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Overview
@@ -113,8 +116,8 @@ export default function IntelligencePage({ params }: IntelligencePageProps) {
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <nav className="flex text-sm text-gray-500">
-          <Link href={`/products/${slug}`} className="hover:text-blue-600">
-            {mockProductData.title}
+          <Link href={`/products/${slug}${nicheId ? `?nicheId=${nicheId}` : ''}`} className="hover:text-blue-600">
+            Product Analysis
           </Link>
           <span className="mx-2">/</span>
           <span className="text-gray-900">Market Intelligence</span>
