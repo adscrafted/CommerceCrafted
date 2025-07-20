@@ -35,9 +35,26 @@ interface KeywordNetworkProps {
   keywordClusters: KeywordClusters
   primaryKeyword: string
   className?: string
+  nodeColorScheme?: {
+    center: string
+    root: string
+    subroot: string
+    level2: string
+  }
+  revenueData?: any
+  currentLevel?: 'root' | 'subroot' | 'level2'
+  onNodeClick?: (nodeLabel: string) => void
 }
 
-export default function KeywordNetwork({ keywordClusters, primaryKeyword, className = '' }: KeywordNetworkProps) {
+export default function KeywordNetwork({ 
+  keywordClusters, 
+  primaryKeyword, 
+  className = '', 
+  nodeColorScheme,
+  revenueData,
+  currentLevel = 'root',
+  onNodeClick
+}: KeywordNetworkProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const simulationRef = useRef<d3.Simulation<NetworkNode, NetworkLink> | null>(null)
   const [isExpanded, setIsExpanded] = useState(true)
@@ -45,14 +62,44 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [nodes, setNodes] = useState<NetworkNode[]>([])
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [zoomLevel, setZoomLevel] = useState(1)
+  const [zoomLevel, setZoomLevel] = useState(0.8) // Start more zoomed out to fit all nodes
   const [panX, setPanX] = useState(0)
   const [panY, setPanY] = useState(0)
   const [isPanning, setIsPanning] = useState(false)
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 })
   
-  const height = isFullscreen ? window.innerHeight - 40 : 800
-  const width = isFullscreen ? window.innerWidth - 40 : 800
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dimensions, setDimensions] = useState({ width: 800, height: 700 })
+  
+  const height = isFullscreen ? window.innerHeight - 40 : (dimensions.height || 700)
+  const width = isFullscreen ? window.innerWidth - 40 : dimensions.width
+
+  // Handle responsive sizing
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current && !isFullscreen) {
+        const rect = containerRef.current.getBoundingClientRect()
+        setDimensions({
+          width: rect.width || 800,
+          height: 700
+        })
+      }
+    }
+    
+    updateDimensions()
+    window.addEventListener('resize', updateDimensions)
+    return () => window.removeEventListener('resize', updateDimensions)
+  }, [isFullscreen])
+
+  // Handle fullscreen changes (including ESC key)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
 
   useEffect(() => {
     if (!svgRef.current || !keywordClusters || !primaryKeyword) return
@@ -60,18 +107,62 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
     // Clear previous content
     d3.select(svgRef.current).selectAll('*').remove()
 
+    // Increased padding to prevent node clipping, especially at the bottom
+    const padding = 300
+
     // Create nodes and links
     const nodes: NetworkNode[] = []
     const links: NetworkLink[] = []
 
-    // Color scheme for clusters
-    const colors = {
-      technology: '#3B82F6', // blue
-      audio: '#10B981',      // green
-      comfort: '#8B5CF6',    // purple
-      travel: '#F59E0B',     // amber
-      blackout: '#EF4444',   // red
-      center: '#1F2937'      // gray-800
+    // Use custom color scheme or default
+    const colors = nodeColorScheme || {
+      center: '#1F2937',    // gray-800
+      root: '#3B82F6',      // blue-500
+      subroot: '#10B981',   // green-500
+      level2: '#8B5CF6'     // purple-500
+    }
+    
+    // Predefined color palette for different root nodes
+    const rootColorPalette = [
+      '#3B82F6', // blue-500
+      '#10B981', // green-500
+      '#8B5CF6', // purple-500
+      '#F59E0B', // amber-500
+      '#EF4444', // red-500
+      '#EC4899', // pink-500
+      '#14B8A6', // teal-500
+      '#F97316', // orange-500
+      '#6366F1', // indigo-500
+      '#84CC16', // lime-500
+      '#06B6D4', // cyan-500
+      '#A855F7', // purple-500
+      '#FB923C', // orange-400
+      '#FBBF24', // yellow-400
+      '#34D399'  // emerald-400
+    ]
+    
+    // Map to store root node colors
+    const rootNodeColors = new Map()
+    let colorIndex = 0
+    
+    // Function to get revenue for sizing
+    const getRevenue = (nodeName: string) => {
+      if (!revenueData) return 0
+      return revenueData[nodeName]?.totalRevenue || 0
+    }
+    
+    // Function to calculate node size based on revenue
+    const calculateNodeSize = (revenue: number, type: string) => {
+      const minSize = type === 'center' ? 50 : type === 'cluster' ? 30 : 20
+      const maxSize = type === 'center' ? 70 : type === 'cluster' ? 50 : 35
+      
+      // Scale logarithmically for better visual distribution
+      if (revenue <= 0) return minSize
+      const logRevenue = Math.log10(revenue + 1)
+      const maxLogRevenue = 6 // Assuming max revenue is around 1M
+      const scale = Math.min(logRevenue / maxLogRevenue, 1)
+      
+      return minSize + (maxSize - minSize) * scale
     }
 
     // Add center node with better sizing
@@ -81,23 +172,42 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
       type: 'center',
       size: 60,
       color: colors.center,
-      fx: width / 2,
-      fy: height / 2
+      fx: width / 2 + padding,
+      fy: height / 2 + padding
     })
 
     // Add cluster nodes and their connections
     Object.entries(keywordClusters || {}).forEach(([clusterName, cluster]) => {
-      const clusterColor = colors[clusterName as keyof typeof colors] || '#6B7280'
+      // Determine node color based on current level and type
+      let nodeColor = colors.root
       
-      // Add cluster root node with better sizing
+      if (currentLevel === 'root') {
+        // Assign unique color to each root node
+        if (!rootNodeColors.has(clusterName)) {
+          rootNodeColors.set(clusterName, rootColorPalette[colorIndex % rootColorPalette.length])
+          colorIndex++
+        }
+        nodeColor = rootNodeColors.get(clusterName)
+      } else if (currentLevel === 'subroot') {
+        nodeColor = colors.root // Roots in subroot view
+      } else if (currentLevel === 'level2') {
+        nodeColor = colors.subroot // Subroots in level2 view
+      }
+      
+      // Get revenue for sizing
+      const revenue = getRevenue(clusterName)
+      const nodeSize = calculateNodeSize(revenue, 'cluster')
+      
+      // Add cluster root node with revenue-based sizing
       const clusterId = `cluster-${clusterName}`
       nodes.push({
         id: clusterId,
         label: cluster.root,
         type: 'cluster',
         cluster: clusterName,
-        size: 40,
-        color: clusterColor
+        size: nodeSize,
+        color: nodeColor,
+        volume: revenue
       })
 
       // Link cluster to center
@@ -111,13 +221,25 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
       if (showSubroots || isExpanded) {
         cluster.subroots.forEach((subroot, index) => {
           const subrootId = `subroot-${clusterName}-${index}`
+          
+          // Determine subroot color based on level
+          let subrootColor = colors.subroot
+          if (currentLevel === 'level2') {
+            subrootColor = colors.level2 // Level 2 nodes in level2 view
+          }
+          
+          // Get revenue for subroot sizing (if available)
+          const subrootRevenue = revenueData?.[subroot]?.totalRevenue || 0
+          const subrootSize = calculateNodeSize(subrootRevenue, 'subroot')
+          
           nodes.push({
             id: subrootId,
             label: subroot,
             type: 'subroot',
             cluster: clusterName,
-            size: 28,
-            color: d3.color(clusterColor)?.brighter(0.5)?.toString() || clusterColor
+            size: subrootSize,
+            color: subrootColor,
+            volume: subrootRevenue
           })
 
           // Link subroot to cluster
@@ -137,8 +259,7 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
                 type: 'keyword',
                 cluster: clusterName,
                 size: 22,
-                color: d3.color(clusterColor)?.brighter(1)?.toString() || clusterColor,
-                volume: Math.floor(Math.random() * 10000) + 1000 // Mock volume
+                color: d3.color(clusterColor)?.brighter(1)?.toString() || clusterColor
               })
 
               // Link keyword to subroot
@@ -153,16 +274,25 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
       }
     })
 
-    // Create SVG
+    // Create SVG with padding for overflow
     const svg = d3.select(svgRef.current)
       .attr('width', width)
       .attr('height', height)
-      .attr('viewBox', [0, 0, width, height])
+      .attr('viewBox', [-padding/2, -padding/2, width + padding, height + padding])
+      .attr('preserveAspectRatio', 'xMidYMid meet')
 
+    // Adjust force strength based on number of nodes for better fit
+    const nodeCount = nodes.length
+    const chargeStrength = nodeCount > 10 ? -1200 : nodeCount > 5 ? -800 : -600
+    const linkDistance = nodeCount > 10 ? 180 : nodeCount > 5 ? 140 : 120
+    
     // Create simulation with better spacing and collision detection
     const simulation = d3.forceSimulation<NetworkNode>(nodes)
-      .force('link', d3.forceLink<NetworkNode, NetworkLink>(links).id(d => d.id).strength(d => d.strength * 0.6))
-      .force('charge', d3.forceManyBody().strength(-600))
+      .force('link', d3.forceLink<NetworkNode, NetworkLink>(links)
+        .id(d => d.id)
+        .strength(d => d.strength * 0.5)
+        .distance(linkDistance))
+      .force('charge', d3.forceManyBody().strength(chargeStrength))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force('collision', d3.forceCollide().radius(d => {
         const node = d as NetworkNode
@@ -170,10 +300,10 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
         const textLength = node.label.length
         const baseRadius = node.size
         const textRadius = Math.max(textLength * 3, baseRadius * 1.5)
-        return textRadius + 10
+        return textRadius + 20 // Increased spacing
       }))
-      .force('x', d3.forceX(width / 2).strength(0.1))
-      .force('y', d3.forceY(height / 2).strength(0.1))
+      .force('x', d3.forceX(width / 2).strength(0.05))
+      .force('y', d3.forceY(height / 2).strength(0.05))
 
     simulationRef.current = simulation
     setNodes(nodes)
@@ -349,6 +479,11 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
         setSelectedNode(null)
       })
       .on('click', function(event, d) {
+        // Call the callback to update scorecards
+        if (onNodeClick && d.label) {
+          onNodeClick(d.label)
+        }
+        
         // Double-click to focus on a cluster
         if (d.type === 'cluster') {
           const clusterNodes = nodes.filter(n => n.cluster === d.cluster || n.id === d.id)
@@ -403,9 +538,10 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
     if (simulationRef.current) {
       simulationRef.current.alpha(1).restart()
     }
-    // Reset pan position
+    // Reset pan and zoom to defaults
     setPanX(0)
     setPanY(0)
+    setZoomLevel(0.85)
   }
 
   const handleZoomIn = () => {
@@ -417,7 +553,23 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
   }
 
   const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen)
+    if (!document.fullscreenElement) {
+      // Enter fullscreen
+      if (containerRef.current) {
+        containerRef.current.requestFullscreen().then(() => {
+          setIsFullscreen(true)
+        }).catch((err) => {
+          console.error('Error attempting to enable fullscreen:', err)
+        })
+      }
+    } else {
+      // Exit fullscreen
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false)
+      }).catch((err) => {
+        console.error('Error attempting to exit fullscreen:', err)
+      })
+    }
   }
 
   const handlePanStart = (event: React.MouseEvent) => {
@@ -444,7 +596,7 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
   }
 
   return (
-    <div className={`relative bg-gray-50 ${className} ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}>
+    <div ref={containerRef} className={`relative bg-gray-50 ${className} ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}>
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         <Button
           variant="outline"
@@ -487,10 +639,11 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
       </div>
       
       <div 
-        className="p-0" 
+        className="p-0 w-full h-full" 
         style={{ 
           overflow: 'hidden',
-          cursor: isPanning ? 'grabbing' : 'grab'
+          cursor: isPanning ? 'grabbing' : 'grab',
+          position: 'relative'
         }}
         onMouseDown={handlePanStart}
         onMouseMove={handlePanMove}
@@ -500,9 +653,14 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
         <div style={{ 
           transform: `scale(${zoomLevel}) translate(${panX}px, ${panY}px)`, 
           transformOrigin: 'center', 
-          transition: isPanning ? 'none' : 'transform 0.2s' 
+          transition: isPanning ? 'none' : 'transform 0.2s',
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}>
-          <svg ref={svgRef} className="w-full" style={{ height: `${height}px` }} />
+          <svg ref={svgRef} style={{ width: `${width}px`, height: `${height}px` }} />
         </div>
       </div>
       
@@ -535,31 +693,45 @@ export default function KeywordNetwork({ keywordClusters, primaryKeyword, classN
       )}
 
       <div className="px-4 pb-4 absolute bottom-0 left-0 right-0 bg-white bg-opacity-90">
-        <div className="text-xs text-gray-500 flex flex-wrap gap-4">
-          <span className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-gray-800"></div>
-            Primary Keyword
-          </span>
-          <span className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-            Technology
-          </span>
-          <span className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            Audio
-          </span>
-          <span className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-            Comfort
-          </span>
-          <span className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-            Travel
-          </span>
-          <span className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            Blackout
-          </span>
+        <div className="text-xs text-gray-500 flex items-center justify-between">
+          <div className="flex flex-wrap gap-4">
+            <span className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded-full bg-gray-800"></div>
+              {primaryKeyword}
+            </span>
+            {currentLevel === 'root' && (
+              <span className="text-gray-400">
+                Each root keyword has a unique color
+              </span>
+            )}
+            {currentLevel === 'subroot' && (
+              <>
+                <span className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  Roots
+                </span>
+                <span className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  Subroots
+                </span>
+              </>
+            )}
+            {currentLevel === 'level2' && (
+              <>
+                <span className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  Subroots
+                </span>
+                <span className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                  Level 2 Subroots
+                </span>
+              </>
+            )}
+          </div>
+          <div className="text-gray-400">
+            Node size = Monthly Revenue
+          </div>
         </div>
       </div>
     </div>
