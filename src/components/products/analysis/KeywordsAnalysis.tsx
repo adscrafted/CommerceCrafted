@@ -20,11 +20,9 @@ import {
   Sparkles,
   Eye,
   List,
-  Network,
   Activity,
   Maximize2
 } from 'lucide-react'
-import KeywordNetworkVisualization from '@/components/KeywordNetworkVisualization'
 import { Button } from '@/components/ui/button'
 
 interface KeywordsAnalysisProps {
@@ -220,7 +218,7 @@ const KeywordPivotTable = ({
                     <span>{metrics.uniqueAsins}</span>
                   </td>
                   <td className="py-3 px-3 text-center text-sm">
-                    <span className="font-medium">{(rootData.keywordCount || 0).toLocaleString()}</span>
+                    <span className="font-medium">{(rootData.keywordCount || 0).toLocaleString('en-US')}</span>
                   </td>
                   <td className="py-3 px-3 text-center text-sm">
                     <span>
@@ -275,7 +273,7 @@ const KeywordPivotTable = ({
                           <span>{subrootMetrics.uniqueAsins}</span>
                         </td>
                         <td className="py-3 px-3 text-center text-sm">
-                          <span>{(subrootData.keywordCount || 0).toLocaleString()}</span>
+                          <span>{(subrootData.keywordCount || 0).toLocaleString('en-US')}</span>
                         </td>
                         <td className="py-3 px-3 text-center text-sm">
                           <span>${(subrootData.totalRevenue / 1000).toFixed(0)}K</span>
@@ -330,10 +328,10 @@ const KeywordPivotTable = ({
                               <span>${keywordMetrics.netProfit.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
                             </td>
                             <td className="py-2 px-3 text-center text-sm">
-                              <span>{keywordMetrics.clicks.toLocaleString()}</span>
+                              <span>{keywordMetrics.clicks.toLocaleString('en-US')}</span>
                             </td>
                             <td className="py-2 px-3 text-center text-sm">
-                              <span>{keywordMetrics.orders.toLocaleString()}</span>
+                              <span>{keywordMetrics.orders.toLocaleString('en-US')}</span>
                             </td>
                             <td className="py-2 px-3 text-center text-sm">
                               <span>{parseFloat(keyword.conversionRate).toFixed(0)}%</span>
@@ -627,7 +625,7 @@ const KeywordProfitAnalysis = ({
                       <span className="font-medium text-gray-900 text-sm">{item.name}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-3 text-center text-sm">{item.keywordCount.toLocaleString()}</td>
+                  <td className="py-3 px-3 text-center text-sm">{item.keywordCount.toLocaleString('en-US')}</td>
                   <td className="py-3 px-3 text-center text-sm">
                     ${item.revenue >= 1000000 
                       ? (item.revenue / 1000000).toFixed(2) + 'M'
@@ -691,7 +689,7 @@ const KeywordProfitAnalysis = ({
                           <span className="text-sm text-gray-700">↳ {subroot.name}</span>
                         </div>
                       </td>
-                      <td className="py-2 px-3 text-center text-sm">{subroot.keywordCount.toLocaleString()}</td>
+                      <td className="py-2 px-3 text-center text-sm">{subroot.keywordCount.toLocaleString('en-US')}</td>
                       <td className="py-2 px-3 text-center text-sm">
                         ${subroot.revenue >= 1000 
                           ? (subroot.revenue / 1000).toFixed(0) + 'K'
@@ -899,7 +897,7 @@ const KeywordProfitAnalysis = ({
           <CardContent className="p-6 text-center">
             <h3 className="text-sm font-medium text-gray-600">Total Profitable Keywords</h3>
             <div className="text-2xl font-bold text-blue-600 mt-2">
-              {profitable.reduce((sum, item) => sum + item.keywordCount, 0).toLocaleString()}
+              {profitable.reduce((sum, item) => sum + item.keywordCount, 0).toLocaleString('en-US')}
             </div>
           </CardContent>
         </Card>
@@ -932,7 +930,6 @@ export default function KeywordsAnalysis({ data, searchTermsData }: KeywordsAnal
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
         {[
           { id: 'hierarchy', label: 'Keyword Hierarchy', icon: List },
-          { id: 'network', label: 'Keyword Network', icon: Network },
           { id: 'profit', label: 'Keyword Profitability', icon: DollarSign },
           { id: 'trending', label: 'Trending Keywords', icon: TrendingUp }
         ].map((tab) => (
@@ -989,7 +986,7 @@ export default function KeywordsAnalysis({ data, searchTermsData }: KeywordsAnal
                   <div className="text-2xl font-bold text-gray-900">
                     {Object.values(data.keywordsData.keywordHierarchy).reduce((sum: number, root: any) => 
                       sum + (root.keywordCount || 0), 0
-                    ).toLocaleString()}
+                    ).toLocaleString('en-US')}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">Unique keywords tracked</p>
                 </CardContent>
@@ -1167,7 +1164,7 @@ export default function KeywordsAnalysis({ data, searchTermsData }: KeywordsAnal
                         <div>
                           <h4 className="font-semibold text-gray-900">{keyword.keyword}</h4>
                           <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
-                            <span>Volume: {keyword.currentVolume.toLocaleString()}</span>
+                            <span>Volume: {keyword.currentVolume.toLocaleString('en-US')}</span>
                             <span>CPC: ${keyword.cpc}</span>
                             <span className="capitalize">Seasonality: {keyword.seasonality}</span>
                           </div>
@@ -1225,11 +1222,11 @@ export default function KeywordsAnalysis({ data, searchTermsData }: KeywordsAnal
                       <div className="grid grid-cols-4 gap-2 text-sm">
                         <div className="text-center p-2 bg-blue-50 rounded">
                           <div className="font-semibold">{keyword.peak.month}</div>
-                          <div className="text-xs text-gray-600">{keyword.peak.volume.toLocaleString()}</div>
+                          <div className="text-xs text-gray-600">{keyword.peak.volume.toLocaleString('en-US')}</div>
                         </div>
                         <div className="text-center p-2 bg-gray-50 rounded">
                           <div className="font-semibold">Off-peak</div>
-                          <div className="text-xs text-gray-600">{keyword.offPeak.volume.toLocaleString()}</div>
+                          <div className="text-xs text-gray-600">{keyword.offPeak.volume.toLocaleString('en-US')}</div>
                         </div>
                         <div className="text-center p-2 bg-green-50 rounded">
                           <div className="font-semibold">{keyword.multiplier}x</div>
@@ -1246,84 +1243,6 @@ export default function KeywordsAnalysis({ data, searchTermsData }: KeywordsAnal
               </CardContent>
             </Card>
           )}
-        </div>
-      )}
-
-      {/* Network Tab */}
-      {activeTab === 'network' && (
-        <div className="space-y-6">
-          {/* Keyword Network Visualization */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Network className="h-5 w-5 text-purple-600" />
-                <span>Keyword Relationship Network</span>
-              </CardTitle>
-              <CardDescription>
-                Visual representation of keyword relationships and clusters
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {data.keywordsData?.keywordHierarchy ? (
-                <KeywordNetworkVisualization 
-                  keywordHierarchy={data.keywordsData.keywordHierarchy}
-                  primaryKeyword={data.nicheName || 'Berberine Supplements'}
-                  minKeywordsPerRoot={minKeywordsPerRoot}
-                  minKeywordsPerSubRoot={minKeywordsPerSubRoot}
-                  onMinKeywordsPerRootChange={setMinKeywordsPerRoot}
-                  onMinKeywordsPerSubRootChange={setMinKeywordsPerSubRoot}
-                />
-              ) : (
-                <div className="h-[600px] w-full flex items-center justify-center text-gray-500">
-                  <p>No keyword hierarchy data available for network visualization</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Keyword Clusters */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Keyword Clusters</CardTitle>
-              <CardDescription>
-                Groups of related keywords that can be targeted together
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-4">
-                {data.keywordsData?.keywordTierStrategy && Object.keys(data.keywordsData.keywordTierStrategy).length > 0 ? Object.entries(data.keywordsData.keywordTierStrategy).map(([tier, tierData]: [string, any], index: number) => (
-                  <div key={index} className="p-4 border rounded-lg">
-                    <h4 className="font-semibold text-gray-900 mb-2">
-                      {tier === 'tier1HighValue' ? 'Tier 1: High Value' : 
-                       tier === 'tier2Moderate' ? 'Tier 2: Moderate' : 
-                       'Tier 3: Discovery'}
-                    </h4>
-                    <div className="text-sm text-gray-600 mb-3">
-                      {tierData.keywords?.length || 0} keywords • Avg CPC: ${tierData.averageCpc || 'N/A'} • ROI: {tierData.expectedRoi || 'N/A'}%
-                    </div>
-                    <p className="text-xs text-gray-500 mb-3">{tierData.strategy}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {tierData.keywords?.slice(0, 5).map((keyword: string, i: number) => (
-                        <Badge key={i} variant="outline" className="text-xs">
-                          {keyword}
-                        </Badge>
-                      ))}
-                      {tierData.keywords?.length > 5 && (
-                        <Badge variant="secondary" className="text-xs">
-                          +{tierData.keywords.length - 5} more
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                )) : (
-                  <div className="col-span-2 text-center py-8">
-                    <div className="text-gray-500 mb-2">No keyword clusters available</div>
-                    <p className="text-gray-600 text-sm">Keyword clustering and tier strategy will be displayed here when available.</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         </div>
       )}
 
@@ -1347,7 +1266,7 @@ export default function KeywordsAnalysis({ data, searchTermsData }: KeywordsAnal
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Search Volume:</span>
-                      <span className="font-medium">{term.searchVolume?.toLocaleString() || 'N/A'}</span>
+                      <span className="font-medium">{term.searchVolume?.toLocaleString('en-US') || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Competition:</span>
@@ -1360,6 +1279,48 @@ export default function KeywordsAnalysis({ data, searchTermsData }: KeywordsAnal
                   </div>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Rising Keywords */}
+      {data.demandData?.trendingKeywords && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <TrendingUp className="h-5 w-5 text-green-600" />
+              <span>Rising Keywords</span>
+            </CardTitle>
+            <CardDescription>
+              Top search terms with highest growth velocity in the niche
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {data.demandData.trendingKeywords.slice(0, 6).map((keyword: any, index: number) => (
+                <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-gradient-to-r from-green-50 to-emerald-50">
+                  <div className="flex-grow">
+                    <h5 className="font-medium text-gray-900 text-sm">{keyword.keyword}</h5>
+                    <div className="flex items-center space-x-3 mt-1 text-xs text-gray-600">
+                      <span>Rank: #{keyword.oldRank} → #{keyword.newRank}</span>
+                      <Badge variant="secondary" className="text-xs">{keyword.growth}</Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-bold text-green-600">
+                      {parseInt(keyword.growth) > 100 ? '🔥' : '↑'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">Opportunity</h4>
+              <p className="text-sm text-gray-700">
+                These rapidly growing keywords represent emerging demand. Target these terms early to capture market share before competition intensifies.
+              </p>
             </div>
           </CardContent>
         </Card>

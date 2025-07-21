@@ -3,6 +3,7 @@
 import { useAuth } from '@/lib/supabase/auth-context'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { ArrowLeft, Rocket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,8 +19,10 @@ interface LaunchPageProps {
 
 export default function LaunchPage({ params }: LaunchPageProps) {
   const { user, loading: authLoading } = useAuth()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [slug, setSlug] = useState<string>('')
+  const nicheId = searchParams.get('nicheId')
 
   useEffect(() => {
     const loadData = async () => {
@@ -84,7 +87,7 @@ export default function LaunchPage({ params }: LaunchPageProps) {
                   <p className="text-base text-gray-600">90-day launch plan & PPC strategy</p>
                 </div>
               </div>
-              <Link href={`/products/${slug}`}>
+              <Link href={`/products/${slug}${nicheId ? `?nicheId=${nicheId}` : ''}`}>
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Overview
