@@ -219,6 +219,34 @@ export class NicheProcessor {
       const price = keepaResult.currentPrice || 0
       const sanitizedPrice = price < 0 ? 0 : price // Convert negative prices to 0
       
+      // Calculate first seen date if we have product age info
+      let firstSeenDate = null
+      let productAgeMonths = null
+      let productAgeCategory = null
+      
+      if (keepaResult.productAge) {
+        // Convert months to date
+        const monthsAgo = keepaResult.productAge.months || 0
+        firstSeenDate = new Date()
+        firstSeenDate.setMonth(firstSeenDate.getMonth() - monthsAgo)
+        
+        productAgeMonths = Math.round(monthsAgo)
+        productAgeCategory = keepaResult.productAge.category
+      } else if (keepaResult.firstSeenTimestamp) {
+        // Use timestamp if available
+        firstSeenDate = new Date(keepaResult.firstSeenTimestamp)
+        const now = new Date()
+        const monthsDiff = (now.getTime() - firstSeenDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44)
+        productAgeMonths = Math.round(monthsDiff)
+        
+        // Determine category
+        if (monthsDiff < 6) productAgeCategory = '0-6 months'
+        else if (monthsDiff < 12) productAgeCategory = '6-12 months'
+        else if (monthsDiff < 24) productAgeCategory = '1-2 years'
+        else if (monthsDiff < 36) productAgeCategory = '2-3 years'
+        else productAgeCategory = '3+ years'
+      }
+
       const productData = {
         id: asin,
         asin: asin,
@@ -237,6 +265,16 @@ export class NicheProcessor {
         status: 'ACTIVE' as const,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        // Store product age in dedicated columns
+        first_seen_date: firstSeenDate ? firstSeenDate.toISOString() : null,
+        product_age_months: productAgeMonths,
+        product_age_category: productAgeCategory,
+        // Store all Keepa data including product age
+        keepa_data: JSON.stringify({
+          ...keepaResult,
+          productAge: keepaResult.productAge,
+          firstSeenTimestamp: keepaResult.firstSeenTimestamp
+        }),
         // Store additional Keepa fields
         length: keepaResult.packageDimensions?.length || null,
         width: keepaResult.packageDimensions?.width || null,

@@ -124,9 +124,13 @@ export async function POST(request: NextRequest) {
       priceHistory: parsePriceHistory(product.csv?.[0], product.csv?.[18]),
       salesRankHistory: parseSalesRankHistory(product.csv?.[3], product.csv?.[18]),
       
-      // Keepa metadata
+      // Keepa metadata and product age
       lastUpdate: product.lastUpdate,
       lastPriceChange: product.lastPriceChange,
+      // Product first seen date (when it was first tracked by Keepa)
+      firstSeenTimestamp: product.csv?.[18] || null, // Keepa timebase
+      productAge: product.csv?.[18] ? calculateProductAge(product.csv[18]) : null,
+      releaseDate: product.releaseDate || null,
       tokensConsumed: data.tokensConsumed
     }
     
@@ -216,4 +220,27 @@ function parseSalesRankHistory(csv: number[] | undefined, timebase: number | und
   }
   
   return history
+}
+
+// Calculate product age in months from Keepa timebase
+function calculateProductAge(keepaTimebase: number): { months: number, years: number, category: string } {
+  // Convert Keepa time to milliseconds (Keepa time is in minutes since Jan 1, 2011)
+  const keepaEpoch = new Date('2011-01-01').getTime()
+  const firstSeenDate = new Date(keepaEpoch + (keepaTimebase * 60000))
+  const now = new Date()
+  
+  const monthsDiff = (now.getTime() - firstSeenDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44)
+  const yearsDiff = monthsDiff / 12
+  
+  let category = '3+ years'
+  if (monthsDiff < 6) category = '0-6 months'
+  else if (monthsDiff < 12) category = '6-12 months'
+  else if (monthsDiff < 24) category = '1-2 years'
+  else if (monthsDiff < 36) category = '2-3 years'
+  
+  return {
+    months: Math.round(monthsDiff),
+    years: parseFloat(yearsDiff.toFixed(1)),
+    category
+  }
 }
