@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import DemandAnalysis from '@/components/products/analysis/DemandAnalysis'
-import DemandAnalysisReal from '@/components/products/analysis/DemandAnalysisReal'
 import { MembershipGate } from '@/components/MembershipGate'
 import { mockProductData } from '@/lib/mockProductData'
 
@@ -424,16 +423,11 @@ export default function DemandPage({ params }: DemandPageProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Demand Analysis Component - Use real component if we have product data */}
         {console.log('Render check - nicheData:', nicheData, 'products:', nicheData?.products)}
-        {nicheData?.products && nicheData.products.length > 0 ? (
-          <>
-            <DemandAnalysis data={productData} />
-            <div className="mt-6">
-              <DemandAnalysisReal products={nicheData.products} />
-            </div>
-          </>
-        ) : (
-          <DemandAnalysis data={productData} />
-        )}
+        <DemandAnalysis 
+          data={productData} 
+          nicheId={nicheId} 
+          nicheData={nicheData}
+        />
       </div>
     </div>
   )
