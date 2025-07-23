@@ -616,9 +616,9 @@ const KeywordProfitAnalysis = ({
                       {item.subroots.length > 0 && (
                         <button className="p-1 hover:bg-gray-200 rounded">
                           {expandedRoots.has(item.name) ? (
-                            <ChevronUp className="h-4 w-4 text-gray-600" />
+                            <ChevronDown className="h-4 w-4 text-gray-500" />
                           ) : (
-                            <ChevronDown className="h-4 w-4 text-gray-600" />
+                            <ArrowRight className="h-4 w-4 text-gray-500" />
                           )}
                         </button>
                       )}
@@ -680,9 +680,9 @@ const KeywordProfitAnalysis = ({
                           {subroot.keywords && subroot.keywords.length > 0 && (
                             <button className="p-1 hover:bg-gray-200 rounded">
                               {expandedSubroots.has(`${item.name}-${subroot.name}`) ? (
-                                <ChevronUp className="h-3 w-3 text-gray-600" />
+                                <ChevronDown className="h-3 w-3 text-gray-500" />
                               ) : (
-                                <ChevronDown className="h-3 w-3 text-gray-600" />
+                                <ArrowRight className="h-3 w-3 text-gray-500" />
                               )}
                             </button>
                           )}

@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { Database } from './database.types'
 
@@ -30,4 +31,12 @@ export const createServerSupabaseClient = async () => {
       },
     }
   )
+}
+
+// Service role client for background tasks (niche processor)
+export const createServiceSupabaseClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  
+  return createClient<Database>(supabaseUrl, supabaseServiceKey)
 }

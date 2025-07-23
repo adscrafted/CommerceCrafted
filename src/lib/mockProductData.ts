@@ -88,7 +88,30 @@ export const mockProductData = {
           consideration: 'Compares 5-10 products over 2 weeks',
           decision: 'Buys after finding reviews from verified shift workers',
           retention: 'Likely to buy extras for travel and recommend to coworkers'
-        }
+        },
+        reviewExamples: [
+          {
+            text: "Game changer for my night shifts! I work 7pm-7am as an ER nurse and sleeping during the day has always been my biggest challenge. The Bluetooth speakers are thin enough that I can sleep on my side without discomfort. The blackout is complete - no light gets through even in my bright bedroom. I pair it with white noise and I'm out within minutes. Already ordered two more for backup.",
+            rating: 5,
+            date: "2025-06-15",
+            verified: true,
+            helpfulVotes: 127
+          },
+          {
+            text: "As a security guard working graveyard shifts, quality day sleep is crucial. This mask blocks out 100% of sunlight and the speakers help me listen to rain sounds without disturbing my partner who works normal hours. Only giving 4 stars because the battery life could be better - I get about 8 hours which is just enough for my sleep schedule.",
+            rating: 4,
+            date: "2025-05-28",
+            verified: true,
+            helpfulVotes: 89
+          },
+          {
+            text: "ICU nurse here - this has literally saved my sanity. Working three 12-hour night shifts in a row is brutal, but being able to completely block out daylight and listen to meditation sounds has improved my sleep quality dramatically. The fabric is soft and doesn't leave marks on my face. Highly recommend to any healthcare worker struggling with shift work.",
+            rating: 5,
+            date: "2025-06-03",
+            verified: true,
+            helpfulVotes: 156
+          }
+        ]
       },
       {
         name: 'Meditation Enthusiast',
@@ -130,7 +153,30 @@ export const mockProductData = {
           consideration: 'Researches materials, reads spiritual community reviews',
           decision: 'Purchases after confirming audio quality meets standards',
           retention: 'Becomes brand advocate, gifts to meditation circle'
-        }
+        },
+        reviewExamples: [
+          {
+            text: "This has transformed my meditation practice! I've been meditating daily for 5 years, and finding quiet time in my busy household was always a struggle. The audio quality is exceptional for binaural beats and sound baths. I love that it's made with eco-friendly materials - aligns perfectly with my values. The complete darkness helps me go deeper into meditation than ever before.",
+            rating: 5,
+            date: "2025-06-22",
+            verified: true,
+            helpfulVotes: 203
+          },
+          {
+            text: "As a yoga instructor and meditation teacher, I recommend this to all my students. The speakers don't fall out during savasana or restorative poses like earbuds do. The sound quality for guided meditations is crystal clear. My only wish is that the battery lasted longer - I get about 10 hours which means charging every few days with my 2-hour daily practice.",
+            rating: 4,
+            date: "2025-05-18",
+            verified: true,
+            helpfulVotes: 178
+          },
+          {
+            text: "Perfect for my morning meditation ritual. I wake at 5am for my practice and this blocks out all distractions while I listen to Tibetan singing bowls. The fabric is so soft and breathable - no sweating during longer sessions. I've gifted 3 of these to my meditation group already. This is mindfulness technology done right!",
+            rating: 5,
+            date: "2025-06-01",
+            verified: true,
+            helpfulVotes: 145
+          }
+        ]
       },
       {
         name: 'Frequent Traveler',
@@ -172,7 +218,30 @@ export const mockProductData = {
           consideration: 'Quick research on battery life and packability',
           decision: 'Orders for next trip or buys at airport',
           retention: 'Replaces every 6-12 months due to heavy use'
-        }
+        },
+        reviewExamples: [
+          {
+            text: "Essential travel gear! I fly 100K+ miles annually for consulting and this has replaced my bulky noise-canceling headphones. Takes up no space in my carry-on, works perfectly on red-eyes, and the battery lasts my entire LAX to LHR flight. The sleep quality improvement has made me more productive at client sites. Worth every penny.",
+            rating: 5,
+            date: "2025-06-08",
+            verified: true,
+            helpfulVotes: 234
+          },
+          {
+            text: "Digital nomad here - this goes everywhere with me. From noisy hostels in Bangkok to overnight buses in South America, it's been a lifesaver. Love that I can wash it easily (important when living out of a backpack). The Bluetooth connection is stable and I can listen to podcasts without disturbing others. Only downside is I've lost 2 already in various hotels!",
+            rating: 4,
+            date: "2025-05-30",
+            verified: true,
+            helpfulVotes: 167
+          },
+          {
+            text: "Sales exec traveling 3-4 days/week. This mask has been clutch for maintaining my sleep schedule across time zones. The complete blackout helps trick my brain into sleeping at odd hours. Audio quality is good enough for audiobooks and white noise. Pro tip: I keep one in each of my travel bags so I never forget it. Small investment for huge productivity gains.",
+            rating: 5,
+            date: "2025-06-12",
+            verified: true,
+            helpfulVotes: 198
+          }
+        ]
       }
     ],
     socialSignals: {

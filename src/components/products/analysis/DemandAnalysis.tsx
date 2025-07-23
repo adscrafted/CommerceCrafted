@@ -416,6 +416,12 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart 
                         data={(() => {
+                          // Use real sales rank history data if available
+                          if (data.demandData.salesRankHistory && data.demandData.salesRankHistory.length > 0) {
+                            return data.demandData.salesRankHistory
+                          }
+                          
+                          // Fallback to synthetic data only if no real data
                           if (viewMode === 'individual' && selectedCompetitors.length > 0) {
                             // Generate data for multiple competitors
                             return Array.from({length: 52}, (_, i) => {
@@ -561,48 +567,80 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
                 </div>
 
                 {/* Competitor Cards */}
-                <div className="grid grid-cols-5 gap-3">
+                <div className="grid grid-cols-3 gap-4">
                   {data.demandData._nicheProducts?.length > 0 ? (
-                    data.demandData._nicheProducts.map((product: any, index: number) => (
+                    data.demandData._nicheProducts.slice(0, 9).map((product: any, index: number) => (
                       <div 
                         key={product.id} 
                         onClick={() => toggleCompetitor(product.asin)}
-                        className={`p-3 rounded-lg border-2 transition-all hover:shadow-md cursor-pointer ${
+                        className={`p-4 rounded-lg border-2 transition-all hover:shadow-md cursor-pointer ${
                           selectedCompetitors.includes(product.asin)
                             ? 'border-purple-300 bg-purple-50 shadow-lg' 
                             : 'border-gray-200 bg-white hover:border-gray-300'
                         }`}
                       >
-                        <div className="text-center relative">
-                          {product.image_url && (
-                            <img 
-                              src={product.image_url} 
-                              alt={product.title}
-                              className="w-10 h-10 object-cover rounded mx-auto mb-2"
-                            />
-                          )}
-                          <div className="text-lg font-bold text-gray-900 mb-1">
-                            #{product.bsr?.toLocaleString() || 'N/A'}
+                        <div className="flex items-start space-x-3">
+                          {/* Image on the left */}
+                          <div className="flex-shrink-0">
+                            {(() => {
+                              let imageUrl = null
+                              if (product.image_urls) {
+                                try {
+                                  // Try parsing as JSON first
+                                  const urls = typeof product.image_urls === 'string' ? JSON.parse(product.image_urls) : product.image_urls
+                                  imageUrl = Array.isArray(urls) ? urls[0] : urls
+                                } catch {
+                                  // If not JSON, try splitting by comma
+                                  const urls = product.image_urls.split(',').map((url: string) => url.trim())
+                                  imageUrl = urls[0]
+                                }
+                                // Convert to full URL if needed
+                                if (imageUrl && !imageUrl.startsWith('http')) {
+                                  imageUrl = `https://m.media-amazon.com/images/I/${imageUrl}`
+                                }
+                              }
+                              return imageUrl ? (
+                                <img 
+                                  src={imageUrl} 
+                                  alt={product.title}
+                                  className="w-20 h-20 object-cover rounded-lg"
+                                />
+                              ) : (
+                                <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                                  <span className="text-gray-400 text-xs">No Image</span>
+                                </div>
+                              )
+                            })()}
                           </div>
-                          <div className="text-xs text-gray-600 mb-1">
-                            {product.title?.substring(0, 25)}...
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {product.asin}
-                          </div>
-                          {selectedCompetitors.includes(product.asin) && (
-                            <>
-                              <div className="mt-1 text-xs font-medium text-purple-600">
-                                ✓ Selected
-                              </div>
-                              {viewMode === 'individual' && (
-                                <div 
-                                  className="absolute top-1 right-1 w-3 h-3 rounded-full"
-                                  style={{ backgroundColor: getCompetitorColor(selectedCompetitors.indexOf(product.asin)) }}
-                                ></div>
+                          
+                          {/* Metadata on the right */}
+                          <div className="flex-1 min-w-0 relative">
+                            <div className="text-lg font-bold text-gray-900">
+                              #{product.bsr?.toLocaleString() || 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-600 mb-1" title={product.title || 'Unknown Product'}>
+                              {product.title || 'Unknown Product'}
+                            </div>
+                            <div className="text-xs text-gray-500 mb-2">
+                              {product.asin}
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-green-600">
+                                ${product.price || 'N/A'}
+                              </span>
+                              {selectedCompetitors.includes(product.asin) && (
+                                <span className="text-xs font-medium text-purple-600">
+                                  ✓ Selected
+                                </span>
                               )}
-                            </>
-                          )}
+                            </div>
+                            {viewMode === 'individual' && selectedCompetitors.includes(product.asin) && (
+                              <div 
+                                className="absolute top-0 right-0 w-3 h-3 rounded-full"
+                                style={{ backgroundColor: getCompetitorColor(selectedCompetitors.indexOf(product.asin)) }}
+                              ></div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))
@@ -626,14 +664,21 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
                 <span>Seasonality Insights</span>
               </CardTitle>
               <CardDescription>
-                Detailed analysis of seasonal patterns and peak demand periods
+                {data.demandData.salesRankHistory?.length > 0 
+                  ? `Analysis based on ${data.demandData.salesRankHistory.length} historical data points` 
+                  : 'Detailed analysis of seasonal patterns and peak demand periods'
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 {/* Peak Seasons Analysis */}
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Peak Demand Periods</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Peak Demand Periods
+                    {data.demandData.salesRankHistory?.length > 0 && (
+                      <span className="ml-2 text-xs text-green-600 font-normal">● Based on Real Sales Rank Data</span>
+                    )}
+                  </h4>
                   <div className="grid md:grid-cols-3 gap-4">
                     <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
                       <div className="flex items-center justify-between mb-2">
@@ -677,55 +722,294 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
                   </div>
                 </div>
 
-                {/* Monthly Breakdown */}
+                {/* Weekly Pattern Analysis */}
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Monthly Performance Breakdown</h4>
-                  <div className="grid grid-cols-6 gap-2">
-                    {[
-                      { month: 'Jan', performance: 85, trend: '↗', color: 'bg-yellow-100 text-yellow-800' },
-                      { month: 'Feb', performance: 75, trend: '↘', color: 'bg-gray-100 text-gray-800' },
-                      { month: 'Mar', performance: 70, trend: '↗', color: 'bg-gray-100 text-gray-800' },
-                      { month: 'Apr', performance: 78, trend: '↗', color: 'bg-gray-100 text-gray-800' },
-                      { month: 'May', performance: 82, trend: '↗', color: 'bg-blue-100 text-blue-800' },
-                      { month: 'Jun', performance: 88, trend: '↗', color: 'bg-blue-100 text-blue-800' },
-                      { month: 'Jul', performance: 92, trend: '↗', color: 'bg-blue-100 text-blue-800' },
-                      { month: 'Aug', performance: 87, trend: '↘', color: 'bg-blue-100 text-blue-800' },
-                      { month: 'Sep', performance: 80, trend: '↘', color: 'bg-gray-100 text-gray-800' },
-                      { month: 'Oct', performance: 95, trend: '↗', color: 'bg-green-100 text-green-800' },
-                      { month: 'Nov', performance: 100, trend: '↗', color: 'bg-green-100 text-green-800' },
-                      { month: 'Dec', performance: 98, trend: '↘', color: 'bg-green-100 text-green-800' }
-                    ].map((item, index) => (
-                      <div key={item.month} className={`p-3 rounded-lg text-center ${item.color}`}>
-                        <div className="text-xs font-medium">{item.month}</div>
-                        <div className="text-lg font-bold">{item.performance}</div>
-                        <div className="text-xs">{item.trend}</div>
-                      </div>
-                    ))}
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Weekly Trend Analysis
+                    {(data.demandData.salesRankHistory?.length > 0 || data.demandData._priceHistory?.length > 0 || data.salesRankHistory?.length > 0 || data._nicheData?.salesRankHistory?.length > 0) && (
+                      <span className="ml-2 text-xs text-blue-600 font-normal">● Real Sales Rank Data</span>
+                    )}
+                  </h4>
+                  <div className="space-y-3">
+                    {(() => {
+                      // Check multiple possible data sources for sales rank history
+                      const salesRankData = data.demandData.salesRankHistory || 
+                                          data.demandData._priceHistory || 
+                                          data.salesRankHistory || 
+                                          data._nicheData?.salesRankHistory
+                      
+                      
+                      if (salesRankData?.length > 0) {
+                        // Use real sales rank data only
+                        const sortedData = [...salesRankData].sort((a, b) => 
+                          new Date(a.timestamp || a.date).getTime() - new Date(b.timestamp || b.date).getTime()
+                        )
+                        
+                        // Group by week and analyze trends
+                        const weeklyGroups: { [key: string]: number[] } = {}
+                        sortedData.forEach((entry: any) => {
+                          const date = new Date(entry.timestamp || entry.date)
+                          const weekKey = `${date.getFullYear()}-W${Math.ceil(date.getDate() / 7)}-${date.getMonth() + 1}`
+                          if (!weeklyGroups[weekKey]) weeklyGroups[weekKey] = []
+                          weeklyGroups[weekKey].push(entry.rank || entry.sales_rank)
+                        })
+                        
+                        const weeklyAverages = Object.entries(weeklyGroups).map(([week, ranks]) => ({
+                          week,
+                          avgRank: ranks.reduce((a, b) => a + b, 0) / ranks.length,
+                          dataPoints: ranks.length
+                        })).sort((a, b) => a.avgRank - b.avgRank)
+                        
+                        // Find best and worst performing periods
+                        const bestWeeks = weeklyAverages.slice(0, 3)
+                        const worstWeeks = weeklyAverages.slice(-3)
+                        const allRanks = Object.values(weeklyGroups).flat()
+                        const volatility = ((Math.max(...allRanks) - Math.min(...allRanks)) / Math.min(...allRanks) * 100).toFixed(0)
+                        
+                        return (
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                              <h5 className="font-medium text-green-900 mb-2">🚀 Peak Performance Periods</h5>
+                              <div className="space-y-1 text-sm">
+                                {bestWeeks.map((week, index) => (
+                                  <div key={index} className="text-green-700">
+                                    • Best rank: #{Math.round(week.avgRank).toLocaleString()} ({week.dataPoints} data points)
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="mt-2 text-xs text-green-600">
+                                Peak performance shows {volatility}% rank variation
+                              </div>
+                            </div>
+                            
+                            <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                              <h5 className="font-medium text-orange-900 mb-2">⚠️ Low Performance Periods</h5>
+                              <div className="space-y-1 text-sm">
+                                {worstWeeks.map((week, index) => (
+                                  <div key={index} className="text-orange-700">
+                                    • Weak period: #{Math.round(week.avgRank).toLocaleString()} ({week.dataPoints} data points)
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="mt-2 text-xs text-orange-600">
+                                Avoid major launches during these periods
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      } else {
+                        return (
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <p className="text-gray-500 text-sm">Weekly analysis requires historical sales rank data</p>
+                          </div>
+                        )
+                      }
+                    })()}
                   </div>
                 </div>
 
-                {/* Key Insights */}
+                {/* Enhanced Seasonality Insights */}
                 <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-3">Key Seasonal Insights</h4>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <h5 className="text-sm font-semibold text-gray-800 mb-2">🎯 Opportunity Windows</h5>
-                      <ul className="space-y-1 text-sm text-gray-700">
-                        <li>• <strong>September:</strong> Pre-order for holiday inventory</li>
-                        <li>• <strong>May:</strong> Prepare for summer travel season</li>
-                        <li>• <strong>December:</strong> Launch premium product variants</li>
-                        <li>• <strong>January:</strong> Target wellness and health markets</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h5 className="text-sm font-semibold text-gray-800 mb-2">📊 Market Patterns</h5>
-                      <ul className="space-y-1 text-sm text-gray-700">
-                        <li>• <strong>85% variance:</strong> High seasonal sensitivity</li>
-                        <li>• <strong>Q4 dominance:</strong> 45% of annual sales</li>
-                        <li>• <strong>Travel correlation:</strong> Strong summer performance</li>
-                        <li>• <strong>Weekly cycles:</strong> Weekend shopping spikes</li>
-                      </ul>
-                    </div>
+                  <h4 className="font-medium text-gray-900 mb-3">Detailed Seasonality Analysis
+                    {(data.demandData.salesRankHistory?.length > 0 || data.demandData._priceHistory?.length > 0 || data.salesRankHistory?.length > 0 || data._nicheData?.salesRankHistory?.length > 0) && (
+                      <span className="ml-2 text-xs text-indigo-600 font-normal">● Real Sales Rank Analysis</span>
+                    )}
+                  </h4>
+                  <div className="space-y-4">
+                    {(() => {
+                      // Check multiple possible data sources for sales rank history
+                      const salesRankData = data.demandData.salesRankHistory || 
+                                          data.demandData._priceHistory || 
+                                          data.salesRankHistory || 
+                                          data._nicheData?.salesRankHistory
+                      
+                      if (salesRankData?.length > 0) {
+                        // Use real sales rank data only
+                        const sortedData = [...salesRankData].sort((a, b) => 
+                          new Date(a.timestamp || a.date).getTime() - new Date(b.timestamp || b.date).getTime()
+                        )
+                        
+                        const ranks = sortedData.map((entry: any) => entry.rank || entry.sales_rank)
+                        const maxRank = Math.max(...ranks)
+                        const minRank = Math.min(...ranks)
+                        const variance = ((maxRank - minRank) / minRank * 100).toFixed(0)
+                        
+                        // Weekly volatility analysis
+                        const weeklyVolatility = []
+                        for (let i = 7; i < ranks.length; i += 7) {
+                          const weekRanks = ranks.slice(i-7, i)
+                          const weekVariance = ((Math.max(...weekRanks) - Math.min(...weekRanks)) / Math.min(...weekRanks) * 100)
+                          weeklyVolatility.push(weekVariance)
+                        }
+                        const avgWeeklyVolatility = (weeklyVolatility.reduce((a, b) => a + b, 0) / weeklyVolatility.length).toFixed(0)
+                        
+                        // Trend analysis - find consistent growth/decline periods
+                        const movingAverage = []
+                        const windowSize = 7 // 7-day moving average
+                        for (let i = windowSize - 1; i < ranks.length; i++) {
+                          const avg = ranks.slice(i - windowSize + 1, i + 1).reduce((a, b) => a + b, 0) / windowSize
+                          movingAverage.push(avg)
+                        }
+                        
+                        // Find longest trends
+                        let longestGrowthStreak = 0
+                        let longestDeclineStreak = 0
+                        let currentGrowthStreak = 0
+                        let currentDeclineStreak = 0
+                        
+                        for (let i = 1; i < movingAverage.length; i++) {
+                          if (movingAverage[i] < movingAverage[i-1]) { // Lower rank = better performance
+                            currentGrowthStreak++
+                            currentDeclineStreak = 0
+                          } else if (movingAverage[i] > movingAverage[i-1]) {
+                            currentDeclineStreak++
+                            currentGrowthStreak = 0
+                          }
+                          longestGrowthStreak = Math.max(longestGrowthStreak, currentGrowthStreak)
+                          longestDeclineStreak = Math.max(longestDeclineStreak, currentDeclineStreak)
+                        }
+                        
+                        // Seasonal patterns by quarter
+                        const quarterlyData: { [key: string]: number[] } = { 'Q1': [], 'Q2': [], 'Q3': [], 'Q4': [] }
+                        sortedData.forEach((entry: any) => {
+                          const date = new Date(entry.timestamp || entry.date)
+                          const month = date.getMonth() + 1
+                          const quarter = month <= 3 ? 'Q1' : month <= 6 ? 'Q2' : month <= 9 ? 'Q3' : 'Q4'
+                          quarterlyData[quarter].push(entry.rank || entry.sales_rank)
+                        })
+                        
+                        const quarterlyPerformance = Object.entries(quarterlyData)
+                          .map(([quarter, ranks]) => ({
+                            quarter,
+                            avgRank: ranks.length > 0 ? ranks.reduce((a, b) => a + b, 0) / ranks.length : 0,
+                            dataPoints: ranks.length
+                          }))
+                          .filter(q => q.dataPoints > 0)
+                          .sort((a, b) => a.avgRank - b.avgRank)
+                        
+                        const bestQuarter = quarterlyPerformance[0]
+                        const worstQuarter = quarterlyPerformance[quarterlyPerformance.length - 1]
+                        
+                        // Calculate data span and quality
+                        const firstDate = new Date(sortedData[0].timestamp || sortedData[0].date)
+                        const lastDate = new Date(sortedData[sortedData.length - 1].timestamp || sortedData[sortedData.length - 1].date)
+                        const dataSpanDays = Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24))
+                        const dataSpanWeeks = Math.ceil(dataSpanDays / 7)
+                        
+                        return (
+                          <div className="space-y-4">
+                            {/* Primary Insights Grid */}
+                            <div className="grid md:grid-cols-3 gap-4">
+                              <div className="p-3 bg-white rounded-lg border border-indigo-200">
+                                <h5 className="text-sm font-semibold text-indigo-800 mb-2">📈 Seasonality Strength</h5>
+                                <div className="text-lg font-bold text-indigo-600">{variance}% Variation</div>
+                                <div className="text-xs text-gray-600">
+                                  {Number(variance) > 100 ? 'Highly seasonal' : 
+                                   Number(variance) > 50 ? 'Moderately seasonal' : 'Low seasonality'}
+                                </div>
+                              </div>
+                              
+                              <div className="p-3 bg-white rounded-lg border border-green-200">
+                                <h5 className="text-sm font-semibold text-green-800 mb-2">🎯 Best Performance</h5>
+                                <div className="text-lg font-bold text-green-600">#{minRank.toLocaleString()}</div>
+                                <div className="text-xs text-gray-600">Peak rank achieved</div>
+                              </div>
+                              
+                              <div className="p-3 bg-white rounded-lg border border-orange-200">
+                                <h5 className="text-sm font-semibold text-orange-800 mb-2">⚡ Weekly Volatility</h5>
+                                <div className="text-lg font-bold text-orange-600">{avgWeeklyVolatility}%</div>
+                                <div className="text-xs text-gray-600">Average weekly fluctuation</div>
+                              </div>
+                            </div>
+
+                            {/* Quarterly Performance Analysis */}
+                            <div className="p-4 bg-white rounded-lg border border-gray-200">
+                              <h5 className="text-sm font-semibold text-gray-800 mb-3">📅 Quarterly Performance Patterns</h5>
+                              <div className="grid md:grid-cols-2 gap-4">
+                                <div>
+                                  <div className="text-sm text-green-700 mb-1">
+                                    <strong>Best Quarter: {bestQuarter?.quarter}</strong>
+                                  </div>
+                                  <div className="text-xs text-gray-600 mb-2">
+                                    Avg rank: #{Math.round(bestQuarter?.avgRank || 0).toLocaleString()} ({bestQuarter?.dataPoints} data points)
+                                  </div>
+                                  <div className="text-xs text-green-600">
+                                    🚀 Optimal period for inventory scaling and marketing campaigns
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-sm text-orange-700 mb-1">
+                                    <strong>Challenging Quarter: {worstQuarter?.quarter}</strong>
+                                  </div>
+                                  <div className="text-xs text-gray-600 mb-2">
+                                    Avg rank: #{Math.round(worstQuarter?.avgRank || 0).toLocaleString()} ({worstQuarter?.dataPoints} data points)
+                                  </div>
+                                  <div className="text-xs text-orange-600">
+                                    ⚠️ Focus on optimization rather than aggressive growth
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Trend Analysis */}
+                            <div className="p-4 bg-white rounded-lg border border-gray-200">
+                              <h5 className="text-sm font-semibold text-gray-800 mb-3">🔄 Trend Patterns</h5>
+                              <div className="grid md:grid-cols-2 gap-4">
+                                <div>
+                                  <div className="text-sm text-gray-700 mb-1">
+                                    <strong>Growth Momentum</strong>
+                                  </div>
+                                  <div className="text-xs text-gray-600 mb-1">
+                                    Longest improvement streak: {longestGrowthStreak} days
+                                  </div>
+                                  <div className="text-xs text-green-600">
+                                    Shows strong potential for sustained growth periods
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-sm text-gray-700 mb-1">
+                                    <strong>Market Volatility</strong>
+                                  </div>
+                                  <div className="text-xs text-gray-600 mb-1">
+                                    Data span: {dataSpanWeeks} weeks ({dataSpanDays} days)
+                                  </div>
+                                  <div className="text-xs text-blue-600">
+                                    {dataSpanWeeks >= 52 ? 'Full year data available' : dataSpanWeeks >= 26 ? 'Strong seasonal coverage' : 'Limited seasonal data'}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Actionable Insights */}
+                            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                              <h5 className="text-sm font-semibold text-blue-800 mb-2">💡 Strategic Recommendations</h5>
+                              <div className="space-y-1 text-sm text-blue-700">
+                                <div>• <strong>Inventory Planning:</strong> Scale up before {bestQuarter?.quarter} (best performance period)</div>
+                                <div>• <strong>Marketing Budget:</strong> Increase spend during low-volatility weeks (under {avgWeeklyVolatility}% variation)</div>
+                                <div>• <strong>Launch Timing:</strong> Target launches during sustained growth periods ({longestGrowthStreak}+ day trends)</div>
+                                <div>• <strong>Risk Management:</strong> Expect {variance}% rank variation - plan inventory accordingly</div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      } else {
+                        // Enhanced fallback when no data is available
+                        return (
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <h5 className="font-medium text-gray-900 mb-2">📊 Seasonality Analysis Not Available</h5>
+                            <p className="text-gray-600 text-sm mb-3">
+                              Historical sales rank data is required for detailed seasonality analysis.
+                            </p>
+                            <div className="text-xs text-gray-500">
+                              Once sales rank data is available, you'll see:
+                              <br />• Week-to-week performance patterns
+                              <br />• Quarterly trend analysis  
+                              <br />• Optimal timing recommendations
+                              <br />• Volatility and risk assessment
+                            </div>
+                          </div>
+                        )
+                      }
+                    })()}
                   </div>
                 </div>
               </div>
@@ -1168,48 +1452,78 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
                 </div>
 
                 {/* Competitor Price Cards */}
-                <div className="grid grid-cols-5 gap-3">
+                <div className="grid grid-cols-3 gap-4">
                   {data.demandData._nicheProducts?.length > 0 ? (
-                    data.demandData._nicheProducts.map((product: any, index: number) => (
+                    data.demandData._nicheProducts.slice(0, 9).map((product: any, index: number) => (
                       <div 
                         key={product.id} 
                         onClick={() => toggleCompetitor(product.asin)}
-                        className={`p-3 rounded-lg border-2 transition-all hover:shadow-md cursor-pointer ${
+                        className={`p-4 rounded-lg border-2 transition-all hover:shadow-md cursor-pointer ${
                           selectedCompetitors.includes(product.asin)
                             ? 'border-purple-300 bg-purple-50 shadow-lg' 
                             : 'border-gray-200 bg-white hover:border-gray-300'
                         }`}
                       >
-                        <div className="text-center relative">
-                          {product.image_url && (
-                            <img 
-                              src={product.image_url} 
-                              alt={product.title}
-                              className="w-10 h-10 object-cover rounded mx-auto mb-2"
-                            />
-                          )}
-                          <div className="text-lg font-bold text-gray-900 mb-1">
-                            ${product.price || 'N/A'}
+                        <div className="flex items-start space-x-3">
+                          {/* Image on the left */}
+                          <div className="flex-shrink-0">
+                            {(() => {
+                              let imageUrl = null
+                              if (product.image_urls) {
+                                try {
+                                  // Try parsing as JSON first
+                                  const urls = typeof product.image_urls === 'string' ? JSON.parse(product.image_urls) : product.image_urls
+                                  imageUrl = Array.isArray(urls) ? urls[0] : urls
+                                } catch {
+                                  // If not JSON, try splitting by comma
+                                  const urls = product.image_urls.split(',').map((url: string) => url.trim())
+                                  imageUrl = urls[0]
+                                }
+                                // Convert to full URL if needed
+                                if (imageUrl && !imageUrl.startsWith('http')) {
+                                  imageUrl = `https://m.media-amazon.com/images/I/${imageUrl}`
+                                }
+                              }
+                              return imageUrl ? (
+                                <img 
+                                  src={imageUrl} 
+                                  alt={product.title}
+                                  className="w-20 h-20 object-cover rounded-lg"
+                                />
+                              ) : (
+                                <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                                  <span className="text-gray-400 text-xs">No Image</span>
+                                </div>
+                              )
+                            })()}
                           </div>
-                          <div className="text-xs text-gray-600 mb-1">
-                            {product.title?.substring(0, 25)}...
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {product.asin}
-                          </div>
-                          {selectedCompetitors.includes(product.asin) && (
-                            <>
-                              <div className="mt-1 text-xs font-medium text-purple-600">
+                          
+                          {/* Metadata on the right */}
+                          <div className="flex-1 min-w-0 relative">
+                            <div className="text-lg font-bold text-green-600">
+                              ${typeof product.price === 'number' ? product.price.toFixed(2) : 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-600 mb-1" title={product.title || 'Unknown Product'}>
+                              {product.title || 'Unknown Product'}
+                            </div>
+                            <div className="text-xs text-gray-500 mb-1">
+                              BSR: #{(product.bsr || product.sales_rank || 0) > 0 ? (product.bsr || product.sales_rank).toLocaleString() : 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-500 mb-2">
+                              {product.asin}
+                            </div>
+                            {selectedCompetitors.includes(product.asin) && (
+                              <span className="text-xs font-medium text-purple-600">
                                 ✓ Selected
-                              </div>
-                              {viewMode === 'individual' && (
-                                <div 
-                                  className="absolute top-1 right-1 w-3 h-3 rounded-full"
-                                  style={{ backgroundColor: getCompetitorColor(selectedCompetitors.indexOf(product.asin)) }}
-                                ></div>
-                              )}
-                            </>
-                          )}
+                              </span>
+                            )}
+                            {viewMode === 'individual' && selectedCompetitors.includes(product.asin) && (
+                              <div 
+                                className="absolute top-0 right-0 w-3 h-3 rounded-full"
+                                style={{ backgroundColor: getCompetitorColor(selectedCompetitors.indexOf(product.asin)) }}
+                              ></div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))

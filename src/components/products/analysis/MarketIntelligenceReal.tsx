@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { 
   Heart,
   Megaphone,
@@ -11,7 +12,9 @@ import {
   UserCheck,
   ThumbsUp,
   ThumbsDown,
-  Star
+  Star,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 
 interface MarketIntelligenceRealProps {
@@ -30,6 +33,8 @@ interface MarketIntelligenceRealProps {
 export default function MarketIntelligenceReal({ data }: MarketIntelligenceRealProps) {
   const [activeTab, setActiveTab] = useState('personas')
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const reviewsPerPage = 10
 
   return (
     <div className="space-y-6">
@@ -43,7 +48,10 @@ export default function MarketIntelligenceReal({ data }: MarketIntelligenceRealP
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id)
+              setCurrentPage(1) // Reset pagination when switching tabs
+            }}
             className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === tab.id
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -122,6 +130,56 @@ export default function MarketIntelligenceReal({ data }: MarketIntelligenceRealP
                     <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                       <h4 className="font-semibold text-gray-900 mb-2">Buying Behavior</h4>
                       <p className="text-sm text-gray-700">{persona.buyingBehavior}</p>
+                    </div>
+                  )}
+
+                  {/* Representative Reviews */}
+                  {persona.reviewExamples && persona.reviewExamples.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+                        <MessageSquare className="h-4 w-4 mr-2 text-blue-600" />
+                        Representative Reviews from This Persona
+                      </h4>
+                      <div className="space-y-3">
+                        {persona.reviewExamples.map((review: any, reviewIndex: number) => (
+                          <div key={reviewIndex} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center space-x-3">
+                                <div className="flex items-center space-x-0.5">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`h-4 w-4 ${
+                                        i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                {review.verified && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Verified Purchase
+                                  </Badge>
+                                )}
+                              </div>
+                              {review.date && (
+                                <span className="text-xs text-gray-500">{review.date}</span>
+                              )}
+                            </div>
+                            <blockquote className="text-sm text-gray-700 italic leading-relaxed">
+                              &ldquo;{review.text}&rdquo;
+                            </blockquote>
+                            {review.helpfulVotes && review.helpfulVotes > 0 && (
+                              <div className="mt-2 text-xs text-gray-500">
+                                {review.helpfulVotes} people found this helpful
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 text-xs text-gray-500 italic">
+                        These reviews were identified as representative of this customer persona based on language patterns, 
+                        concerns expressed, and purchase motivations mentioned.
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -267,11 +325,6 @@ export default function MarketIntelligenceReal({ data }: MarketIntelligenceRealP
                     <div key={index} className="p-4 border rounded-lg bg-white">
                       <div className="flex items-start justify-between mb-2">
                         <h5 className="font-medium text-gray-900">{trigger.trigger}</h5>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="outline" className="text-xs">
-                            {trigger.intensity} intensity
-                          </Badge>
-                        </div>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">{trigger.description}</p>
                       
@@ -322,7 +375,19 @@ export default function MarketIntelligenceReal({ data }: MarketIntelligenceRealP
             <CardContent>
               {data.rawReviews && data.rawReviews.length > 0 ? (
                 <div className="space-y-4">
-                  {data.rawReviews.map((review: any, index: number) => (
+                  {/* Pagination Info */}
+                  <div className="flex justify-between items-center text-sm text-gray-600">
+                    <span>
+                      Showing {((currentPage - 1) * reviewsPerPage) + 1} to{' '}
+                      {Math.min(currentPage * reviewsPerPage, data.rawReviews.length)} of{' '}
+                      {data.rawReviews.length} reviews
+                    </span>
+                  </div>
+
+                  {/* Reviews */}
+                  {data.rawReviews
+                    .slice((currentPage - 1) * reviewsPerPage, currentPage * reviewsPerPage)
+                    .map((review: any, index: number) => (
                     <div key={index} className="border rounded-lg p-4 bg-white">
                       {/* Review Header */}
                       <div className="flex items-start justify-between mb-3">
@@ -393,6 +458,94 @@ export default function MarketIntelligenceReal({ data }: MarketIntelligenceRealP
                       )}
                     </div>
                   ))}
+                  
+                  {/* Pagination Controls */}
+                  {data.rawReviews.length > reviewsPerPage && (
+                    <div className="flex justify-center items-center space-x-2 pt-4 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        Previous
+                      </Button>
+                      
+                      <div className="flex items-center space-x-1">
+                        {/* Page numbers */}
+                        {(() => {
+                          const totalPages = Math.ceil(data.rawReviews.length / reviewsPerPage)
+                          const pages = []
+                          
+                          // Always show first page
+                          pages.push(
+                            <Button
+                              key={1}
+                              variant={currentPage === 1 ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(1)}
+                              className="w-10"
+                            >
+                              1
+                            </Button>
+                          )
+                          
+                          // Show ellipsis if needed
+                          if (currentPage > 3) {
+                            pages.push(<span key="ellipsis1" className="px-2">...</span>)
+                          }
+                          
+                          // Show pages around current page
+                          for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+                            pages.push(
+                              <Button
+                                key={i}
+                                variant={currentPage === i ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(i)}
+                                className="w-10"
+                              >
+                                {i}
+                              </Button>
+                            )
+                          }
+                          
+                          // Show ellipsis if needed
+                          if (currentPage < totalPages - 2) {
+                            pages.push(<span key="ellipsis2" className="px-2">...</span>)
+                          }
+                          
+                          // Always show last page if there's more than one page
+                          if (totalPages > 1) {
+                            pages.push(
+                              <Button
+                                key={totalPages}
+                                variant={currentPage === totalPages ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(totalPages)}
+                                className="w-10"
+                              >
+                                {totalPages}
+                              </Button>
+                            )
+                          }
+                          
+                          return pages
+                        })()}
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(Math.ceil(data.rawReviews.length / reviewsPerPage), prev + 1))}
+                        disabled={currentPage === Math.ceil(data.rawReviews.length / reviewsPerPage)}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8">

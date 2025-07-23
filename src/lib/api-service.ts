@@ -125,7 +125,8 @@ export class APIService {
    */
   static async getDailyFeature(): Promise<DailyFeature> {
     try {
-      return await this.request<DailyFeature>('/products/daily-feature')
+      // Don't cache daily feature as it changes daily
+      return await this.request<DailyFeature>('/products/daily-feature', {}, false)
     } catch (error) {
       throw new Error(`Failed to fetch daily feature: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }

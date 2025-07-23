@@ -196,13 +196,20 @@ interface MarketIntelligenceProps {
           decision: string
           retention: string
         }
+        reviewExamples?: Array<{
+          text: string
+          rating: number
+          date?: string
+          verified?: boolean
+          helpfulVotes?: number
+        }>
       }>
     }
   }
 }
 
 export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState('personas')
   const getEmotionColor = (impact: string) => {
     switch (impact) {
       case 'high': return 'text-red-600 bg-red-50 border-red-200'
@@ -228,11 +235,9 @@ export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
       {/* Tab Navigation */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
         {[
-          { id: 'overview', label: 'Overview', icon: Eye },
+          { id: 'personas', label: 'Customer Personas', icon: Users },
           { id: 'voice', label: 'Voice of Customer', icon: Megaphone },
           { id: 'emotions', label: 'Emotional Triggers', icon: Heart },
-          { id: 'personas', label: 'Customer Personas', icon: Users },
-          { id: 'opportunities', label: 'Opportunities', icon: Lightbulb },
           { id: 'reviews', label: 'Raw Reviews', icon: MessageSquare }
         ].map((tab) => (
           <button
@@ -250,96 +255,6 @@ export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
         ))}
       </div>
 
-      {/* Overview Tab */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* Key Insights Scorecards */}
-          <div className="grid md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{data.reviewAnalysisData.sentimentScore}★</div>
-                  <div className="text-sm text-gray-600 mt-1">Sentiment Score</div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{(data.reviewAnalysisData.totalReviews / 1000).toFixed(1)}K</div>
-                  <div className="text-sm text-gray-600 mt-1">Reviews Analyzed</div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">{data.reviewAnalysisData.voiceOfCustomer.featureRequests.length}</div>
-                  <div className="text-sm text-gray-600 mt-1">Feature Requests</div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">{data.reviewAnalysisData.commonThemes.opportunities.length}</div>
-                  <div className="text-sm text-gray-600 mt-1">Opportunities</div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Common Themes Overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <MessageSquare className="h-5 w-5 text-blue-600" />
-                <span>Common Themes</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium text-green-600 mb-2">Positive Themes</h4>
-                  <ul className="space-y-1">
-                    {data.reviewAnalysisData.commonThemes.positive.map((theme, index) => (
-                      <li key={index} className="text-sm text-gray-700 flex items-start">
-                        <span className="text-green-500 mr-2">•</span>
-                        {theme}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-red-600 mb-2">Negative Themes</h4>
-                  <ul className="space-y-1">
-                    {data.reviewAnalysisData.commonThemes.negative.map((theme, index) => (
-                      <li key={index} className="text-sm text-gray-700 flex items-start">
-                        <span className="text-red-500 mr-2">•</span>
-                        {theme}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-orange-600 mb-2">Opportunities</h4>
-                  <ul className="space-y-1">
-                    {data.reviewAnalysisData.commonThemes.opportunities.map((opportunity, index) => (
-                      <li key={index} className="text-sm text-gray-700 flex items-start">
-                        <span className="text-orange-500 mr-2">•</span>
-                        {opportunity}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       {/* Voice of Customer Tab */}
       {activeTab === 'voice' && (
@@ -355,7 +270,188 @@ export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Feature Requests */}
+              {/* Key Patterns */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Key Patterns
+                </h4>
+                <div className="space-y-3">
+                  {[
+                    { pattern: "Skepticism about 30-second dissolve claim without visual proof", impact: "Critical", frequency: 45, color: "red" },
+                    { pattern: "Poor adhesion causing labels to fall off containers", impact: "Critical", frequency: 12, color: "red" },
+                    { pattern: "Temperature range unclear - freezer compatibility questions", impact: "High", frequency: 18, color: "orange" },
+                    { pattern: "Writing quality concerns - pen compatibility unknown", impact: "High", frequency: 7, color: "orange" },
+                    { pattern: "Residue-free removal doubts need visual confirmation", impact: "High", frequency: 28, color: "orange" }
+                  ].map((item, index) => (
+                    <div key={index} className="p-4 border rounded-lg bg-white">
+                      <div className="flex items-start justify-between mb-2">
+                        <p className="text-sm text-gray-900 flex-1">{item.pattern}</p>
+                        <div className="flex items-center space-x-2 ml-4">
+                          <Badge variant={item.impact === 'Critical' ? 'destructive' : 'default'} className="text-xs">
+                            {item.impact}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {item.frequency} mentions
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Purchase Barriers */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <Target className="h-4 w-4 mr-2" />
+                  Purchase Barriers
+                </h4>
+                <div className="space-y-3">
+                  {[
+                    { barrier: "Skepticism about 30-second dissolve claim - seems too good to be true", impact: "High" },
+                    { barrier: "Unclear if labels work on wet/frozen surfaces or just room temperature", impact: "High" },
+                    { barrier: "Concern about ink running or smudging when labels get wet", impact: "Medium" },
+                    { barrier: "Price justification - $15+ for 200 labels vs traditional stickers", impact: "Medium" },
+                    { barrier: "Size limitation - only 1x2 inches may not fit all labeling needs", impact: "Low" }
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-start space-x-3 p-3 border rounded-lg bg-gray-50">
+                      <div className="flex-shrink-0">
+                        <div className={`w-3 h-3 rounded-full mt-1 ${
+                          item.impact === 'High' ? 'bg-red-500' :
+                          item.impact === 'Medium' ? 'bg-orange-500' : 'bg-yellow-500'
+                        }`}></div>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-900">{item.barrier}</p>
+                        <div className="mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            {item.impact} Impact
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Top Customer Questions */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Top Customer Questions
+                </h4>
+                <div className="space-y-3">
+                  {[
+                    { question: "What temperature water dissolves the labels - cold, warm, or hot?", type: "Usage", icon: "🔧" },
+                    { question: "Will the labels stick to wet or condensation-covered containers?", type: "Product", icon: "📦" },
+                    { question: "What pens/markers work best and won't run when labels dissolve?", type: "Usage", icon: "🔧" },
+                    { question: "Do labels leave any residue on expensive containers or glass jars?", type: "Product", icon: "📦" },
+                    { question: "How long do labels stay stuck before accidentally dissolving?", type: "Usage", icon: "🔧" },
+                    { question: "Are the labels food-safe for direct contact with food surfaces?", type: "Product", icon: "📦" },
+                    { question: "How do these compare to regular removable labels in cost per use?", type: "Comparison", icon: "⚖️" }
+                  ].map((item, index) => (
+                    <div key={index} className="p-3 border rounded-lg bg-white">
+                      <div className="flex items-start space-x-3">
+                        <span className="text-sm mt-0.5">{item.icon}</span>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-900">{item.question}</p>
+                          <Badge variant="outline" className="text-xs mt-1">
+                            {item.type}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Priority Improvements */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <Lightbulb className="h-4 w-4 mr-2" />
+                  Top 5 Priority Improvements
+                </h4>
+                <div className="space-y-3">
+                  {[
+                    { 
+                      priority: 1, 
+                      action: "Add dissolving proof video/GIF in main image", 
+                      type: "🖼️", 
+                      impact: "Eliminates primary trust barrier and proves core benefit immediately" 
+                    },
+                    { 
+                      priority: 2, 
+                      action: "Address adhesion quality in bullet points", 
+                      type: "•", 
+                      impact: "Addresses major quality concern and sets proper expectations" 
+                    },
+                    { 
+                      priority: 3, 
+                      action: "Clarify temperature range in title", 
+                      type: "📝", 
+                      impact: "Captures meal prep audience and eliminates temperature uncertainty" 
+                    },
+                    { 
+                      priority: 4, 
+                      action: "Show pen compatibility in product images", 
+                      type: "🖼️", 
+                      impact: "Removes writing quality doubts and demonstrates versatility" 
+                    },
+                    { 
+                      priority: 5, 
+                      action: "Add no-residue guarantee in bullets", 
+                      type: "•", 
+                      impact: "Builds confidence for users with expensive glassware and containers" 
+                    }
+                  ].map((item, index) => (
+                    <div key={index} className="p-4 border rounded-lg bg-blue-50">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                            {item.priority}
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className="text-sm">{item.type}</span>
+                            <h5 className="font-medium text-gray-900">{item.action}</h5>
+                          </div>
+                          <p className="text-sm text-gray-600">{item.impact}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Research Insights Summary */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Research Insights Summary
+                </h4>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h5 className="font-medium text-gray-900 mb-2">Primary Concerns</h5>
+                    <ul className="space-y-1 text-sm text-gray-700">
+                      <li>• Dissolution effectiveness</li>
+                      <li>• Temperature compatibility</li>
+                      <li>• Writing quality</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-gray-900 mb-2">Key Decision Factors</h5>
+                    <ul className="space-y-1 text-sm text-gray-700">
+                      <li>• Residue-free removal</li>
+                      <li>• Adhesion strength</li>
+                      <li>• Value for price</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Original Voice of Customer Analysis */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
                   <Package className="h-4 w-4 mr-2" />
@@ -363,10 +459,10 @@ export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
                 </h4>
                 <div className="grid md:grid-cols-2 gap-4">
                   {data.reviewAnalysisData.voiceOfCustomer.featureRequests.map((request, index) => (
-                    <div key={index} className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <div key={index} className="p-4 border rounded-lg bg-gray-50">
                       <div className="flex items-start justify-between mb-2">
                         <h5 className="font-medium text-gray-900">{request.feature}</h5>
-                        <Badge className="text-xs">{request.mentions} mentions</Badge>
+                        <Badge variant="outline" className="text-xs">{request.mentions} mentions</Badge>
                       </div>
                       <div className="text-sm text-gray-600 mb-2">
                         Sentiment: <span className="font-medium text-blue-600">{request.sentiment}</span>
@@ -379,7 +475,7 @@ export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
                 </div>
               </div>
 
-              {/* Use Cases */}
+              {/* Primary Use Cases */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
                   <Target className="h-4 w-4 mr-2" />
@@ -387,10 +483,10 @@ export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
                 </h4>
                 <div className="space-y-3">
                   {data.reviewAnalysisData.voiceOfCustomer.useCases.map((useCase, index) => (
-                    <div key={index} className="flex items-center space-x-4 p-3 border rounded-lg">
+                    <div key={index} className="flex items-center space-x-4 p-3 border rounded-lg bg-white">
                       <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                          <span className="text-lg font-bold text-purple-600">{useCase.percentage}%</span>
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                          <span className="text-lg font-bold text-gray-600">{useCase.percentage}%</span>
                         </div>
                       </div>
                       <div className="flex-grow">
@@ -417,8 +513,8 @@ export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {data.reviewAnalysisData.voiceOfCustomer.purchaseMotivations.map((motivation, index) => (
-                    <div key={index} className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-bold text-indigo-600 mb-1">{motivation.percentage}%</div>
+                    <div key={index} className="text-center p-4 border rounded-lg bg-white">
+                      <div className="text-2xl font-bold text-gray-700 mb-1">{motivation.percentage}%</div>
                       <div className="text-sm font-medium text-gray-900">{motivation.motivation}</div>
                       <div className="text-xs text-gray-600 mt-1">{motivation.description}</div>
                     </div>
@@ -516,21 +612,21 @@ export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
       {activeTab === 'personas' && (
         <div className="space-y-6">
           {data.demandData.customerAvatars.map((avatar, index) => (
-            <Card key={index} className="overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 text-white">
+            <Card key={index} className="border border-gray-200 shadow-sm">
+              <div className="bg-gray-50 p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
-                      <UserCheck className="h-8 w-8 text-white" />
+                    <div className="w-16 h-16 bg-white border border-gray-300 rounded-full flex items-center justify-center">
+                      <UserCheck className="h-8 w-8 text-gray-600" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold">{avatar.name}</h3>
-                      <p className="text-purple-100">{avatar.age} • {avatar.gender}</p>
+                      <h3 className="text-2xl font-bold text-gray-900">{avatar.name}</h3>
+                      <p className="text-gray-600">{avatar.age} • {avatar.gender}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-purple-100">Income Range</div>
-                    <div className="font-semibold">{avatar.income}</div>
+                    <div className="text-sm text-gray-500">Income Range</div>
+                    <div className="font-semibold text-gray-900">{avatar.income}</div>
                   </div>
                 </div>
               </div>
@@ -621,16 +717,16 @@ export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
                     {/* Shopping Behavior */}
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-2">Shopping Behavior</h4>
-                      <div className="bg-blue-50 p-4 rounded-lg space-y-2 text-sm">
-                        <div><span className="font-medium">Research Style:</span> {avatar.shoppingBehavior.researchStyle}</div>
-                        <div><span className="font-medium">Price Sensitivity:</span> {avatar.shoppingBehavior.pricePoint}</div>
-                        <div><span className="font-medium">Purchase Timing:</span> {avatar.shoppingBehavior.purchaseTime}</div>
-                        <div><span className="font-medium">Brand Loyalty:</span> {avatar.shoppingBehavior.brandLoyalty}</div>
+                      <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm border border-gray-200">
+                        <div><span className="font-medium text-gray-700">Research Style:</span> <span className="text-gray-600">{avatar.shoppingBehavior.researchStyle}</span></div>
+                        <div><span className="font-medium text-gray-700">Price Sensitivity:</span> <span className="text-gray-600">{avatar.shoppingBehavior.pricePoint}</span></div>
+                        <div><span className="font-medium text-gray-700">Purchase Timing:</span> <span className="text-gray-600">{avatar.shoppingBehavior.purchaseTime}</span></div>
+                        <div><span className="font-medium text-gray-700">Brand Loyalty:</span> <span className="text-gray-600">{avatar.shoppingBehavior.brandLoyalty}</span></div>
                         <div>
-                          <span className="font-medium">Key Decision Factors:</span>
+                          <span className="font-medium text-gray-700">Key Decision Factors:</span>
                           <ul className="mt-1 ml-4">
                             {avatar.shoppingBehavior.decisionFactors.map((factor, i) => (
-                              <li key={i} className="text-gray-700">• {factor}</li>
+                              <li key={i} className="text-gray-600">• {factor}</li>
                             ))}
                           </ul>
                         </div>
@@ -640,101 +736,85 @@ export default function MarketIntelligence({ data }: MarketIntelligenceProps) {
                     {/* Buying Journey */}
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-2">Customer Journey</h4>
-                      <div className="space-y-2">
-                        <div className="border-l-4 border-blue-500 pl-3">
-                          <div className="text-xs font-medium text-blue-600 uppercase">Awareness</div>
-                          <p className="text-sm text-gray-700">{avatar.buyingJourney.awareness}</p>
+                      <div className="space-y-3">
+                        <div className="border-l-4 border-gray-400 pl-3">
+                          <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">Awareness</div>
+                          <p className="text-sm text-gray-700 mt-1">{avatar.buyingJourney.awareness}</p>
                         </div>
-                        <div className="border-l-4 border-purple-500 pl-3">
-                          <div className="text-xs font-medium text-purple-600 uppercase">Consideration</div>
-                          <p className="text-sm text-gray-700">{avatar.buyingJourney.consideration}</p>
+                        <div className="border-l-4 border-gray-400 pl-3">
+                          <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">Consideration</div>
+                          <p className="text-sm text-gray-700 mt-1">{avatar.buyingJourney.consideration}</p>
                         </div>
-                        <div className="border-l-4 border-green-500 pl-3">
-                          <div className="text-xs font-medium text-green-600 uppercase">Decision</div>
-                          <p className="text-sm text-gray-700">{avatar.buyingJourney.decision}</p>
+                        <div className="border-l-4 border-gray-400 pl-3">
+                          <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">Decision</div>
+                          <p className="text-sm text-gray-700 mt-1">{avatar.buyingJourney.decision}</p>
                         </div>
-                        <div className="border-l-4 border-orange-500 pl-3">
-                          <div className="text-xs font-medium text-orange-600 uppercase">Retention</div>
-                          <p className="text-sm text-gray-700">{avatar.buyingJourney.retention}</p>
+                        <div className="border-l-4 border-gray-400 pl-3">
+                          <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">Retention</div>
+                          <p className="text-sm text-gray-700 mt-1">{avatar.buyingJourney.retention}</p>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Review Examples Section */}
+                {avatar.reviewExamples && avatar.reviewExamples.length > 0 && (
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+                      <MessageSquare className="h-4 w-4 mr-2 text-blue-600" />
+                      Representative Reviews from This Persona
+                    </h4>
+                    <div className="space-y-3">
+                      {avatar.reviewExamples.map((review, reviewIndex) => (
+                        <div key={reviewIndex} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex items-center space-x-0.5">
+                                {[...Array(5)].map((_, i) => (
+                                  <span
+                                    key={i}
+                                    className={`text-sm ${
+                                      i < review.rating ? 'text-yellow-400' : 'text-gray-300'
+                                    }`}
+                                  >
+                                    ★
+                                  </span>
+                                ))}
+                              </div>
+                              {review.verified && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Verified Purchase
+                                </Badge>
+                              )}
+                            </div>
+                            {review.date && (
+                              <span className="text-xs text-gray-500">{review.date}</span>
+                            )}
+                          </div>
+                          <blockquote className="text-sm text-gray-700 italic leading-relaxed">
+                            &ldquo;{review.text}&rdquo;
+                          </blockquote>
+                          {review.helpfulVotes && review.helpfulVotes > 0 && (
+                            <div className="mt-2 text-xs text-gray-500">
+                              {review.helpfulVotes} people found this helpful
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 text-xs text-gray-500 italic">
+                      These reviews were identified as representative of this customer persona based on language patterns, 
+                      concerns expressed, and purchase motivations mentioned.
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
       )}
 
-      {/* Opportunities Tab */}
-      {activeTab === 'opportunities' && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-                <span>Market Opportunities</span>
-              </CardTitle>
-              <CardDescription>
-                Untapped segments and expansion opportunities
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Untapped Segments */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Untapped Market Segments</h4>
-                <div className="grid md:grid-cols-3 gap-4">
-                  {data.reviewAnalysisData.marketOpportunities.untappedSegments.map((segment, index) => (
-                    <div key={index} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <h5 className="font-medium text-gray-900">{segment.segment}</h5>
-                        <div className="flex space-x-1">
-                          <Badge variant="outline" className="text-xs">
-                            Size: {segment.size}
-                          </Badge>
-                          <Badge className="text-xs">
-                            Fit: {segment.fit}
-                          </Badge>
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-600">{segment.strategy}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Product Extensions */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Product Extension Opportunities</h4>
-                <div className="space-y-3">
-                  {data.reviewAnalysisData.marketOpportunities.productExtensions.map((extension, index) => (
-                    <div key={index} className="flex items-center space-x-4 p-4 border rounded-lg">
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                          <DollarSign className="h-6 w-6 text-green-600" />
-                        </div>
-                      </div>
-                      <div className="flex-grow">
-                        <div className="flex items-center justify-between mb-1">
-                          <h5 className="font-medium text-gray-900">{extension.idea}</h5>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium text-green-600">{extension.marketSize}</span>
-                            <Badge variant={extension.difficulty === 'Low' ? 'secondary' : extension.difficulty === 'Medium' ? 'default' : 'destructive'} className="text-xs">
-                              {extension.difficulty} difficulty
-                            </Badge>
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-600">{extension.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       {/* Raw Reviews Tab */}
       {activeTab === 'reviews' && (

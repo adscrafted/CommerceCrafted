@@ -108,31 +108,100 @@ export class AmazonAdsAuth {
     }
   }
   
+  public async getUSProfile(): Promise<string | null> {
+    try {
+      const headers = {
+        'Authorization': `Bearer ${await this.getAccessToken()}`,
+        'Amazon-Advertising-API-ClientId': this.clientId,
+        'Amazon-Advertising-API-Scope': this.profileId,
+        'Content-Type': 'application/json'
+      }
+      
+      const response = await fetch(`${this.endpoints.NA}/v2/profiles`, {
+        method: 'GET',
+        headers
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Failed to get profiles: ${response.status}`)
+      }
+      
+      const profiles = await response.json()
+      
+      // Find US marketplace profile
+      const usProfile = profiles.find((profile: any) => 
+        profile.countryCode === 'US' && 
+        profile.accountInfo?.marketplaceStringId === 'ATVPDKIKX0DER'
+      )
+      
+      return usProfile?.profileId?.toString() || null
+    } catch (error) {
+      console.error('Failed to get US profile:', error)
+      return null
+    }
+  }
+  
   public async makeRequest(
     method: string,
-    path: string,
-    region: 'NA' | 'EU' | 'FE' = 'NA',
-    body?: any,
-    customHeaders?: Record<string, string>
+    endpoint: string,
+    queryParams: Record<string, string> = {},
+    body: any = null
   ): Promise<any> {
-    const headers = await this.createHeaders()
-    const endpoint = this.endpoints[region]
-    const url = `${endpoint}${path}`
+    const baseUrl = this.endpoints.NA // Default to NA like JungleAce
+    const queryString = new URLSearchParams(queryParams).toString()
+    const url = `${baseUrl}${endpoint}${queryString ? `?${queryString}` : ''}`
     
-    const response = await fetch(url, {
+    const headers = await this.createHeaders()
+
+    const requestOptions: RequestInit = {
       method,
-      headers: {
-        ...headers,
-        ...customHeaders
-      },
-      body: body ? JSON.stringify(body) : undefined
-    })
+      headers,
+    }
+
+    if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+      requestOptions.body = JSON.stringify(body)
+    }
+
+    const response = await fetch(url, requestOptions)
     
     if (!response.ok) {
       const errorText = await response.text()
       throw new Error(`Amazon Ads API request failed: ${response.status} - ${errorText}`)
     }
+
+    return response.json()
+  }
+
+  public async makeRequestWithCustomHeaders(
+    method: string,
+    endpoint: string,
+    queryParams: Record<string, string> = {},
+    body: any = null,
+    customHeaders: Record<string, string> = {}
+  ): Promise<any> {
+    const baseUrl = this.endpoints.NA
+    const queryString = new URLSearchParams(queryParams).toString()
+    const url = `${baseUrl}${endpoint}${queryString ? `?${queryString}` : ''}`
     
+    const baseHeaders = await this.createHeaders()
+    const headers = { ...baseHeaders, ...customHeaders }
+
+    const requestOptions: RequestInit = {
+      method,
+      headers,
+    }
+
+    if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+      requestOptions.body = JSON.stringify(body)
+    }
+
+    const response = await fetch(url, requestOptions)
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Amazon Ads API request failed: ${response.status} - ${errorText}`)
+    }
+
     return response.json()
   }
 }
@@ -144,12 +213,30 @@ export function getAdsApiAuth() {
 
 // For backward compatibility
 export const adsApiAuth = {
-  makeRequest: async (...args: Parameters<AmazonAdsAuth['makeRequest']>) => {
+  makeRequest: async (
+    method: string,
+    endpoint: string,
+    queryParams: Record<string, string> = {},
+    body: any = null
+  ) => {
     const instance = getAdsApiAuth()
     if (!instance.isConfigured()) {
       throw new Error('Amazon Ads API credentials not configured')
     }
-    return instance.makeRequest(...args)
+    return instance.makeRequest(method, endpoint, queryParams, body)
+  },
+  makeRequestWithCustomHeaders: async (
+    method: string,
+    endpoint: string,
+    queryParams: Record<string, string> = {},
+    body: any = null,
+    customHeaders: Record<string, string> = {}
+  ) => {
+    const instance = getAdsApiAuth()
+    if (!instance.isConfigured()) {
+      throw new Error('Amazon Ads API credentials not configured')
+    }
+    return instance.makeRequestWithCustomHeaders(method, endpoint, queryParams, body, customHeaders)
   },
   getAccessToken: async () => {
     const instance = getAdsApiAuth()

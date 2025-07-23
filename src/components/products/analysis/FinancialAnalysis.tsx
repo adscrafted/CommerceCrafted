@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -216,7 +217,8 @@ export default function FinancialAnalysis({ data }: FinancialAnalysisProps) {
         {[
           { id: 'profitability', label: 'Profitability', icon: DollarSign },
           { id: 'packaging', label: 'Package Optimiser', icon: Package },
-          { id: 'projections', label: 'Projections', icon: TrendingUp },
+          { id: 'forecast', label: 'Financial Forecast', icon: TrendingUp },
+          { id: 'cashflow', label: 'Cash Flow Projections', icon: BarChart3 },
           { id: 'investment', label: 'Investment & ROI', icon: Wallet }
         ].map((tab) => (
           <button
@@ -563,10 +565,10 @@ export default function FinancialAnalysis({ data }: FinancialAnalysisProps) {
         </div>
       )}
 
-      {/* Projections Tab */}
-      {activeTab === 'projections' && (
+      {/* Financial Forecast Tab */}
+      {activeTab === 'forecast' && (
         <div className="space-y-6">
-          {/* 12-Month Financial Projections */}
+          {/* Revenue & Profit Projections Chart */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -579,7 +581,51 @@ export default function FinancialAnalysis({ data }: FinancialAnalysisProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {/* Scenario Comparison */}
+                {/* Revenue Bar Chart */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-4">Monthly Revenue Scenarios</h4>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={[
+                        {
+                          scenario: 'Conservative',
+                          revenue: financialData.monthlyProjections?.conservative?.revenue || 0,
+                          profit: financialData.monthlyProjections?.conservative?.profit || 0,
+                          units: financialData.monthlyProjections?.conservative?.units || 0
+                        },
+                        {
+                          scenario: 'Realistic',
+                          revenue: financialData.monthlyProjections?.realistic?.revenue || 0,
+                          profit: financialData.monthlyProjections?.realistic?.profit || 0,
+                          units: financialData.monthlyProjections?.realistic?.units || 0
+                        },
+                        {
+                          scenario: 'Optimistic',
+                          revenue: financialData.monthlyProjections?.optimistic?.revenue || 0,
+                          profit: financialData.monthlyProjections?.optimistic?.profit || 0,
+                          units: financialData.monthlyProjections?.optimistic?.units || 0
+                        }
+                      ]}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="scenario" />
+                        <YAxis />
+                        <Tooltip 
+                          formatter={(value: any, name: string) => {
+                            if (name === 'revenue' || name === 'profit') {
+                              return [formatCurrency(value), name === 'revenue' ? 'Revenue' : 'Profit']
+                            }
+                            return [value, name === 'units' ? 'Units' : name]
+                          }}
+                        />
+                        <Legend />
+                        <Bar dataKey="revenue" fill="#3b82f6" name="Revenue" />
+                        <Bar dataKey="profit" fill="#10b981" name="Profit" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Scenario Comparison Cards */}
                 <div className="grid md:grid-cols-3 gap-4">
                   <div className="p-4 border rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
                     <h4 className="font-semibold text-gray-900 mb-3">Conservative</h4>
@@ -596,10 +642,14 @@ export default function FinancialAnalysis({ data }: FinancialAnalysisProps) {
                         <span className="text-sm text-gray-600">Units/Month</span>
                         <span className="font-medium">{financialData.monthlyProjections.conservative.units}</span>
                       </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Profit Margin</span>
+                        <span className="font-medium">{((financialData.monthlyProjections.conservative.profit / financialData.monthlyProjections.conservative.revenue) * 100).toFixed(1)}%</span>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="p-4 border rounded-lg bg-gradient-to-br from-blue-50 to-blue-100">
+                  <div className="p-4 border-2 border-blue-200 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100">
                     <h4 className="font-semibold text-blue-900 mb-3">Realistic</h4>
                     <div className="space-y-2">
                       <div className="flex justify-between">
@@ -613,6 +663,10 @@ export default function FinancialAnalysis({ data }: FinancialAnalysisProps) {
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Units/Month</span>
                         <span className="font-medium">{financialData.monthlyProjections.realistic.units}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Profit Margin</span>
+                        <span className="font-medium">{((financialData.monthlyProjections.realistic.profit / financialData.monthlyProjections.realistic.revenue) * 100).toFixed(1)}%</span>
                       </div>
                     </div>
                   </div>
@@ -632,85 +686,224 @@ export default function FinancialAnalysis({ data }: FinancialAnalysisProps) {
                         <span className="text-sm text-gray-600">Units/Month</span>
                         <span className="font-medium">{financialData.monthlyProjections.optimistic.units}</span>
                       </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Profit Margin</span>
+                        <span className="font-medium">{((financialData.monthlyProjections.optimistic.profit / financialData.monthlyProjections.optimistic.revenue) * 100).toFixed(1)}%</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Monthly Progression */}
+                {/* Annual Projections */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">Revenue Projections</h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-gradient-to-t from-yellow-50 to-white rounded-lg border">
-                      <div className="text-sm text-gray-600 mb-2">Conservative</div>
-                      <div className="text-xl font-semibold text-yellow-600">
-                        {formatCurrency(financialData.monthlyProjections?.conservative?.revenue || 0)}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">{financialData.monthlyProjections?.conservative?.units || 0} units/mo</div>
-                    </div>
-                    <div className="text-center p-4 bg-gradient-to-t from-blue-50 to-white rounded-lg border-2 border-blue-200">
-                      <div className="text-sm text-gray-600 mb-2">Realistic</div>
-                      <div className="text-xl font-semibold text-blue-600">
-                        {formatCurrency(financialData.monthlyProjections?.realistic?.revenue || 0)}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">{financialData.monthlyProjections?.realistic?.units || 0} units/mo</div>
-                    </div>
-                    <div className="text-center p-4 bg-gradient-to-t from-green-50 to-white rounded-lg border">
-                      <div className="text-sm text-gray-600 mb-2">Optimistic</div>
-                      <div className="text-xl font-semibold text-green-600">
-                        {formatCurrency(financialData.monthlyProjections?.optimistic?.revenue || 0)}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">{financialData.monthlyProjections?.optimistic?.units || 0} units/mo</div>
-                    </div>
+                  <h4 className="font-semibold text-gray-900 mb-4">Annual Revenue Projections</h4>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={[
+                        {
+                          scenario: 'Conservative',
+                          annual: (financialData.monthlyProjections?.conservative?.revenue || 0) * 12
+                        },
+                        {
+                          scenario: 'Realistic',
+                          annual: (financialData.monthlyProjections?.realistic?.revenue || 0) * 12
+                        },
+                        {
+                          scenario: 'Optimistic',
+                          annual: (financialData.monthlyProjections?.optimistic?.revenue || 0) * 12
+                        }
+                      ]}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="scenario" />
+                        <YAxis />
+                        <Tooltip 
+                          formatter={(value: any) => [formatCurrency(value), 'Annual Revenue']}
+                        />
+                        <Bar dataKey="annual" fill="#8b5cf6" />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Cash Flow Projections */}
+        </div>
+      )}
+
+      {/* Cash Flow Projections Tab */}
+      {activeTab === 'cashflow' && (
+        <div className="space-y-6">
+          {/* Monthly Cash Flow Chart */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <BarChart3 className="h-5 w-5 text-purple-600" />
-                <span>Monthly Cash Flow Projections</span>
+                <span>Monthly Cash Flow Analysis</span>
               </CardTitle>
+              <CardDescription>
+                Revenue vs costs breakdown across scenarios
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-3 text-sm font-medium text-gray-700">Scenario</th>
-                      <th className="text-right py-2 px-3 text-sm font-medium text-gray-700">Monthly Revenue</th>
-                      <th className="text-right py-2 px-3 text-sm font-medium text-gray-700">Monthly Costs</th>
-                      <th className="text-right py-2 px-3 text-sm font-medium text-gray-700">Monthly Profit</th>
-                      <th className="text-right py-2 px-3 text-sm font-medium text-gray-700">Annual Profit</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {['Conservative', 'Realistic', 'Optimistic'].map((scenario, index) => {
-                      const projectionKey = scenario.toLowerCase() as 'conservative' | 'realistic' | 'optimistic'
-                      const projection = financialData.monthlyProjections?.[projectionKey]
-                      if (!projection) return null
-                      
-                      const revenue = projection.revenue || 0
-                      const profit = projection.profit || 0
-                      const costs = revenue - profit
-                      const annualRevenue = revenue * 12
-                      const annualProfit = profit * 12
-                      
-                      return (
-                        <tr key={scenario} className={`border-b ${scenario === 'Realistic' ? 'bg-blue-50' : ''}`}>
-                          <td className="py-2 px-3 text-sm font-medium">{scenario}</td>
-                          <td className="py-2 px-3 text-sm text-right">{formatCurrency(revenue)}</td>
-                          <td className="py-2 px-3 text-sm text-right text-red-600">{formatCurrency(costs)}</td>
-                          <td className="py-2 px-3 text-sm text-right font-medium text-green-600">{formatCurrency(profit)}</td>
-                          <td className="py-2 px-3 text-sm text-right font-bold">{formatCurrency(annualProfit)}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+              <div className="space-y-6">
+                {/* Cash Flow Bar Chart */}
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={[
+                      {
+                        scenario: 'Conservative',
+                        revenue: financialData.monthlyProjections?.conservative?.revenue || 0,
+                        costs: (financialData.monthlyProjections?.conservative?.revenue || 0) - (financialData.monthlyProjections?.conservative?.profit || 0),
+                        profit: financialData.monthlyProjections?.conservative?.profit || 0
+                      },
+                      {
+                        scenario: 'Realistic',
+                        revenue: financialData.monthlyProjections?.realistic?.revenue || 0,
+                        costs: (financialData.monthlyProjections?.realistic?.revenue || 0) - (financialData.monthlyProjections?.realistic?.profit || 0),
+                        profit: financialData.monthlyProjections?.realistic?.profit || 0
+                      },
+                      {
+                        scenario: 'Optimistic',
+                        revenue: financialData.monthlyProjections?.optimistic?.revenue || 0,
+                        costs: (financialData.monthlyProjections?.optimistic?.revenue || 0) - (financialData.monthlyProjections?.optimistic?.profit || 0),
+                        profit: financialData.monthlyProjections?.optimistic?.profit || 0
+                      }
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="scenario" />
+                      <YAxis />
+                      <Tooltip 
+                        formatter={(value: any, name: string) => {
+                          return [formatCurrency(value), name === 'revenue' ? 'Revenue' : name === 'costs' ? 'Total Costs' : 'Net Profit']
+                        }}
+                      />
+                      <Legend />
+                      <Bar dataKey="revenue" fill="#3b82f6" name="Revenue" />
+                      <Bar dataKey="costs" fill="#ef4444" name="Total Costs" />
+                      <Bar dataKey="profit" fill="#10b981" name="Net Profit" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Cash Flow Table */}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 px-3 text-sm font-medium text-gray-700">Scenario</th>
+                        <th className="text-right py-2 px-3 text-sm font-medium text-gray-700">Monthly Revenue</th>
+                        <th className="text-right py-2 px-3 text-sm font-medium text-gray-700">Monthly Costs</th>
+                        <th className="text-right py-2 px-3 text-sm font-medium text-gray-700">Monthly Profit</th>
+                        <th className="text-right py-2 px-3 text-sm font-medium text-gray-700">Annual Profit</th>
+                        <th className="text-right py-2 px-3 text-sm font-medium text-gray-700">ROI %</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {['Conservative', 'Realistic', 'Optimistic'].map((scenario, index) => {
+                        const projectionKey = scenario.toLowerCase() as 'conservative' | 'realistic' | 'optimistic'
+                        const projection = financialData.monthlyProjections?.[projectionKey]
+                        if (!projection) return null
+                        
+                        const revenue = projection.revenue || 0
+                        const profit = projection.profit || 0
+                        const costs = revenue - profit
+                        const annualProfit = profit * 12
+                        const roi = ((annualProfit / (financialData.investmentRequired?.total || 10000)) * 100)
+                        
+                        return (
+                          <tr key={scenario} className={`border-b ${scenario === 'Realistic' ? 'bg-blue-50' : ''}`}>
+                            <td className="py-2 px-3 text-sm font-medium">{scenario}</td>
+                            <td className="py-2 px-3 text-sm text-right">{formatCurrency(revenue)}</td>
+                            <td className="py-2 px-3 text-sm text-right text-red-600">{formatCurrency(costs)}</td>
+                            <td className="py-2 px-3 text-sm text-right font-medium text-green-600">{formatCurrency(profit)}</td>
+                            <td className="py-2 px-3 text-sm text-right font-bold">{formatCurrency(annualProfit)}</td>
+                            <td className="py-2 px-3 text-sm text-right font-medium text-blue-600">{roi.toFixed(1)}%</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 12-Month Cumulative Cash Flow */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Activity className="h-5 w-5 text-green-600" />
+                <span>12-Month Cumulative Cash Flow</span>
+              </CardTitle>
+              <CardDescription>
+                Track cumulative profits over time
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={(() => {
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                    return months.map((month, index) => ({
+                      month,
+                      conservative: (financialData.monthlyProjections?.conservative?.profit || 0) * (index + 1),
+                      realistic: (financialData.monthlyProjections?.realistic?.profit || 0) * (index + 1),
+                      optimistic: (financialData.monthlyProjections?.optimistic?.profit || 0) * (index + 1)
+                    }))
+                  })()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value: any, name: string) => {
+                        const label = name === 'conservative' ? 'Conservative' : 
+                                     name === 'realistic' ? 'Realistic' : 'Optimistic'
+                        return [formatCurrency(value), label]
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="conservative" fill="#6b7280" name="Conservative" />
+                    <Bar dataKey="realistic" fill="#3b82f6" name="Realistic" />
+                    <Bar dataKey="optimistic" fill="#10b981" name="Optimistic" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Break-Even Analysis */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Target className="h-5 w-5 text-orange-600" />
+                <span>Break-Even Analysis</span>
+              </CardTitle>
+              <CardDescription>
+                Time to recover initial investment
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4">
+                {['conservative', 'realistic', 'optimistic'].map((scenario) => {
+                  const projectionKey = scenario as 'conservative' | 'realistic' | 'optimistic'
+                  const monthlyProfit = financialData.monthlyProjections?.[projectionKey]?.profit || 0
+                  const totalInvestment = financialData.investmentRequired?.total || 10000
+                  const breakEvenMonths = monthlyProfit > 0 ? Math.ceil(totalInvestment / monthlyProfit) : 0
+                  
+                  return (
+                    <div key={scenario} className="p-4 border rounded-lg text-center">
+                      <h4 className="font-medium text-gray-900 mb-2 capitalize">{scenario}</h4>
+                      <div className="text-3xl font-bold text-blue-600 mb-1">
+                        {breakEvenMonths}
+                      </div>
+                      <p className="text-sm text-gray-600">Months to Break Even</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatCurrency(monthlyProfit)}/month profit
+                      </p>
+                    </div>
+                  )
+                })}
               </div>
             </CardContent>
           </Card>

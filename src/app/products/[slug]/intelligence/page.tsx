@@ -19,12 +19,20 @@ interface IntelligencePageProps {
 
 // Helper function to extract ASIN from slug
 const extractAsinFromSlug = (slug: string): string => {
-  // Slug format: "smart-bluetooth-sleep-mask-with-built-in-speakers"
-  // We need to map this to ASIN. For now, we'll use a mapping or extract from the end
+  // Extract the last part of the slug which should be part of the ASIN
+  const parts = slug.split('-')
+  const lastPart = parts[parts.length - 1]
+  
+  // If the last part looks like an ASIN suffix (4 chars), return it
+  if (lastPart && lastPart.length === 4) {
+    return lastPart.toUpperCase()
+  }
+  
+  // Special handling for known patterns
   const slugToAsinMap: { [key: string]: string } = {
-    'smart-bluetooth-sleep-mask-with-built-in-speakers': 'B08MVBRNKV',
     'berberine-supplments': 'B08QRPYKLD' // Add mapping for berberine supplements
   }
+  
   return slugToAsinMap[slug] || slug // fallback to using slug as ASIN if no mapping found
 }
 

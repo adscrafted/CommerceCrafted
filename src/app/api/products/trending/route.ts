@@ -3,201 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { Product } from '@/types/api'
-
-// Mock trending products data
-function getMockTrendingProducts(limit: number = 6): Product[] {
-  const products = [
-    {
-      id: 'mock-1',
-      asin: 'B07K9J4F5V',
-      title: 'Wireless Charging Desk Organizer',
-      brand: 'TechOrganize',
-      category: 'Office & Business',
-      subcategory: 'Desk Organizers',
-      price: 89.99,
-      currency: 'USD',
-      rating: 4.6,
-      reviewCount: 2300,
-      imageUrls: ['https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&h=400&fit=crop'],
-      description: 'Premium bamboo desk organizer with built-in wireless charging pad',
-      features: ['Wireless charging', 'Bamboo construction', 'Multiple compartments'],
-      availability: 'in_stock' as const,
-      bsr: 156,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      analysis: {
-        id: 'analysis-1',
-        productId: 'mock-1',
-        opportunityScore: 8.7,
-        demandScore: 9.1,
-        competitionScore: 6.8,
-        feasibilityScore: 8.5,
-        financialAnalysis: {
-          estimatedMonthlySales: 850,
-          estimatedRevenue: 76500,
-          profitMargin: 42,
-          breakEvenUnits: 125,
-          roi: 215,
-          costOfGoodsSold: 27.0,
-          fbaFees: 13.5,
-          marketingCosts: 9.0
-        },
-        marketAnalysis: {
-          marketSize: '$450M',
-          totalAddressableMarket: 450000000,
-          growthRate: 15.2,
-          seasonality: 'medium' as const,
-          seasonalityMultipliers: {},
-          trends: ['Remote work growth', 'Organization trend'],
-          marketMaturity: 'growing' as const
-        },
-        competitionAnalysis: {
-          competitorCount: 28,
-          averageRating: 4.2,
-          priceRange: { min: 60, max: 120 },
-          marketShare: 'Strong',
-          competitionLevel: 'medium' as const,
-          barrierToEntry: 'medium' as const,
-          topCompetitors: []
-        },
-        keywordAnalysis: {
-          primaryKeywords: ['desk organizer', 'wireless charging'],
-          searchVolume: 45000,
-          difficulty: 68,
-          cpc: 1.85,
-          suggestions: ['wireless charging desk', 'bamboo organizer'],
-          longTailKeywords: []
-        },
-        reviewAnalysis: {
-          sentiment: 0.82,
-          positivePercentage: 82,
-          negativePercentage: 12,
-          neutralPercentage: 6,
-          commonComplaints: ['Price point'],
-          commonPraises: ['Quality', 'Design'],
-          opportunities: ['Better packaging'],
-          reviewVelocity: 25,
-          averageReviewLength: 165
-        },
-        supplyChainAnalysis: {
-          complexity: 'medium' as const,
-          leadTime: '45-60 days',
-          minimumOrder: 200,
-          supplierCount: 12,
-          manufacturingRegions: ['China'],
-          shippingCosts: 17.4,
-          customsDuties: 6.96,
-          qualityRequirements: ['CE marking']
-        },
-        riskFactors: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        analysisVersion: '1.0'
-      }
-    },
-    {
-      id: 'mock-2',
-      asin: 'B08P7MCDPT',
-      title: 'Smart Plant Watering System',
-      brand: 'GreenTech',
-      category: 'Home & Garden',
-      subcategory: 'Gardening Tools',
-      price: 129.99,
-      currency: 'USD',
-      rating: 4.4,
-      reviewCount: 1800,
-      imageUrls: ['https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=400&fit=crop'],
-      description: 'Automated plant care system with soil moisture sensors',
-      features: ['Automated watering', 'App controlled', 'Soil sensors'],
-      availability: 'in_stock' as const,
-      bsr: 89,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      analysis: {
-        id: 'analysis-2',
-        productId: 'mock-2',
-        opportunityScore: 8.2,
-        demandScore: 8.5,
-        competitionScore: 7.2,
-        feasibilityScore: 8.0,
-        financialAnalysis: {
-          estimatedMonthlySales: 520,
-          estimatedRevenue: 67600,
-          profitMargin: 38,
-          breakEvenUnits: 95,
-          roi: 185,
-          costOfGoodsSold: 39.0,
-          fbaFees: 19.5,
-          marketingCosts: 13.0
-        },
-        marketAnalysis: {
-          marketSize: '$320M',
-          totalAddressableMarket: 320000000,
-          growthRate: 22.1,
-          seasonality: 'high' as const,
-          seasonalityMultipliers: {},
-          trends: ['Smart home growth', 'Gardening boom'],
-          marketMaturity: 'growing' as const
-        },
-        competitionAnalysis: {
-          competitorCount: 15,
-          averageRating: 4.1,
-          priceRange: { min: 90, max: 200 },
-          marketShare: 'Growing',
-          competitionLevel: 'low' as const,
-          barrierToEntry: 'medium' as const,
-          topCompetitors: []
-        },
-        keywordAnalysis: {
-          primaryKeywords: ['smart plant watering', 'automated gardening'],
-          searchVolume: 32000,
-          difficulty: 55,
-          cpc: 2.15,
-          suggestions: ['plant watering system', 'smart irrigation'],
-          longTailKeywords: []
-        },
-        reviewAnalysis: {
-          sentiment: 0.78,
-          positivePercentage: 78,
-          negativePercentage: 15,
-          neutralPercentage: 7,
-          commonComplaints: ['Setup complexity'],
-          commonPraises: ['Effectiveness', 'Innovation'],
-          opportunities: ['Easier setup'],
-          reviewVelocity: 18,
-          averageReviewLength: 140
-        },
-        supplyChainAnalysis: {
-          complexity: 'high' as const,
-          leadTime: '60-75 days',
-          minimumOrder: 150,
-          supplierCount: 8,
-          manufacturingRegions: ['China', 'Taiwan'],
-          shippingCosts: 22.8,
-          customsDuties: 9.12,
-          qualityRequirements: ['FCC certification', 'CE marking']
-        },
-        riskFactors: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        analysisVersion: '1.0'
-      }
-    }
-  ]
-  
-  // Duplicate and modify products to reach the requested limit
-  const result = []
-  for (let i = 0; i < limit; i++) {
-    const product = { ...products[i % products.length] }
-    product.id = `mock-${i + 1}`
-    product.title = `${product.title} ${i > 1 ? `(Variant ${i})` : ''}`
-    result.push(product)
-  }
-  
-  return result
-}
-
-// Note: Using mock data for trending products to avoid database dependencies
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 // Force dynamic behavior since we use searchParams
 export const dynamic = 'force-dynamic'
@@ -208,20 +14,155 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '6')
     const sortBy = searchParams.get('sortBy') || 'opportunity'
 
-    // Use mock data instead of database
-    const mockProducts = getMockTrendingProducts(limit)
+    const supabase = await createServerSupabaseClient()
+    
+    // First, get all ASINs from niches (same logic as products API)
+    const { data: niches } = await supabase
+      .from('niches')
+      .select('asins')
+      
+    // Extract all ASINs from niches
+    const allAsins: string[] = []
+    niches?.forEach(niche => {
+      if (niche.asins) {
+        const asins = niche.asins.split(',').map((a: string) => a.trim())
+        allAsins.push(...asins)
+      }
+    })
 
-    // Apply sorting to mock data
-    let sortedProducts = [...mockProducts]
-    if (sortBy === 'opportunity' || sortBy === 'demand') {
-      sortedProducts.sort((a, b) => (b.analysis?.opportunityScore || 0) - (a.analysis?.opportunityScore || 0))
-    } else if (sortBy === 'recent') {
-      sortedProducts.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    } else if (sortBy === 'price') {
-      sortedProducts.sort((a, b) => a.price - b.price)
+    // If no ASINs found in niches, return empty array
+    if (allAsins.length === 0) {
+      console.log('No products found in niches')
+      return NextResponse.json([])
     }
 
-    return NextResponse.json(sortedProducts)
+    // Fetch products that are in niches with their analyses
+    const { data: products, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        product_analyses (
+          opportunity_score,
+          competition_score,
+          demand_score,
+          feasibility_score,
+          timing_score,
+          keyword_analysis,
+          financial_analysis,
+          created_at,
+          updated_at
+        )
+      `)
+      .in('asin', allAsins)
+      .eq('status', 'ACTIVE')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('Database error:', error)
+      return NextResponse.json(
+        { 
+          error: 'Failed to fetch products',
+          message: error.message
+        },
+        { status: 500 }
+      )
+    }
+
+    if (!products || products.length === 0) {
+      console.log('No products found in database')
+      return NextResponse.json([])
+    }
+
+    // Transform database products to match Product interface
+    const transformedProducts: Product[] = products.map(product => {
+      // Parse image URLs
+      let imageUrls = []
+      if (product.image_urls) {
+        try {
+          if (product.image_urls.startsWith('[') || product.image_urls.startsWith('{')) {
+            imageUrls = JSON.parse(product.image_urls)
+          } else {
+            const filenames = product.image_urls.split(',').map((f: string) => f.trim())
+            imageUrls = filenames.map((filename: string) => 
+              `https://m.media-amazon.com/images/I/${filename}`
+            )
+          }
+        } catch {
+          imageUrls = [`https://m.media-amazon.com/images/I/${product.image_urls}`]
+        }
+      }
+      
+      // Get the first analysis if it exists
+      const analysis = product.product_analyses && product.product_analyses.length > 0 
+        ? product.product_analyses[0] 
+        : null
+        
+      return {
+        id: product.id,
+        asin: product.asin,
+        title: product.title,
+        brand: product.brand || 'Unknown Brand',
+        category: product.category || 'Uncategorized',
+        subcategory: product.subcategory || '',
+        price: product.price || 0,
+        currency: 'USD',
+        rating: product.rating || 0,
+        reviewCount: product.review_count || 0,
+        imageUrls: imageUrls.length > 0 ? imageUrls : ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop'],
+        images: imageUrls, // Add images field for compatibility
+        imageUrl: imageUrls[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop', // Add imageUrl for compatibility
+        description: product.description || '',
+        features: product.features ? (typeof product.features === 'string' ? JSON.parse(product.features) : product.features) : [],
+        availability: 'in_stock' as const,
+        bsr: product.bsr || 0,
+        monthlySales: product.monthly_sales || 0,
+        createdAt: product.created_at,
+        updatedAt: product.updated_at,
+        analysis: analysis ? {
+          id: `analysis-${product.id}`,
+          productId: product.id,
+          opportunityScore: analysis.opportunity_score || 0,
+          demandScore: analysis.demand_score || 0,
+          competitionScore: analysis.competition_score || 0,
+          feasibilityScore: analysis.feasibility_score || 0,
+          financialAnalysis: analysis.financial_analysis || {
+            estimatedMonthlySales: 0,
+            estimatedRevenue: 0,
+            profitMargin: 0,
+            breakEvenUnits: 0,
+            roi: 0,
+            costOfGoodsSold: 0,
+            fbaFees: 0,
+            marketingCosts: 0
+          },
+          competitionAnalysis: {
+            competitorCount: 0,
+            averageRating: 0,
+            priceRange: { min: 0, max: 0 },
+            marketShare: 'Unknown',
+            competitionLevel: 'medium' as const,
+            barrierToEntry: 'medium' as const,
+            topCompetitors: []
+          },
+          createdAt: analysis.created_at || new Date().toISOString(),
+          updatedAt: analysis.updated_at || new Date().toISOString(),
+          analysisVersion: '1.0'
+        } : undefined
+      }
+    })
+
+    // Apply sorting
+    if (sortBy === 'opportunity' || sortBy === 'demand') {
+      transformedProducts.sort((a, b) => (b.analysis?.opportunityScore || 0) - (a.analysis?.opportunityScore || 0))
+    } else if (sortBy === 'recent') {
+      transformedProducts.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    } else if (sortBy === 'price') {
+      transformedProducts.sort((a, b) => a.price - b.price)
+    }
+
+    console.log(`Returning ${transformedProducts.length} products from database`)
+    return NextResponse.json(transformedProducts)
   } catch (error) {
     console.error('Trending products API error:', error)
     return NextResponse.json(

@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, email, password, subscribeNewsletter } = signupSchema.parse(body)
 
+    const supabase = getServerSupabase()
+
     // Check if user already exists
     const { data: existingUser } = await supabase
       .from('users')
@@ -55,9 +57,14 @@ export async function POST(request: NextRequest) {
         await supabase.from('newsletter_subscriptions').insert({
           email,
           user_id: user.id,
-          subscription_type: 'daily_deals',
+          subscription_type: 'daily_product',
           subscribe_source: 'signup',
           unsubscribe_token: `unsubscribe_${user.id}_${Date.now()}`,
+          is_active: true,
+          preferences: {
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            format: 'html'
+          }
         })
       } catch (error) {
         // Newsletter subscription is not critical, log but don't fail

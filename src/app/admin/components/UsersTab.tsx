@@ -34,7 +34,8 @@ import {
   RefreshCw,
   User as UserIcon,
   Save,
-  Loader2
+  Loader2,
+  Trash2
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -148,6 +149,108 @@ export default function UsersTab() {
     } catch (error) {
       console.error('Error updating user plan:', error)
       alert('Failed to update user plan')
+    } finally {
+      setSavingUserId(null)
+    }
+  }
+
+  const deleteUser = async (userId: string, userEmail: string) => {
+    if (!confirm(`Are you sure you want to delete user ${userEmail}? This action cannot be undone.`)) {
+      return
+    }
+
+    setSavingUserId(userId)
+    try {
+      // First, find the admin user (anthony@adscrafted.com)
+      const { data: adminUser, error: adminError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', 'anthony@adscrafted.com')
+        .single()
+
+      if (adminError || !adminUser) {
+        throw new Error('Could not find admin user (anthony@adscrafted.com) to reassign content')
+      }
+
+      // Check if user has any niches
+      const { data: userNiches, error: nichesError } = await supabase
+        .from('niches')
+        .select('id, niche_name')
+        .eq('created_by', userId)
+
+      if (nichesError) {
+        throw new Error('Failed to check user dependencies')
+      }
+
+      // If user has niches, reassign them to admin
+      if (userNiches && userNiches.length > 0) {
+        const nichesList = userNiches.map(n => `- ${n.niche_name}`).join('\n')
+        const reassignNiches = confirm(
+          `This user has created ${userNiches.length} niche(s):\n\n${nichesList}\n\n` +
+          `These niches will be reassigned to anthony@adscrafted.com before deleting the user.\n\n` +
+          `Click OK to proceed with reassignment and deletion.\n` +
+          `Click Cancel to abort.`
+        )
+
+        if (!reassignNiches) {
+          alert('User deletion cancelled.')
+          return
+        }
+
+        // Reassign all user's niches to admin
+        const { error: reassignError } = await supabase
+          .from('niches')
+          .update({ created_by: adminUser.id })
+          .eq('created_by', userId)
+
+        if (reassignError) {
+          throw new Error('Failed to reassign user niches: ' + reassignError.message)
+        }
+
+        console.log(`Reassigned ${userNiches.length} niches from ${userEmail} to anthony@adscrafted.com`)
+      }
+
+      // Now delete the user
+      const { data, error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId)
+        .select()
+
+      if (error) {
+        console.error('Supabase delete error:', error)
+        throw new Error(error.message || 'Failed to delete user')
+      }
+
+      // Check if any rows were actually deleted
+      if (!data || data.length === 0) {
+        throw new Error('No user was deleted. The user may not exist or you may not have permission.')
+      }
+
+      console.log('Successfully deleted user:', userEmail)
+      
+      // Update local state and cache
+      const updatedUsers = users.filter(user => user.id !== userId)
+      setUsers(updatedUsers)
+      cachedUsers = updatedUsers
+      
+      // Show success message
+      const nichesReassigned = userNiches && userNiches.length > 0 ? ` (${userNiches.length} niche(s) reassigned to admin)` : ''
+      alert(`User ${userEmail} has been successfully deleted${nichesReassigned}.`)
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete user'
+      
+      // Provide helpful message for foreign key constraint
+      if (errorMessage.includes('foreign key constraint')) {
+        alert(
+          `Cannot delete user: They have created content that must be removed first.\n\n` +
+          `This user may have created niches, products, or other data that couldn't be automatically reassigned. ` +
+          `Please manually handle these items before deleting the user.`
+        )
+      } else {
+        alert(`Failed to delete user: ${errorMessage}`)
+      }
     } finally {
       setSavingUserId(null)
     }
@@ -376,13 +479,23 @@ export default function UsersTab() {
                     {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : 'Never'}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push(`/admin/users/manage/${user.id}`)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push(`/admin/users/manage/${user.id}`)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteUser(user.id, user.email)}
+                        disabled={savingUserId === user.id}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

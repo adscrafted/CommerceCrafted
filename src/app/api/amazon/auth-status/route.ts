@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
     }
 
     const adsApiStatus = {
-      status: process.env.AMAZON_ADS_API_CLIENT_ID ? 'configured' : 'not_configured',
-      hasClientId: !!process.env.AMAZON_ADS_API_CLIENT_ID,
-      hasClientSecret: !!process.env.AMAZON_ADS_API_CLIENT_SECRET,
-      hasRefreshToken: !!process.env.AMAZON_ADS_API_REFRESH_TOKEN,
-      profileId: process.env.AMAZON_ADS_PROFILE_ID || null,
+      status: process.env.ADS_API_CLIENT_ID ? 'configured' : 'not_configured',
+      hasClientId: !!process.env.ADS_API_CLIENT_ID,
+      hasClientSecret: !!process.env.ADS_API_CLIENT_SECRET,
+      hasRefreshToken: !!process.env.ADS_API_REFRESH_TOKEN,
+      profileId: process.env.ADS_API_PROFILE_ID || null,
       advertiserId: process.env.AMAZON_ADVERTISER_ID || null,
       region: process.env.AMAZON_ADS_API_REGION || 'na',
       lastChecked: new Date().toISOString()
@@ -65,10 +65,10 @@ export async function GET(request: NextRequest) {
           ...adsApiStatus,
           status: testResults.adsApi.canConnect ? 'ready' : 'not_configured',
           configurationSteps: !testResults.adsApi.canConnect ? [
-            'Set AMAZON_ADS_API_CLIENT_ID in environment variables',
-            'Set AMAZON_ADS_API_CLIENT_SECRET in environment variables',
-            'Set AMAZON_ADS_API_REFRESH_TOKEN in environment variables',
-            'Set AMAZON_ADS_PROFILE_ID in environment variables'
+            'Set ADS_API_CLIENT_ID in environment variables',
+            'Set ADS_API_CLIENT_SECRET in environment variables',
+            'Set ADS_API_REFRESH_TOKEN in environment variables',
+            'Set ADS_API_PROFILE_ID in environment variables'
           ] : []
         }
       },

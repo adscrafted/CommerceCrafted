@@ -28,11 +28,12 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 
-interface Product {
+interface Niche {
   id: string
   slug: string
   title: string
   mainImage: string
+  productCount: number
   opportunityScore: number
   scores: {
     demand: number
@@ -44,25 +45,27 @@ interface Product {
     financial: number
   }
   category: string
-  price: string
-  reviews: string
+  avgPrice: string
+  totalReviews: number
+  monthlyRevenue: number
+  competitionLevel: string
 }
 
-export default function ProductDatabasePage() {
+export default function NicheDatabasePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isGridView, setIsGridView] = useState(true) // Default to grid view
   const [currentPage, setCurrentPage] = useState(1)
-  const [products, setProducts] = useState<Product[]>([])
+  const [niches, setNiches] = useState<Niche[]>([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const productsPerPage = 12
+  const nichesPerPage = 12
   const filterRef = useRef<HTMLDivElement>(null)
 
-  // Get unique categories from products
-  const categories = Array.from(new Set(products.map(p => p.category))).sort()
+  // Get unique categories from niches
+  const categories = Array.from(new Set(niches.map(n => n.category))).sort()
 
   // Click outside handler for filter dropdown
   useEffect(() => {
@@ -81,37 +84,37 @@ export default function ProductDatabasePage() {
     }
   }, [showFilters])
 
-  // Fetch products from database
+  // Fetch niches from database
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchNiches = async () => {
       setIsLoading(true)
       
       try {
         const params = new URLSearchParams({
           search: searchQuery,
           page: currentPage.toString(),
-          limit: productsPerPage.toString()
+          limit: nichesPerPage.toString()
         })
         
-        const response = await fetch(`/api/products?${params}`)
+        const response = await fetch(`/api/niches/public?${params}`)
         
         if (!response.ok) {
           // Handle any non-ok response gracefully
-          console.log('Products API returned:', response.status)
-          setProducts([])
+          console.log('Niches API returned:', response.status)
+          setNiches([])
           setTotalPages(0)
           setTotalCount(0)
           return
         }
         
         const data = await response.json()
-        setProducts(data.products || [])
+        setNiches(data.niches || [])
         setTotalPages(data.totalPages || 0)
         setTotalCount(data.totalCount || 0)
       } catch (err) {
         // Log error but don't throw - just show empty state
-        console.log('Error fetching products, showing empty state')
-        setProducts([])
+        console.log('Error fetching niches, showing empty state')
+        setNiches([])
         setTotalPages(0)
         setTotalCount(0)
       } finally {
@@ -119,7 +122,7 @@ export default function ProductDatabasePage() {
       }
     }
 
-    fetchProducts()
+    fetchNiches()
   }, [searchQuery, currentPage])
 
   // Reset to page 1 when search or category changes
@@ -127,10 +130,10 @@ export default function ProductDatabasePage() {
     setCurrentPage(1)
   }, [searchQuery, selectedCategory])
 
-  // Filter products by category
-  const filteredProducts = selectedCategory 
-    ? products.filter(p => p.category === selectedCategory)
-    : products
+  // Filter niches by category
+  const filteredNiches = selectedCategory 
+    ? niches.filter(n => n.category === selectedCategory)
+    : niches
 
   const getScoreColor = (score: number) => {
     if (score >= 85) return 'text-green-600'
@@ -146,7 +149,7 @@ export default function ProductDatabasePage() {
         <div className="text-center mb-8">
           <h1 className="text-5xl font-bold text-blue-600 mb-4">The Product Database</h1>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Discover profitable Amazon product opportunities
+            Explore curated Amazon product niches with comprehensive market analysis
           </p>
         </div>
 
@@ -156,7 +159,7 @@ export default function ProductDatabasePage() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search products..."
+                placeholder="Search niches..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -285,11 +288,11 @@ export default function ProductDatabasePage() {
               </Card>
             ))}
           </div>
-        ) : filteredProducts.length > 0 ? (
+        ) : filteredNiches.length > 0 ? (
           <>
             <div className={isGridView ? "grid md:grid-cols-2 gap-6" : "space-y-4"}>
-              {filteredProducts.map((product) => (
-                <Link key={product.id} href={`/products/${product.slug}`}>
+              {filteredNiches.map((niche) => (
+                <Link key={niche.id} href={`/products/${niche.slug}?nicheId=${niche.id}`}>
                   <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer bg-white border-2 h-full">
                     <div className={isGridView ? "p-8" : "p-6"}>
                       {isGridView ? (
@@ -298,23 +301,23 @@ export default function ProductDatabasePage() {
                           <div className="flex flex-col space-y-4">
                             <div className="flex items-start space-x-4">
                               <img
-                                src={product.mainImage}
-                                alt={product.title}
+                                src={niche.mainImage}
+                                alt={niche.title}
                                 className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
                               />
                               <div className="flex-1">
                                 <div className="flex items-center space-x-2 mb-2">
                                   <Badge variant="secondary" className="text-xs">
-                                    {product.category}
+                                    {niche.category}
                                   </Badge>
-                                  <span className="text-sm text-gray-500">{product.price}</span>
-                                  <span className="text-sm text-gray-500">• {product.reviews} reviews</span>
+                                  <span className="text-sm text-gray-500">{niche.productCount} products</span>
+                                  <span className="text-sm text-gray-500">• Avg: {niche.avgPrice}</span>
                                 </div>
-                                <h2 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">{product.title}</h2>
+                                <h2 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">{niche.title}</h2>
                               </div>
                               <div className="text-center">
                                 <div className="text-4xl font-bold text-blue-600">
-                                  {product.opportunityScore}
+                                  {niche.opportunityScore}
                                 </div>
                                 <div className="text-xs text-gray-600">Opportunity</div>
                               </div>
@@ -329,7 +332,7 @@ export default function ProductDatabasePage() {
                               <MessageSquare className="h-3 w-3 text-yellow-600" />
                               <span className="text-xs font-medium text-gray-700">Market Intelligence</span>
                             </div>
-                            <Progress value={product.scores.intelligence} className="h-2 [&>div]:bg-purple-600" />
+                            <Progress value={niche.scores.intelligence} className="h-2 [&>div]:bg-purple-600" />
                           </div>
 
                           <div className="space-y-2">
@@ -337,7 +340,7 @@ export default function ProductDatabasePage() {
                               <TrendingUp className="h-3 w-3 text-blue-600" />
                               <span className="text-xs font-medium text-gray-700">Demand Analysis</span>
                             </div>
-                            <Progress value={product.scores.demand} className="h-2 [&>div]:bg-purple-600" />
+                            <Progress value={niche.scores.demand} className="h-2 [&>div]:bg-purple-600" />
                           </div>
 
                           <div className="space-y-2">
@@ -345,7 +348,7 @@ export default function ProductDatabasePage() {
                               <Target className="h-3 w-3 text-red-600" />
                               <span className="text-xs font-medium text-gray-700">Competition</span>
                             </div>
-                            <Progress value={product.scores.competition} className="h-2 [&>div]:bg-purple-600" />
+                            <Progress value={niche.scores.competition} className="h-2 [&>div]:bg-purple-600" />
                           </div>
 
                           <div className="space-y-2">
@@ -353,7 +356,7 @@ export default function ProductDatabasePage() {
                               <Search className="h-3 w-3 text-green-600" />
                               <span className="text-xs font-medium text-gray-700">Keywords</span>
                             </div>
-                            <Progress value={product.scores.keywords} className="h-2 [&>div]:bg-purple-600" />
+                            <Progress value={niche.scores.keywords} className="h-2 [&>div]:bg-purple-600" />
                           </div>
 
                           <div className="space-y-2">
@@ -361,7 +364,7 @@ export default function ProductDatabasePage() {
                               <DollarSign className="h-3 w-3 text-emerald-600" />
                               <span className="text-xs font-medium text-gray-700">Financial</span>
                             </div>
-                            <Progress value={product.scores.financial} className="h-2 [&>div]:bg-purple-600" />
+                            <Progress value={niche.scores.financial} className="h-2 [&>div]:bg-purple-600" />
                           </div>
 
                           <div className="space-y-2">
@@ -369,7 +372,7 @@ export default function ProductDatabasePage() {
                               <FileText className="h-3 w-3 text-purple-600" />
                               <span className="text-xs font-medium text-gray-700">Listing</span>
                             </div>
-                            <Progress value={product.scores.listing} className="h-2 [&>div]:bg-purple-600" />
+                            <Progress value={niche.scores.listing} className="h-2 [&>div]:bg-purple-600" />
                           </div>
 
                           <div className="space-y-2">
@@ -377,7 +380,7 @@ export default function ProductDatabasePage() {
                               <Rocket className="h-3 w-3 text-orange-600" />
                               <span className="text-xs font-medium text-gray-700">Launch Strategy</span>
                             </div>
-                            <Progress value={product.scores.launch} className="h-2 [&>div]:bg-purple-600" />
+                            <Progress value={niche.scores.launch} className="h-2 [&>div]:bg-purple-600" />
                           </div>
                         </div>
                       </div>
@@ -387,20 +390,21 @@ export default function ProductDatabasePage() {
                           {/* List View Layout */}
                           <div className="flex items-center space-x-4">
                             <img
-                              src={product.mainImage}
-                              alt={product.title}
+                              src={niche.mainImage}
+                              alt={niche.title}
                               className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                             />
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-1">
-                                <h2 className="text-lg font-semibold text-gray-900">{product.title}</h2>
+                                <h2 className="text-lg font-semibold text-gray-900">{niche.title}</h2>
                                 <Badge variant="secondary" className="text-xs">
-                                  {product.category}
+                                  {niche.category}
                                 </Badge>
                               </div>
                               <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                <span>{product.price}</span>
-                                <span>• {product.reviews} reviews</span>
+                                <span>{niche.productCount} products</span>
+                                <span>• Avg: {niche.avgPrice}</span>
+                                <span>• {niche.totalReviews.toLocaleString()} total reviews</span>
                               </div>
                             </div>
                             
@@ -408,31 +412,31 @@ export default function ProductDatabasePage() {
                             <div className="flex items-center space-x-6">
                               <div className="text-center">
                                 <div className="text-xs text-gray-600 mb-1">Demand</div>
-                                <div className={`font-semibold ${getScoreColor(product.scores.demand)}`}>
-                                  {product.scores.demand}%
+                                <div className={`font-semibold ${getScoreColor(niche.scores.demand)}`}>
+                                  {niche.scores.demand}%
                                 </div>
                               </div>
                               <div className="text-center">
                                 <div className="text-xs text-gray-600 mb-1">Competition</div>
-                                <div className={`font-semibold ${getScoreColor(product.scores.competition)}`}>
-                                  {product.scores.competition}%
+                                <div className={`font-semibold ${getScoreColor(niche.scores.competition)}`}>
+                                  {niche.scores.competition}%
                                 </div>
                               </div>
                               <div className="text-center">
                                 <div className="text-xs text-gray-600 mb-1">Keywords</div>
-                                <div className={`font-semibold ${getScoreColor(product.scores.keywords)}`}>
-                                  {product.scores.keywords}%
+                                <div className={`font-semibold ${getScoreColor(niche.scores.keywords)}`}>
+                                  {niche.scores.keywords}%
                                 </div>
                               </div>
                               <div className="text-center">
                                 <div className="text-xs text-gray-600 mb-1">Financial</div>
-                                <div className={`font-semibold ${getScoreColor(product.scores.financial)}`}>
-                                  {product.scores.financial}%
+                                <div className={`font-semibold ${getScoreColor(niche.scores.financial)}`}>
+                                  {niche.scores.financial}%
                                 </div>
                               </div>
                               <div className="text-center px-4 py-2 bg-blue-50 rounded-lg">
                                 <div className="text-2xl font-bold text-blue-600">
-                                  {product.opportunityScore}
+                                  {niche.opportunityScore}
                                 </div>
                                 <div className="text-xs text-gray-600">Opportunity</div>
                               </div>
@@ -449,7 +453,7 @@ export default function ProductDatabasePage() {
             {/* Pagination */}
             <div className="flex items-center justify-between mt-8">
               <div className="text-sm text-gray-600">
-                {filteredProducts.length} results
+                {filteredNiches.length} results
                 {selectedCategory && (
                   <span className="ml-2">
                     (filtered by: <span className="font-medium">{selectedCategory}</span>)
@@ -459,7 +463,7 @@ export default function ProductDatabasePage() {
               
               <div className="flex items-center space-x-2">
                 <div className="text-sm text-gray-600 mr-4">
-                  Rows per page: {productsPerPage}
+                  Rows per page: {nichesPerPage}
                 </div>
                 <div className="text-sm text-gray-600 mr-4">
                   Page {currentPage} of {totalPages || 1}
@@ -493,9 +497,9 @@ export default function ProductDatabasePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No niches found</h3>
             <p className="text-gray-600 text-center max-w-md">
-              No products match your search criteria. Try adjusting your filters or search terms.
+              No niches match your search criteria. Try adjusting your filters or search terms.
             </p>
           </div>
         )}

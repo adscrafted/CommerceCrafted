@@ -35,10 +35,26 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session if needed
-  const { data: { user } } = await supabase.auth.getUser()
+  // Try to get the session first, then the user
+  let user = null
+  try {
+    // First try to get the session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError) {
+      console.log('Middleware: Session error:', sessionError.message)
+      // Clear invalid session cookies
+      if (sessionError.message.includes('Refresh Token') || sessionError.message.includes('invalid')) {
+        console.log('Middleware: Clearing invalid session')
+        await supabase.auth.signOut()
+      }
+    } else if (session) {
+      user = session.user
+    }
+  } catch (error) {
+    console.error('Middleware: Error getting session:', error)
+  }
   
-  console.log('Middleware: Full user object from getUser():', JSON.stringify(user, null, 2))
   console.log('Middleware: User email:', user?.email)
   console.log('Middleware: User ID:', user?.id)
 

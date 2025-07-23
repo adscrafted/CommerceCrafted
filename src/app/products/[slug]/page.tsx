@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import React, { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,7 +19,6 @@ import {
   Heart,
   Share2,
   Globe,
-  Crown,
   CheckCircle,
   FileText,
   MessageSquare,
@@ -39,12 +38,16 @@ interface ProductPageProps {
 
 // Helper function to extract ASIN from slug
 const extractAsinFromSlug = (slug: string): string => {
-  // Slug format: "smart-bluetooth-sleep-mask-with-built-in-speakers"
-  // We need to map this to ASIN. For now, we'll use a mapping or extract from the end
-  const slugToAsinMap: { [key: string]: string } = {
-    'smart-bluetooth-sleep-mask-with-built-in-speakers': 'B08MVBRNKV'
+  // Extract the last part of the slug which should be part of the ASIN
+  const parts = slug.split('-')
+  const lastPart = parts[parts.length - 1]
+  
+  // If the last part looks like an ASIN suffix (4 chars), return it
+  if (lastPart && lastPart.length === 4) {
+    return lastPart.toUpperCase()
   }
-  return slugToAsinMap[slug] || 'B08MVBRNKV' // fallback to our known ASIN
+  
+  return ''
 }
 
 // Function to fetch niche data from database
@@ -91,40 +94,7 @@ const fetchProductData = async (asin: string) => {
   }
 }
 
-// Fallback mock data in case database fetch fails
-const fallbackProductData = {
-  id: 'daily_product_1',
-  title: 'Smart Bluetooth Sleep Mask with Built-in Speakers',
-  subtitle: 'Revolutionary sleep technology combining comfort with audio entertainment',
-  category: 'Health & Personal Care',
-  asin: 'B08MVBRNKV',
-  date: 'July 4, 2025',
-  mainImage: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&h=600&fit=crop',
-  
-  // Overall scores
-  opportunityScore: 87,
-  scores: {
-    demand: 92,
-    competition: 78,
-    keywords: 85,
-    listing: 82,
-    intelligence: 88,
-    launch: 90,
-    financial: 88,
-    overall: 87
-  },
-  
-  // Financial Data
-  financialData: {
-    avgSellingPrice: 29.99,
-    totalFees: 8.50,
-    monthlyProjections: {
-      revenue: 52000,
-      profit: 18200,
-      units: 1735
-    }
-  }
-}
+// Fallback mock data removed - we'll show a proper not found message instead
 
 // Score card component
 const AnalysisScoreCard = ({ 
@@ -216,12 +186,93 @@ const AnalysisScoreCard = ({
   )
 }
 
+// Image carousel component
+const ImageCarousel = ({ images, title }: { images: string[], title: string }) => {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  
+  // Filter out empty strings and ensure we have valid URLs, then proxy Amazon images
+  const validImages = (images?.filter(img => img && img.trim() !== '') || [])
+    .map(img => {
+      // Proxy Amazon images to avoid CORS issues
+      if (img.includes('media-amazon.com') || img.includes('images-na.ssl-images-amazon.com')) {
+        return `/api/proxy-image?url=${encodeURIComponent(img)}`
+      }
+      return img
+    })
+  
+  if (!validImages || validImages.length === 0) {
+    return (
+      <div className="w-72 h-72 relative bg-gray-200 rounded-lg flex items-center justify-center">
+        <span className="text-gray-400">No images available</span>
+      </div>
+    )
+  }
+  
+  return (
+    <div className="flex gap-4">
+      {/* Main Image */}
+      <div className="w-72 h-72 relative bg-white rounded-lg shadow-xl overflow-hidden">
+        <Image 
+          src={validImages[currentIndex]}
+          alt={`${title} - Image ${currentIndex + 1}`}
+          width={288}
+          height={288}
+          className="w-full h-full object-contain"
+          onError={(e) => {
+            // Use a placeholder image for supplements
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&h=600&fit=crop'
+          }}
+        />
+      </div>
+      
+      {/* Thumbnails */}
+      {validImages.length > 1 && (
+        <div className="h-72">
+          <div className={`grid gap-2 h-full ${
+            validImages.length <= 4 ? 'grid-cols-1' :
+            validImages.length <= 8 ? 'grid-cols-2' :
+            validImages.length <= 12 ? 'grid-cols-3' :
+            'grid-cols-4'
+          }`}>
+            {validImages.map((image, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                  index === currentIndex 
+                    ? 'border-blue-500 shadow-md' 
+                    : 'border-gray-200 hover:border-gray-400'
+                }`}
+                style={{ height: '66px' }}
+              >
+                <Image
+                  src={image}
+                  alt={`${title} - Thumbnail ${index + 1}`}
+                  width={66}
+                  height={66}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=100&h=100&fit=crop'
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ProductPage({ params }: ProductPageProps) {
   // Remove auth dependency since this is now a public page
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [slug, setSlug] = useState<string>('')
   const [productData, setProductData] = useState<any>(null)
+  const [keywordHierarchy, setKeywordHierarchy] = useState<any>(null)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
@@ -233,6 +284,121 @@ export default function ProductPage({ params }: ProductPageProps) {
       const currentSlug = resolvedParams.slug
       setSlug(currentSlug)
       
+      // Check if we have a nicheId in the query params
+      const urlParams = new URLSearchParams(window.location.search)
+      const nicheId = urlParams.get('nicheId')
+      
+      if (nicheId) {
+        // Fetch niche showcase data
+        console.log('Fetching niche showcase data for ID:', nicheId)
+        try {
+          const response = await fetch(`/api/niches/${nicheId}/showcase`)
+          if (response.ok) {
+            const nicheShowcase = await response.json()
+            console.log('Using niche showcase data:', nicheShowcase)
+            
+            // Also fetch the full niche data to get keyword revenue
+            const nicheDataResponse = await fetch(`/api/niches/${nicheId}/data`)
+            let totalKeywordRevenue = 0
+            if (nicheDataResponse.ok) {
+              const nicheData = await nicheDataResponse.json()
+              // Calculate total revenue from keyword hierarchy
+              if (nicheData.keywordHierarchy) {
+                setKeywordHierarchy(nicheData.keywordHierarchy)
+                totalKeywordRevenue = Object.values(nicheData.keywordHierarchy).reduce((sum: number, root: any) => 
+                  sum + (root.totalRevenue || 0), 0
+                )
+              }
+            }
+            
+            // Calculate average price from products
+            const avgPrice = nicheShowcase.products.length > 0
+              ? nicheShowcase.products.reduce((sum: number, p: any) => sum + (p.price || 0), 0) / nicheShowcase.products.length
+              : nicheShowcase.metrics.price.avg
+            
+            // Get product images (all products for thumbnails)
+            const productImages = nicheShowcase.products
+              .map((p: any) => {
+                // Use image_urls (plural) as the primary source - this is the actual database field
+                if (p.image_urls) {
+                  // image_urls might be a JSON string or comma-separated list
+                  try {
+                    const urls = typeof p.image_urls === 'string' ? JSON.parse(p.image_urls) : p.image_urls
+                    const imageUrl = Array.isArray(urls) ? urls[0] : urls
+                    
+                    // If we have an image URL, ensure it's a full URL
+                    if (imageUrl) {
+                      // Check if it's just a filename (e.g., "71KdyGDfBbL.jpg")
+                      if (!imageUrl.startsWith('http')) {
+                        // Convert Amazon image filename to full URL
+                        return `https://m.media-amazon.com/images/I/${imageUrl}`
+                      }
+                      return imageUrl
+                    }
+                  } catch {
+                    // If not JSON, try splitting by comma
+                    const urls = p.image_urls.split(',').map((url: string) => url.trim())
+                    const imageUrl = urls[0]
+                    
+                    if (imageUrl) {
+                      if (!imageUrl.startsWith('http')) {
+                        return `https://m.media-amazon.com/images/I/${imageUrl}`
+                      }
+                      return imageUrl
+                    }
+                  }
+                }
+                
+                return null
+              })
+              .filter(Boolean)
+            
+            // Transform niche data to match product data structure
+            setProductData({
+              id: nicheShowcase.id,
+              title: nicheShowcase.title,
+              subtitle: nicheShowcase.subtitle,
+              category: nicheShowcase.category,
+              asin: nicheShowcase.asin,
+              date: new Date(nicheShowcase.createdAt).toLocaleDateString('en-US', { 
+                month: 'long', 
+                day: 'numeric', 
+                year: 'numeric' 
+              }),
+              opportunityScore: Math.round(nicheShowcase.scores.opportunity || 85),
+              scores: {
+                intelligence: Math.round(nicheShowcase.scores.opportunity || 85),
+                demand: Math.round(nicheShowcase.scores.demand || 82),
+                competition: Math.round(nicheShowcase.scores.competition || 78),
+                keywords: nicheShowcase.totalKeywords > 50 ? 85 : 75,
+                financial: nicheShowcase.metrics.revenue.monthly > 50000 ? 88 : 80,
+                listing: 82,
+                launch: 85
+              },
+              financialData: {
+                avgSellingPrice: avgPrice,
+                monthlyProjections: {
+                  revenue: totalKeywordRevenue || nicheShowcase.metrics.revenue.monthly,
+                  profit: (totalKeywordRevenue || nicheShowcase.metrics.revenue.monthly) * 0.35, // Assuming 35% margin
+                  units: Math.round((totalKeywordRevenue || nicheShowcase.metrics.revenue.monthly) / avgPrice)
+                }
+              },
+              mainImage: productImages[0] || fallbackProductData.mainImage,
+              images: productImages.length > 0 ? productImages : [fallbackProductData.mainImage],
+              totalProducts: nicheShowcase.products.length,
+              // Store the full niche data
+              _nicheData: nicheShowcase,
+              isNiche: true
+            })
+            setLoading(false)
+            return
+          }
+        } catch (error) {
+          console.error('Error fetching niche showcase:', error)
+        }
+      }
+      
+      // Original flow for individual products
       // First try to fetch niche data
       const nicheData = await fetchNicheData(currentSlug)
       
@@ -265,8 +431,8 @@ export default function ProductPage({ params }: ProductPageProps) {
           console.log('Using database product data')
           setProductData(fetchedProduct)
         } else {
-          console.log('Falling back to mock data')
-          setProductData(fallbackProductData)
+          console.log('No product data found')
+          setError('Product not found')
         }
       }
       
@@ -338,13 +504,35 @@ export default function ProductPage({ params }: ProductPageProps) {
     )
   }
 
+  if (error || !productData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Product Not Found</h1>
+          <p className="text-gray-600 mb-6">{error || 'The requested product could not be found.'}</p>
+          <Link href="/database">
+            <Button>Browse Product Database</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   // Since this is now a public page, always show access (or use debug toggle)
   const hasAccess = true // Public page - always has access
+  const nicheIdParam = searchParams.get('nicheId')
   
   // No membership gate needed for public pages
   
   // Use productData if available, otherwise fallback to mock data
   const currentProduct = productData || fallbackProductData
+
+
+  // Calculate metrics with real data
+  const totalKeywords = currentProduct._nicheData?.totalKeywords || 248
+  const avgBSR = currentProduct._nicheData?.metrics?.bsr?.avg || 15243
+  const avgRating = currentProduct._nicheData?.metrics?.rating?.avg || 4.2
+  const totalReviews = currentProduct._nicheData?.metrics?.reviews?.total || 36600
 
   const analysisCards = [
     {
@@ -352,11 +540,11 @@ export default function ProductPage({ params }: ProductPageProps) {
       score: currentProduct.scores.intelligence,
       icon: MessageSquare,
       description: 'Reviews, sentiment & customer insights',
-      href: `/products/${slug}/intelligence`,
+      href: `/products/${slug}/intelligence${nicheIdParam ? `?nicheId=${nicheIdParam}` : ''}`,
       gradient: 'bg-gradient-to-br from-yellow-50 to-yellow-100',
       metrics: [
-        { label: 'Sentiment', value: '4.2★' },
-        { label: 'Total Reviews', value: '36.6K' },
+        { label: 'Sentiment', value: `${avgRating.toFixed(1)}★` },
+        { label: 'Total Reviews', value: totalReviews > 1000 ? `${(totalReviews / 1000).toFixed(1)}K` : totalReviews.toString() },
         { label: 'Opportunities', value: '4' },
         { label: 'Avatars', value: '3 Types' }
       ]
@@ -366,11 +554,11 @@ export default function ProductPage({ params }: ProductPageProps) {
       score: currentProduct.scores.demand,
       icon: TrendingUp,
       description: 'Market size, search volume & customer segments',
-      href: `/products/${slug}/demand`,
+      href: `/products/${slug}/demand${nicheIdParam ? `?nicheId=${nicheIdParam}` : ''}`,
       gradient: 'bg-gradient-to-br from-blue-50 to-blue-100',
       metrics: [
         { label: 'Market Trend', value: 'Growing' },
-        { label: 'Market Growth', value: '+15%' },
+        { label: 'Avg BSR', value: avgBSR.toLocaleString() },
         { label: 'Conversion Rate', value: '12.5%' },
         { label: 'Market Size', value: '$1.2B' }
       ]
@@ -380,13 +568,13 @@ export default function ProductPage({ params }: ProductPageProps) {
       score: currentProduct.scores.competition,
       icon: Target,
       description: 'Competitor landscape & market positioning',
-      href: `/products/${slug}/competition`,
+      href: `/products/${slug}/competition${nicheIdParam ? `?nicheId=${nicheIdParam}` : ''}`,
       gradient: 'bg-gradient-to-br from-red-50 to-red-100',
       metrics: [
-        { label: 'Competitors', value: '127' },
-        { label: 'Avg Price', value: '$27.99' },
-        { label: 'Avg Rating', value: '4.2★' },
-        { label: 'Avg Reviews', value: '3,421' }
+        { label: 'Competitors', value: currentProduct.totalProducts || currentProduct._nicheData?.products?.length || 10 },
+        { label: 'Avg Price', value: `$${currentProduct.financialData.avgSellingPrice.toFixed(2)}` },
+        { label: 'Avg Rating', value: `${avgRating.toFixed(1)}★` },
+        { label: 'Avg Reviews', value: Math.round(totalReviews / (currentProduct.totalProducts || 10)).toLocaleString() }
       ]
     },
     {
@@ -394,11 +582,11 @@ export default function ProductPage({ params }: ProductPageProps) {
       score: currentProduct.scores.keywords,
       icon: Search,
       description: 'Keyword opportunities & search terms',
-      href: `/products/${slug}/keywords`,
+      href: `/products/${slug}/keywords${nicheIdParam ? `?nicheId=${nicheIdParam}` : ''}`,
       gradient: 'bg-gradient-to-br from-green-50 to-green-100',
       metrics: [
         { label: 'Primary CPC', value: '$1.23' },
-        { label: 'Total Keywords', value: '248' },
+        { label: 'Total Keywords', value: totalKeywords.toLocaleString() },
         { label: 'Keyword Revenue', value: '$454K' },
         { label: 'Competition', value: 'Medium' }
       ]
@@ -408,11 +596,11 @@ export default function ProductPage({ params }: ProductPageProps) {
       score: currentProduct.scores.financial,
       icon: DollarSign,
       description: 'Profitability, pricing & ROI projections',
-      href: `/products/${slug}/financial`,
+      href: `/products/${slug}/financial${nicheIdParam ? `?nicheId=${nicheIdParam}` : ''}`,
       gradient: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
       metrics: [
-        { label: 'Monthly Revenue', value: '$52K' },
-        { label: 'Monthly Profit', value: '$18.2K' },
+        { label: 'Monthly Revenue', value: `$${(currentProduct.financialData.monthlyProjections.revenue / 1000).toFixed(0)}K` },
+        { label: 'Monthly Profit', value: `$${(currentProduct.financialData.monthlyProjections.profit / 1000).toFixed(1)}K` },
         { label: 'Profit Margin', value: '35%' },
         { label: 'ROI', value: '142%' }
       ]
@@ -422,7 +610,7 @@ export default function ProductPage({ params }: ProductPageProps) {
       score: currentProduct.scores.listing,
       icon: FileText,
       description: 'Title, images, A+ content & video strategy',
-      href: `/products/${slug}/listing`,
+      href: `/products/${slug}/listing${nicheIdParam ? `?nicheId=${nicheIdParam}` : ''}`,
       gradient: 'bg-gradient-to-br from-purple-50 to-purple-100',
       metrics: [
         { label: 'Title Score', value: '85%' },
@@ -436,10 +624,10 @@ export default function ProductPage({ params }: ProductPageProps) {
       score: currentProduct.scores.launch,
       icon: Rocket,
       description: '90-day roadmap & growth tactics',
-      href: `/products/${slug}/launch`,
+      href: `/products/${slug}/launch${nicheIdParam ? `?nicheId=${nicheIdParam}` : ''}`,
       gradient: 'bg-gradient-to-br from-orange-50 to-orange-100',
       metrics: [
-        { label: 'Launch Price', value: '$19.99' },
+        { label: 'Launch Price', value: `$${(currentProduct.financialData.avgSellingPrice * 0.7).toFixed(2)}` },
         { label: 'Target Reviews', value: '100+' },
         { label: 'PPC Budget', value: '$75/day' },
         { label: 'Timeline', value: '90 days' }
@@ -468,83 +656,75 @@ export default function ProductPage({ params }: ProductPageProps) {
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  Daily Amazon Opportunity
+                  {currentProduct.isNiche ? 'Niche Analysis' : 'Daily Amazon Opportunity'}
                 </Badge>
                 <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
                   {currentProduct.date}
                 </Badge>
               </div>
               <h1 className="text-4xl font-bold mb-4">{currentProduct.title}</h1>
-              <p className="text-xl mb-6 text-blue-100">{currentProduct.subtitle}</p>
               
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <Button 
-                  onClick={handleSaveAnalysis}
-                  disabled={isSaved}
-                  className="bg-white text-blue-600 hover:bg-gray-100"
-                >
-                  <Heart className={`h-4 w-4 mr-2 ${isSaved ? 'fill-current text-red-500' : ''}`} />
-                  {isSaved ? 'Saved!' : 'Save Analysis'}
-                </Button>
-                <Button 
-                  onClick={handleShareReport}
-                  disabled={isSharing}
-                  variant="outline" 
-                  className="bg-white/10 border-white text-white hover:bg-white/20"
-                >
-                  <Share2 className="h-4 w-4 mr-2" />
-                  {isSharing ? 'Sharing...' : 'Share Report'}
-                </Button>
-              </div>
-            </div>
-            
-            {/* Product Image */}
-            <div className="text-center">
-              <div className="relative inline-block">
-                <div className="w-80 h-80 relative">
-                  <Image 
-                    src={currentProduct.mainImage}
-                    alt={currentProduct.title}
-                    width={320}
-                    height={320}
-                    className="rounded-lg shadow-2xl w-full h-full object-cover"
-                  />
-                  <div className="absolute -top-4 -right-4 bg-yellow-400 text-black rounded-full p-3">
-                    <Crown className="h-6 w-6" />
-                  </div>
+              {/* Monthly Revenue Display */}
+              <div className="mb-6">
+                <div className="inline-flex items-center bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/30">
+                  <span className="text-sm text-blue-100 mr-2">Est. Monthly Revenue:</span>
+                  <span className="text-2xl font-bold text-white">
+                    ${(() => {
+                      const revenue = currentProduct.financialData.monthlyProjections.revenue;
+                      if (revenue >= 1000000) {
+                        return `${(revenue / 1000000).toFixed(1)}M`;
+                      } else if (revenue >= 1000) {
+                        return `${(revenue / 1000).toFixed(0)}K`;
+                      } else {
+                        return revenue.toFixed(0);
+                      }
+                    })()}
+                  </span>
                 </div>
               </div>
+              
+            </div>
+            
+            {/* Product Image Carousel */}
+            <div className="text-center">
+              <ImageCarousel 
+                images={(() => {
+                  // Ensure we have valid images array
+                  let imagesArray = currentProduct.images || []
+                  
+                  // If no images array, try to use mainImage
+                  if ((!imagesArray || imagesArray.length === 0) && currentProduct.mainImage) {
+                    imagesArray = [currentProduct.mainImage]
+                  }
+                  
+                  // If we have image_urls as a string, parse it
+                  if (currentProduct.image_urls && typeof currentProduct.image_urls === 'string') {
+                    try {
+                      // Try to parse as JSON first
+                      const parsed = JSON.parse(currentProduct.image_urls)
+                      imagesArray = Array.isArray(parsed) ? parsed : [parsed]
+                    } catch {
+                      // If not JSON, split by comma
+                      imagesArray = currentProduct.image_urls.split(',').map((url: string) => url.trim())
+                    }
+                  }
+                  
+                  // Ensure all images have full URLs
+                  return imagesArray.map((url: string) => {
+                    if (!url) return null
+                    if (!url.startsWith('http')) {
+                      return `https://m.media-amazon.com/images/I/${url}`
+                    }
+                    return url
+                  }).filter(Boolean)
+                })()}
+                title={currentProduct.title}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats Bar */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold text-blue-600">
-                ${currentProduct.financialData.monthlyProjections.revenue.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600">Est. Monthly Revenue</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-purple-600">
-                ${currentProduct.financialData.avgSellingPrice}
-              </div>
-              <div className="text-sm text-gray-600">Avg. Selling Price</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-orange-600">
-                127
-              </div>
-              <div className="text-sm text-gray-600">Total Competitors</div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Analysis Score Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -585,11 +765,11 @@ export default function ProductPage({ params }: ProductPageProps) {
                       <ul className="space-y-1">
                         <li className="text-sm text-gray-700 flex items-start space-x-2">
                           <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>High demand with 45K monthly searches</span>
+                          <span>{totalKeywords} high-value keywords identified</span>
                         </li>
                         <li className="text-sm text-gray-700 flex items-start space-x-2">
                           <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>Growing market (+15% YoY)</span>
+                          <span>Average BSR of {avgBSR.toLocaleString()}</span>
                         </li>
                         <li className="text-sm text-gray-700 flex items-start space-x-2">
                           <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
@@ -597,7 +777,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                         </li>
                         <li className="text-sm text-gray-700 flex items-start space-x-2">
                           <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>Low competition in premium segment</span>
+                          <span>{avgRating.toFixed(1)}★ average rating</span>
                         </li>
                       </ul>
                     </div>

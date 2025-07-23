@@ -132,6 +132,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (error) {
           console.error('Error getting session:', error)
+          // Handle refresh token errors
+          if (error.message?.includes('Refresh Token') || error.message?.includes('invalid')) {
+            console.log('Invalid refresh token detected, clearing session')
+            await supabase.auth.signOut()
+          }
           setLoading(false)
           return
         }
@@ -385,6 +390,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (error) {
         console.error('Error refreshing session:', error)
+        // Handle refresh token errors
+        if (error.message?.includes('Refresh Token') || error.message?.includes('invalid')) {
+          console.log('Invalid refresh token detected during refresh, clearing session')
+          await supabase.auth.signOut()
+          setUser(null)
+          setSession(null)
+        }
         return
       }
 

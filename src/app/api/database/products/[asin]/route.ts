@@ -7,9 +7,16 @@ export async function GET(
 ) {
   try {
     const { asin } = await params
+    const url = new URL(request.url)
+    const marketIntelligence = url.searchParams.get('marketIntelligence')
     const supabase = await createServerSupabaseClient()
 
     console.log('Fetching product with ASIN:', asin)
+    
+    // If market intelligence is requested, return that data instead
+    if (marketIntelligence === 'true') {
+      return await getMarketIntelligence(asin, supabase)
+    }
 
     // Fetch product with full analysis data
     const { data: product, error: productError } = await supabase
@@ -194,6 +201,67 @@ export async function GET(
     return NextResponse.json(transformedProduct)
   } catch (error) {
     console.error('Error fetching product:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+// Market Intelligence function
+async function getMarketIntelligence(asin: string, supabase: any) {
+  try {
+    console.log('Fetching market intelligence for ASIN:', asin)
+    
+    // Fetch market intelligence data for the product
+    const { data: marketIntelligence, error: miError } = await supabase
+      .from('market_intelligence')
+      .select('*')
+      .eq('product_id', asin)
+      .single()
+    
+    if (miError && miError.code !== 'PGRST116') {
+      console.error('Error fetching market intelligence:', miError)
+      return NextResponse.json({ error: 'Failed to fetch market intelligence' }, { status: 500 })
+    }
+    
+    // Fetch customer reviews for the product
+    const { data: reviews, error: reviewsError } = await supabase
+      .from('customer_reviews')
+      .select('*')
+      .eq('product_id', asin)
+      .order('review_date', { ascending: false })
+      .limit(100)
+    
+    if (reviewsError) {
+      console.error('Error fetching reviews:', reviewsError)
+    }
+    
+    // If no market intelligence data exists, return empty structure
+    if (!marketIntelligence) {
+      return NextResponse.json({
+        hasData: false,
+        message: 'No market intelligence data available. Run niche processing to generate this data.',
+        reviewCount: reviews?.length || 0
+      })
+    }
+    
+    // Format the data for the UI
+    const formattedData = {
+      hasData: true,
+      customerPersonas: marketIntelligence.customer_personas || [],
+      voiceOfCustomer: marketIntelligence.voice_of_customer || {},
+      emotionalTriggers: marketIntelligence.emotional_triggers || [],
+      rawReviews: reviews || [],
+      totalReviewsAnalyzed: marketIntelligence.total_reviews_analyzed || 0,
+      analysisDate: marketIntelligence.analysis_date,
+      updatedAt: marketIntelligence.updated_at
+    }
+    
+    return NextResponse.json(formattedData)
+    
+  } catch (error) {
+    console.error('Market intelligence API error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

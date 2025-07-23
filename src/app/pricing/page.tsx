@@ -119,7 +119,7 @@ export default function PricingPage() {
                   <span className="text-4xl font-bold">$0</span>
                   <span className="text-gray-600 ml-2">forever</span>
                 </div>
-                <Link href="/auth/signin">
+                <Link href="/auth/signup">
                   <Button variant="outline" className="w-full mb-6">
                     Sign up Free
                   </Button>
@@ -170,7 +170,7 @@ export default function PricingPage() {
                   <span className="text-4xl font-bold text-orange-600">$499</span>
                   <span className="text-gray-600 ml-2">per year</span>
                 </div>
-                <Link href="/auth/signin?plan=starter&price=499">
+                <Link href="/auth/signup?plan=starter&price=499">
                   <Button className="w-full mb-6 bg-blue-600 hover:bg-blue-700">
                     Select Starter
                   </Button>
@@ -234,7 +234,7 @@ export default function PricingPage() {
                   <span className="text-4xl font-bold text-orange-600">$749</span>
                   <span className="text-gray-600 ml-2">per year</span>
                 </div>
-                <Link href="/auth/signin?plan=pro&price=749">
+                <Link href="/auth/signup?plan=pro&price=749">
                   <Button className="w-full mb-6 bg-purple-600 hover:bg-purple-700">
                     Select Pro
                   </Button>

@@ -150,6 +150,10 @@ export interface ProductAnalysis {
 export interface DailyFeature {
   id: string
   date: string
+  nicheName?: string | null
+  nicheSlug?: string | null
+  nicheId?: string | null
+  nicheProducts?: any[] // Array of products in the niche for carousel
   product: Product
   reason: string
   highlights: string[]

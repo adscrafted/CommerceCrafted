@@ -38,10 +38,10 @@ export const apiConfig = {
   amazonAds: {
     endpoint: process.env.AMAZON_ADS_API_ENDPOINT || 'https://advertising-api.amazon.com',
     credentials: {
-      clientId: process.env.AMAZON_ADS_CLIENT_ID!,
-      clientSecret: process.env.AMAZON_ADS_CLIENT_SECRET!,
-      refreshToken: process.env.AMAZON_ADS_REFRESH_TOKEN!,
-      profileId: process.env.AMAZON_ADS_PROFILE_ID!,
+      clientId: process.env.ADS_API_CLIENT_ID!,
+      clientSecret: process.env.ADS_API_CLIENT_SECRET!,
+      refreshToken: process.env.ADS_API_REFRESH_TOKEN!,
+      profileId: process.env.ADS_API_PROFILE_ID!,
     },
   },
   

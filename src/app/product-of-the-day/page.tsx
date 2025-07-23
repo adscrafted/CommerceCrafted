@@ -3,7 +3,6 @@
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-import { useAuth } from '@/lib/supabase/auth-context'
 import { useRouter } from 'next/navigation'
 import React, { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -43,9 +42,10 @@ import {
 import Link from 'next/link'
 import { MembershipGate } from '@/components/MembershipGate'
 import { generateProductSlug } from '@/lib/utils/slug'
+import { APIService } from '@/lib/api-service'
 
 
-// Score card component with debug mode support
+// Score card component (copied from product page)
 const AnalysisScoreCard = ({ 
   title, 
   score, 
@@ -54,7 +54,7 @@ const AnalysisScoreCard = ({
   href, 
   gradient,
   metrics,
-  showDebugUnlocked = false
+  isLocked = false
 }: {
   title: string
   score: number
@@ -63,7 +63,7 @@ const AnalysisScoreCard = ({
   href: string
   gradient: string
   metrics?: { label: string; value: string }[]
-  showDebugUnlocked?: boolean
+  isLocked?: boolean
 }) => {
   const getScoreColor = (score: number) => {
     if (score >= 85) return 'text-green-600'
@@ -79,176 +79,244 @@ const AnalysisScoreCard = ({
     return 'Poor'
   }
 
-  if (showDebugUnlocked) {
-    // Show full content without membership gate (debug mode)
-    return (
-      <Card className={`h-full transition-all duration-300 border-2 ${gradient}`}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-white rounded-lg shadow-sm">
-                <Icon className="h-6 w-6 text-gray-700" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">{title}</CardTitle>
-                <CardDescription className="text-sm">{description}</CardDescription>
-              </div>
+  const cardContent = (
+    <Card className={`h-full transition-all duration-300 border-2 ${isLocked ? 'cursor-default' : 'hover:shadow-lg cursor-pointer hover:border-blue-200'} ${gradient}`}>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-white rounded-lg shadow-sm">
+              <Icon className="h-6 w-6 text-gray-700" />
             </div>
-            <div className="text-center">
-              <div className={`text-3xl font-bold ${getScoreColor(score)}`}>
-                {score}
-              </div>
-              <div className="text-xs text-gray-600">{getScoreLabel(score)}</div>
+            <div>
+              <CardTitle className="text-lg">{title}</CardTitle>
+              <CardDescription className="text-sm">{description}</CardDescription>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Progress value={score} className="h-2 mb-3" />
+          <div className="text-center">
+            <div className={`text-3xl font-bold ${getScoreColor(score)}`}>
+              {score}
+            </div>
+            <div className="text-xs text-gray-600">{getScoreLabel(score)}</div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <Progress value={score} className="h-2" />
           {metrics && (
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-2 gap-4 mt-4">
               {metrics.map((metric, index) => (
-                <div key={index}>
-                  <span className="text-gray-600">{metric.label}:</span> <span className="font-medium">{metric.value}</span>
+                <div key={index} className="text-center p-2 bg-white/50 rounded">
+                  <div className="text-xs text-gray-600">{metric.label}</div>
+                  <div className="text-sm font-semibold text-gray-900">{metric.value}</div>
                 </div>
               ))}
             </div>
           )}
-          <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
-            <div className="text-sm text-green-800 font-medium">✓ Full Analysis Available</div>
-            <div className="text-xs text-green-600 mt-1">Complete insights and recommendations included</div>
-          </div>
-        </CardContent>
-      </Card>
-    )
+          {!isLocked && (
+            <div className="flex items-center justify-end text-sm text-blue-600 font-medium">
+              View Analysis
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  if (isLocked) {
+    return cardContent
   }
 
-  // Regular locked version (shows membership gate)
   return (
     <Link href={href} className="h-full">
-      <Card className={`h-full hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-blue-200 ${gradient}`}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-white rounded-lg shadow-sm">
-                <Icon className="h-6 w-6 text-gray-700" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">{title}</CardTitle>
-                <CardDescription className="text-sm">{description}</CardDescription>
-              </div>
-            </div>
-            <div className="text-center">
-              <div className={`text-3xl font-bold ${getScoreColor(score)}`}>
-                {score}
-              </div>
-              <div className="text-xs text-gray-600">{getScoreLabel(score)}</div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Progress value={score} className="h-2 mb-3" />
-          {metrics && (
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {metrics.map((metric, index) => (
-                <div key={index}>
-                  <span className="text-gray-600">{metric.label}:</span> <span className="font-medium">{metric.value}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {cardContent}
     </Link>
   )
 }
 
-// Mock daily feature data - in production this would come from the API
-const getDailyFeature = () => {
-  // Use current date
-  const today = new Date()
-  const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24)
-  
-  // Rotate through products based on day of year
-  const products = [
-    {
-      id: 'daily_product_1',
-      asin: 'B08MVBRNKV',
-      title: 'Smart Bluetooth Sleep Mask with Built-in Speakers',
-      brand: 'LC-dolida',
-      category: 'Health & Personal Care',
-      price: 29.99,
-      rating: 4.3,
-      reviewCount: 35678,
-      monthlyRevenue: 520000,
-      bsr: 2341,
-      images: ['https://images.unsplash.com/photo-1573883431205-98b5f10aaedb?w=600&h=400&fit=crop'],
-      opportunityScore: 87,
-      demandScore: 85,
-      competitionScore: 72,
-      profitMargin: 45,
-      launchBudget: 8000,
-      timeToMarket: 30,
-      highlights: [
-        'Growing 127% YoY with consistent demand',
-        'Premium positioning opportunity in $40-60 range',
-        'Untapped niches: travel, meditation, ASMR',
-        'Low competition from major brands'
-      ],
-      whyThisProduct: 'The intersection of sleep wellness and audio technology creates a unique opportunity. Post-pandemic remote work has driven demand for sleep optimization products, while the rise of sleep podcasts and meditation apps creates perfect product-market fit. Competition remains fragmented with no dominant brand.',
-      marketAnalysis: {
-        size: 450000000,
-        growth: 127,
-        trends: ['Sleep wellness growth', 'Remote work trend', 'Audio technology boom'],
-        seasonality: 'medium',
-        marketMaturity: 'growing'
-      },
-      competitorAnalysis: {
-        topCompetitors: ['MUSICOZY', 'Perytong', 'TOPOINT'],
-        marketShare: 'Fragmented market with no brand over 15% share',
-        differentiation: 'Premium materials, better sound quality, sleep tracking'
-      },
-      financialProjection: {
-        monthlyUnits: 17334,
-        avgSellingPrice: 29.99,
-        monthlyRevenue: 520000,
-        netProfit: 234000,
-        roi: 450
+interface DailyFeatureData {
+  id: string
+  date: string
+  nicheName?: string | null
+  nicheSlug?: string | null
+  nicheId?: string | null
+  nicheProducts?: any[]
+  product: {
+    id: string
+    asin: string
+    title: string
+    brand: string
+    category: string
+    price: number
+    rating: number
+    reviewCount: number
+    imageUrls: string[]
+    bsr?: number
+    analysis?: {
+      opportunityScore: number
+      demandScore: number
+      competitionScore: number
+      feasibilityScore: number
+      financialAnalysis?: {
+        estimatedMonthlySales: number
+        estimatedRevenue: number
+        profitMargin: number
+        roi: number
+      }
+      marketAnalysis?: {
+        totalAddressableMarket: number
+        growthRate: number
+        seasonality: string
+        marketMaturity: string
+      }
+      competitionAnalysis?: {
+        competitorCount: number
+        topCompetitors?: any[]
       }
     }
-  ]
-  
-  const selectedProduct = products[dayOfYear % products.length]
-  return {
-    product: selectedProduct,
-    date: today.toISOString().split('T')[0],
-    reason: 'High opportunity score with growing market demand'
   }
+  reason: string
+  highlights: string[]
+  marketContext: string
+  aiInsights: string[]
+  createdAt: string
+}
+
+// Image carousel component (copied from product page)
+const ImageCarousel = ({ images, title }: { images: string[], title: string }) => {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  
+  // Filter out empty strings and ensure we have valid URLs, then proxy Amazon images
+  // Limit to maximum 12 images
+  const validImages = (images?.filter(img => img && img.trim() !== '') || [])
+    .slice(0, 12)
+    .map(img => {
+      // Proxy Amazon images to avoid CORS issues
+      if (img.includes('media-amazon.com') || img.includes('images-na.ssl-images-amazon.com')) {
+        return `/api/proxy-image?url=${encodeURIComponent(img)}`
+      }
+      return img
+    })
+  
+  if (!validImages || validImages.length === 0) {
+    return (
+      <div className="w-72 h-72 relative bg-gray-200 rounded-lg flex items-center justify-center">
+        <span className="text-gray-400">No images available</span>
+      </div>
+    )
+  }
+  
+  return (
+    <div className="flex gap-4">
+      {/* Main Image */}
+      <div className="w-72 h-72 relative bg-white rounded-lg shadow-xl overflow-hidden">
+        <Image 
+          src={validImages[currentIndex]}
+          alt={`${title} - Image ${currentIndex + 1}`}
+          width={288}
+          height={288}
+          className="w-full h-full object-contain"
+          onError={(e) => {
+            // Use a placeholder image for supplements
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&h=600&fit=crop'
+          }}
+        />
+      </div>
+      
+      {/* Thumbnails */}
+      {validImages.length > 1 && (
+        <div className="h-72">
+          <div className={`grid gap-2 h-full ${
+            validImages.length <= 4 ? 'grid-cols-1' :
+            validImages.length <= 8 ? 'grid-cols-2' :
+            'grid-cols-3'
+          }`}>
+            {validImages.map((image, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                  index === currentIndex 
+                    ? 'border-blue-500 shadow-md' 
+                    : 'border-gray-200 hover:border-gray-400'
+                }`}
+                style={{ height: '66px' }}
+              >
+                <Image
+                  src={image}
+                  alt={`${title} - Thumbnail ${index + 1}`}
+                  width={66}
+                  height={66}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=100&h=100&fit=crop'
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 
 export default function ProductOfTheDayPage() {
-  // Remove auth dependency since this is a public page
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
-  const [showDebugUnlocked, setShowDebugUnlocked] = useState(false)
-
-  const dailyFeature = getDailyFeature()
-  const product = dailyFeature.product
-  const slug = generateProductSlug(product.title, product.asin)
+  const [dailyFeature, setDailyFeature] = useState<DailyFeatureData | null>(null)
+  const [error, setError] = useState<string | null>(null)
   
-  // Use current date formatting
-  const dateString = new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  })
+  // Use daily feature date if available, otherwise current date
+  const dateString = dailyFeature?.date 
+    ? new Date(dailyFeature.date).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })
+    : new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })
 
   useEffect(() => {
-    setTimeout(() => setLoading(false), 500)
+    fetchDailyFeature()
   }, [])
+  
+  const fetchDailyFeature = async () => {
+    try {
+      console.log('Fetching daily feature from API...')
+      const data = await APIService.getDailyFeature()
+      console.log('Daily feature data:', data)
+      
+      // If we have a nicheId, fetch additional niche data like the individual product page does
+      if (data.nicheId) {
+        try {
+          const nicheResponse = await fetch(`/api/niches/${data.nicheId}/showcase`)
+          if (nicheResponse.ok) {
+            const nicheShowcase = await nicheResponse.json()
+            // Merge the niche showcase data into our daily feature data
+            data._nicheData = nicheShowcase
+          }
+        } catch (nicheErr) {
+          console.error('Error fetching niche showcase:', nicheErr)
+        }
+      }
+      
+      setDailyFeature(data)
+    } catch (err) {
+      console.error('Error fetching daily feature:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load daily feature')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -311,79 +379,120 @@ export default function ProductOfTheDayPage() {
       </div>
     )
   }
+  
+  if (error || !dailyFeature) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Unable to Load Product of the Day</h1>
+          <p className="text-gray-600">{error || 'No daily feature available'}</p>
+        </div>
+      </div>
+    )
+  }
+  
+  const product = dailyFeature.product
+  // Use niche slug if available, otherwise fall back to product slug
+  let slug = dailyFeature.nicheSlug
+  if (!slug && dailyFeature.nicheName) {
+    // Generate slug from niche name if we have it but no slug
+    slug = dailyFeature.nicheName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  }
+  if (!slug) {
+    // Final fallback to product slug
+    slug = generateProductSlug(product.title, product.asin)
+  }
+  const nicheIdParam = dailyFeature.nicheId ? `?nicheId=${dailyFeature.nicheId}` : ''
+  
+  // Debug logging
+  console.log('Daily Feature Debug:', {
+    nicheId: dailyFeature.nicheId,
+    nicheSlug: dailyFeature.nicheSlug,
+    nicheName: dailyFeature.nicheName,
+    nicheIdParam: nicheIdParam,
+    finalSlug: slug
+  })
 
   // Product of the day is free for everyone as a preview
+  
+  // Get real metrics from niche data (same as individual product page)
+  const totalKeywords = dailyFeature._nicheData?.totalKeywords || 248
+  const avgBSR = dailyFeature._nicheData?.metrics?.bsr?.avg || 15243
+  const avgRating = dailyFeature._nicheData?.metrics?.rating?.avg || product.rating || 4.2
+  const totalReviews = dailyFeature._nicheData?.metrics?.reviews?.total || product.reviewCount || 36600
+  const totalProducts = dailyFeature._nicheData?.products?.length || dailyFeature.nicheProducts?.length || 10
+  const avgPrice = dailyFeature._nicheData?.metrics?.price?.avg || product.price || 19.99
 
   // Create analysis cards matching the product detail page format
   const analysisCards = [
     {
       title: 'Market Intelligence',
-      score: 88,
+      score: product.analysis?.opportunityScore || 85,
       icon: MessageSquare,
       description: 'Reviews, sentiment & customer insights',
-      href: `/products/${slug}/intelligence`,
+      href: `/products/${slug}/intelligence${nicheIdParam}`,
       gradient: 'bg-gradient-to-br from-yellow-50 to-yellow-100',
       metrics: [
-        { label: 'Sentiment', value: '4.3★' },
-        { label: 'Total Reviews', value: '35.7K' },
+        { label: 'Sentiment', value: `${avgRating.toFixed(1)}★` },
+        { label: 'Total Reviews', value: totalReviews > 1000 ? `${(totalReviews / 1000).toFixed(1)}K` : totalReviews.toString() },
         { label: 'Opportunities', value: '4' },
         { label: 'Avatars', value: '3 Types' }
       ]
     },
     {
       title: 'Demand Analysis',
-      score: product.demandScore,
+      score: product.analysis?.demandScore || 82,
       icon: TrendingUp,
       description: 'Market size, search volume & customer segments',
-      href: `/products/${slug}/demand`,
+      href: `/products/${slug}/demand${nicheIdParam}`,
       gradient: 'bg-gradient-to-br from-blue-50 to-blue-100',
       metrics: [
         { label: 'Market Trend', value: 'Growing' },
-        { label: 'Market Growth', value: `+${product.marketAnalysis.growth}%` },
+        { label: 'Avg BSR', value: avgBSR.toLocaleString() },
         { label: 'Conversion Rate', value: '12.5%' },
-        { label: 'Market Size', value: `$${(product.marketAnalysis.size / 1000000).toFixed(0)}M` }
+        { label: 'Market Size', value: '$1.2B' }
       ]
     },
     {
       title: 'Competition Analysis',
-      score: product.competitionScore,
+      score: product.analysis?.competitionScore || 78,
       icon: Target,
       description: 'Competitor landscape & market positioning',
-      href: `/products/${slug}/competition`,
+      href: `/products/${slug}/competition${nicheIdParam}`,
       gradient: 'bg-gradient-to-br from-red-50 to-red-100',
       metrics: [
-        { label: 'Competitors', value: product.competitorAnalysis.topCompetitors.length.toString() },
-        { label: 'Avg Price', value: `$${product.price.toFixed(2)}` },
-        { label: 'Avg Rating', value: `${product.rating}★` },
-        { label: 'Avg Reviews', value: product.reviewCount.toLocaleString() }
+        { label: 'Competitors', value: totalProducts.toString() },
+        { label: 'Avg Price', value: `$${avgPrice.toFixed(2)}` },
+        { label: 'Avg Rating', value: `${avgRating.toFixed(1)}★` },
+        { label: 'Avg Reviews', value: Math.round(totalReviews / totalProducts).toLocaleString() }
       ]
     },
     {
       title: 'Keywords Analysis',
-      score: 85,
+      score: totalKeywords > 50 ? 85 : 75,
       icon: Search,
       description: 'Keyword opportunities & search terms',
-      href: `/products/${slug}/keywords`,
+      href: `/products/${slug}/keywords${nicheIdParam}`,
       gradient: 'bg-gradient-to-br from-green-50 to-green-100',
       metrics: [
         { label: 'Primary CPC', value: '$1.23' },
-        { label: 'Total Keywords', value: '248' },
-        { label: 'Keyword Revenue', value: '$454K' },
+        { label: 'Total Keywords', value: totalKeywords.toString() },
+        { label: 'Keyword Revenue', value: `$${((dailyFeature._nicheData?.metrics?.revenue?.monthly || 454000) / 1000).toFixed(0)}K` },
         { label: 'Competition', value: 'Medium' }
       ]
     },
     {
       title: 'Financial Analysis',
-      score: 88,
+      score: dailyFeature._nicheData?.metrics?.revenue?.monthly > 50000 ? 88 : 80,
       icon: DollarSign,
       description: 'Profitability, costs & ROI projections',
-      href: `/products/${slug}/financial`,
+      href: `/products/${slug}/financial${nicheIdParam}`,
       gradient: 'bg-gradient-to-br from-green-50 to-green-100',
       metrics: [
-        { label: 'Monthly Revenue', value: `$${product.financialProjection.monthlyRevenue.toLocaleString()}` },
-        { label: 'Profit Margin', value: `${product.profitMargin}%` },
-        { label: 'ROI', value: `${product.financialProjection.roi}%` },
-        { label: 'Break-even', value: '3 months' }
+        { label: 'Monthly Revenue', value: `$${((dailyFeature._nicheData?.metrics?.revenue?.monthly || product.analysis?.financialAnalysis?.estimatedRevenue || 0) / 1000).toFixed(0)}K` },
+        { label: 'Monthly Profit', value: `$${((dailyFeature._nicheData?.metrics?.revenue?.monthly || product.analysis?.financialAnalysis?.estimatedRevenue || 0) * 0.35 / 1000).toFixed(1)}K` },
+        { label: 'Profit Margin', value: '35%' },
+        { label: 'ROI', value: '142%' }
       ]
     },
     {
@@ -391,7 +500,7 @@ export default function ProductOfTheDayPage() {
       score: 82,
       icon: FileText,
       description: 'Title, bullets & image recommendations',
-      href: `/products/${slug}/listing`,
+      href: `/products/${slug}/listing${nicheIdParam}`,
       gradient: 'bg-gradient-to-br from-purple-50 to-purple-100',
       metrics: [
         { label: 'Title Score', value: '85/100' },
@@ -405,10 +514,10 @@ export default function ProductOfTheDayPage() {
       score: 90,
       icon: Rocket,
       description: 'PPC, pricing & promotion strategies',
-      href: `/products/${slug}/launch`,
+      href: `/products/${slug}/launch${nicheIdParam}`,
       gradient: 'bg-gradient-to-br from-orange-50 to-orange-100',
       metrics: [
-        { label: 'Launch Budget', value: `$${product.launchBudget.toLocaleString()}` },
+        { label: 'Launch Budget', value: '$8,000' },
         { label: 'PPC Budget', value: '$2.5K' },
         { label: 'Time to Profit', value: '45 days' },
         { label: 'Strategy', value: 'Aggressive' }
@@ -418,39 +527,27 @@ export default function ProductOfTheDayPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Debug Button */}
-      <div className="fixed top-4 right-4 z-50">
-        <Button
-          onClick={() => setShowDebugUnlocked(!showDebugUnlocked)}
-          variant="outline"
-          size="sm"
-          className="bg-white shadow-lg"
-        >
-          {showDebugUnlocked ? 'Show Locked' : 'Debug Unlocked'}
-        </Button>
-      </div>
 
-      {/* Header with Navigation */}
-      <div className="bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Header Explanation Section */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
-            <h1 className="text-5xl font-bold text-blue-600 mb-8">Product of the Day</h1>
+            <Badge className="mb-4">Daily Amazon Opportunity</Badge>
+            <h1 className="text-5xl font-bold text-blue-600 mb-4">
+              Product of the Day
+            </h1>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+              Every day at midnight, we release one thoroughly analyzed Amazon product opportunity. 
+              Each analysis represents 40+ hours of research condensed into actionable insights you can use immediately.
+            </p>
             
-            {/* Navigation */}
-            <div className="flex items-center justify-center space-x-8">
-              <Link href="/products/smart-bluetooth-sleep-mask-with-built-in-speakers" className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
-                <ChevronLeft className="h-4 w-4" />
-                <span>Previous</span>
-              </Link>
-              
-              <div className="flex items-center space-x-2 text-gray-600">
-                <Calendar className="h-4 w-4" />
-                <span>{dateString}</span>
-              </div>
-              
-              <Link href="/next-product" className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
-                <span>Next Product</span>
-                <ChevronRight className="h-4 w-4" />
+            {/* CTA Button */}
+            <div className="flex justify-center">
+              <Link href="/pricing">
+                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg px-8 py-3">
+                  Get Daily Analysis
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
               </Link>
             </div>
           </div>
@@ -467,91 +564,79 @@ export default function ProductOfTheDayPage() {
                   Daily Amazon Opportunity
                 </Badge>
                 <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  Free Preview
+                  {dateString}
                 </Badge>
               </div>
-              <h1 className="text-4xl font-bold mb-4">{product.title}</h1>
-              <p className="text-xl mb-6 text-blue-100">{product.whyThisProduct}</p>
+              <h1 className="text-4xl font-bold mb-4">{dailyFeature.nicheName || product.title}</h1>
               
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <Button 
-                  onClick={handleSaveAnalysis}
-                  disabled={isSaved}
-                  className="bg-white text-blue-600 hover:bg-gray-100"
-                >
-                  <Heart className={`h-4 w-4 mr-2 ${isSaved ? 'fill-current text-red-500' : ''}`} />
-                  {isSaved ? 'Saved!' : 'Save Analysis'}
-                </Button>
-                <Button 
-                  onClick={handleShareReport}
-                  disabled={isSharing}
-                  variant="outline" 
-                  className="bg-white/10 border-white text-white hover:bg-white/20"
-                >
-                  <Share2 className="h-4 w-4 mr-2" />
-                  {isSharing ? 'Sharing...' : 'Share Report'}
-                </Button>
-              </div>
-            </div>
-            
-            {/* Product Image */}
-            <div className="text-center">
-              <div className="relative inline-block">
-                <div className="w-80 h-80 relative">
-                  <Image 
-                    src={product.images[0]}
-                    alt={product.title}
-                    width={320}
-                    height={320}
-                    className="rounded-lg shadow-2xl w-full h-full object-cover"
-                  />
-                  <div className="absolute -top-4 -right-4 bg-yellow-400 text-black rounded-full p-3">
-                    <Crown className="h-6 w-6" />
-                  </div>
+              {/* Monthly Revenue Display */}
+              <div className="mb-6">
+                <div className="inline-flex items-center bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/30">
+                  <span className="text-sm text-blue-100 mr-2">Est. Monthly Revenue:</span>
+                  <span className="text-2xl font-bold text-white">
+                    ${(() => {
+                      const revenue = dailyFeature._nicheData?.metrics?.revenue?.monthly || product.analysis?.financialAnalysis?.estimatedRevenue || 0;
+                      if (revenue >= 1000000) {
+                        return `${(revenue / 1000000).toFixed(1)}M`;
+                      } else if (revenue >= 1000) {
+                        return `${(revenue / 1000).toFixed(0)}K`;
+                      } else {
+                        return revenue.toFixed(0);
+                      }
+                    })()}
+                  </span>
                 </div>
               </div>
+              
+            </div>
+            
+            {/* Product Image Carousel */}
+            <div className="text-center">
+              <ImageCarousel 
+                images={(() => {
+                  // If we have niche products, collect their main images using image_url field
+                  if (dailyFeature.nicheProducts && dailyFeature.nicheProducts.length > 0) {
+                    return dailyFeature.nicheProducts
+                      .map(p => {
+                        // Check for mainImage first (this is what the daily-feature API returns)
+                        if (p.mainImage) {
+                          return p.mainImage
+                        }
+                        // Then check image_urls (plural) - this is the actual database field
+                        if (p.image_urls) {
+                          try {
+                            const urls = typeof p.image_urls === 'string' ? JSON.parse(p.image_urls) : p.image_urls
+                            return Array.isArray(urls) ? urls[0] : urls
+                          } catch {
+                            // If not JSON, try splitting by comma
+                            const urls = p.image_urls.split(',').map((url: string) => url.trim())
+                            return urls[0]
+                          }
+                        }
+                        // Fallback to other possible fields
+                        if (p.main_image) {
+                          return p.main_image
+                        }
+                        return null
+                      })
+                      .filter(Boolean)
+                      .slice(0, 12) // Limit to 12 images for the gallery
+                  }
+                  // Otherwise use the featured product's first image only
+                  return [product.imageUrls[0]].filter(Boolean)
+                })()}
+                title={dailyFeature.nicheName || product.title}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats Bar */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold text-blue-600">
-                ${product.financialProjection.monthlyRevenue.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600">Est. Monthly Revenue</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-purple-600">
-                ${product.price}
-              </div>
-              <div className="text-sm text-gray-600">Avg. Selling Price</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-orange-600">
-                {product.competitorAnalysis.topCompetitors.length || 3}
-              </div>
-              <div className="text-sm text-gray-600">Total Competitors</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Analysis Score Cards - Conditional Display */}
+      {/* Analysis Score Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Complete Product Analysis</h2>
-          <p className="text-gray-600">
-            {showDebugUnlocked 
-              ? "Full analysis available to all users as part of our daily product showcase"
-              : "Click any analysis below to explore detailed insights and recommendations"
-            }
-          </p>
+          <p className="text-gray-600">Click any analysis below to explore detailed insights and recommendations</p>
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -571,7 +656,7 @@ export default function ProductOfTheDayPage() {
                   </div>
                   <div className="text-center">
                     <div className={`text-3xl font-bold text-indigo-600`}>
-                      {product.opportunityScore}
+                      {Math.round(dailyFeature._nicheData?.scores?.opportunity || product.analysis?.opportunityScore || 85)}
                     </div>
                     <div className="text-xs text-gray-600">Overall Score</div>
                   </div>
@@ -579,26 +664,26 @@ export default function ProductOfTheDayPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <Progress value={product.opportunityScore} className="h-2" />
+                  <Progress value={Math.round(dailyFeature._nicheData?.scores?.opportunity || product.analysis?.opportunityScore || 85)} className="h-2" />
                   <div className="grid md:grid-cols-2 gap-6 mt-4">
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-2">Strengths</h3>
                       <ul className="space-y-1">
                         <li className="text-sm text-gray-700 flex items-start space-x-2">
                           <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>High demand with 45K monthly searches</span>
+                          <span>{totalKeywords} high-value keywords identified</span>
                         </li>
                         <li className="text-sm text-gray-700 flex items-start space-x-2">
                           <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>Growing market (+{product.marketAnalysis.growth}% YoY)</span>
+                          <span>Average BSR of {avgBSR.toLocaleString()}</span>
                         </li>
                         <li className="text-sm text-gray-700 flex items-start space-x-2">
                           <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>Strong profit margins ({product.profitMargin}%)</span>
+                          <span>Strong profit margins (35%)</span>
                         </li>
                         <li className="text-sm text-gray-700 flex items-start space-x-2">
                           <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>Low competition in premium segment</span>
+                          <span>{avgRating.toFixed(1)}★ average rating</span>
                         </li>
                       </ul>
                     </div>
@@ -632,49 +717,12 @@ export default function ProductOfTheDayPage() {
 
           {/* Regular Analysis Cards */}
           {analysisCards.map((card, index) => (
-            <AnalysisScoreCard key={index} {...card} showDebugUnlocked={showDebugUnlocked} />
+            <AnalysisScoreCard key={index} {...card} isLocked={false} />
           ))}
         </div>
       </div>
 
-      {/* Large CTA Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="mb-8">
-            <Award className="h-16 w-16 mx-auto mb-4 text-yellow-400" />
-            <h2 className="text-4xl font-bold mb-4">
-              Love This Analysis? Get More Every Day.
-            </h2>
-            <p className="text-xl text-blue-100 max-w-2xl mx-auto">
-              This is just a taste of what's possible. Join thousands of successful Amazon sellers who rely on our comprehensive product research to find their next winning opportunity.
-            </p>
-          </div>
 
-          <div className="grid md:grid-cols-3 gap-8 mb-10">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-yellow-400 mb-2">1000+</div>
-              <div className="text-blue-200">Products Analyzed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-yellow-400 mb-2">40+ hrs</div>
-              <div className="text-blue-200">Research Per Product</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-yellow-400 mb-2">365</div>
-              <div className="text-blue-200">Days Per Year</div>
-            </div>
-          </div>
-
-          <div>
-            <Link href="/pricing">
-              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-4">
-                Unlock Full Access
-                <ArrowRight className="ml-2 h-6 w-6" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
 
       {/* Scroll to Top Button */}
       {showScrollTop && (

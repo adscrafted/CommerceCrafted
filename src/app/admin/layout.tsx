@@ -14,7 +14,8 @@ import {
   LogOut,
   Home,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  Package
 } from 'lucide-react'
 
 // Navigation removed - using tabs in the main admin page instead
@@ -85,11 +86,49 @@ export default function AdminLayout({
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Shield className="h-6 w-6 text-red-600" />
-                <span className="text-xl font-bold text-gray-900">Admin Portal</span>
-              </div>
+            <div className="flex items-center space-x-8">
+              {/* Logo */}
+              <Link href="/" className="flex items-center space-x-2">
+                <Package className="h-6 w-6 text-blue-600" />
+                <span className="text-blue-600 text-2xl font-bold">CommerceCrafted</span>
+              </Link>
+              
+              {/* Navigation Links */}
+              <nav className="flex items-center space-x-6">
+                <Link
+                  href="/admin/niche"
+                  className={`flex items-center space-x-2 text-sm font-medium ${
+                    pathname === '/admin/niche' || pathname.startsWith('/admin/niche/')
+                      ? 'text-blue-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Home className="h-4 w-4" />
+                  <span>Niche</span>
+                </Link>
+                <Link
+                  href="/admin/users"
+                  className={`flex items-center space-x-2 text-sm font-medium ${
+                    pathname === '/admin/users' || pathname.startsWith('/admin/users/')
+                      ? 'text-blue-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Users className="h-4 w-4" />
+                  <span>Users</span>
+                </Link>
+                <Link
+                  href="/admin/analytics"
+                  className={`flex items-center space-x-2 text-sm font-medium ${
+                    pathname === '/admin/analytics'
+                      ? 'text-blue-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>Analytics</span>
+                </Link>
+              </nav>
             </div>
 
             <div className="flex items-center space-x-4">

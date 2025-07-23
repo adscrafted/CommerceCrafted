@@ -93,10 +93,24 @@ export default function SignUpPage() {
     setIsLoading(true)
 
     try {
-      const result = await signUp(formData.email, formData.password, formData.name)
-      
-      if (result.error) {
-        setError(result.error)
+      // Use the custom signup API that handles newsletter subscription
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          subscribeNewsletter: subscribeNewsletter,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to create account')
       } else {
         // Redirect to verification notice
         router.push('/auth/signin?message=Account created successfully! Please check your email to verify your account before signing in.')
@@ -246,7 +260,7 @@ export default function SignUpPage() {
                   onCheckedChange={(checked) => setSubscribeNewsletter(checked === true)}
                 />
                 <Label htmlFor="newsletter" className="text-sm">
-                  Subscribe to our newsletter for daily product opportunities
+                  Get our Product of the Day email - one winning Amazon product delivered to your inbox daily
                 </Label>
               </div>
 

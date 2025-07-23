@@ -302,7 +302,7 @@ export default function EnhancedDataSyncTab() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open(`/products/smart-bluetooth-sleep-mask-with-built-in-speakers`, '_blank')}
+                  onClick={() => window.open(`/products/${syncResult.asin}`, '_blank')}
                   className="flex items-center space-x-1"
                 >
                   <ExternalLink className="h-3 w-3" />

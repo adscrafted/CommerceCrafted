@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import NicheProgressDialog from './NicheProgressDialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,7 +24,12 @@ import {
   ChevronUp,
   ChevronDown,
   Filter,
-  Download
+  Download,
+  PlayCircle,
+  RotateCcw,
+  Bug,
+  RefreshCcw,
+  Activity
 } from 'lucide-react'
 import {
   Dialog,
@@ -98,6 +104,7 @@ export default function ProductQueueTab() {
   const [marketplaceFilter, setMarketplaceFilter] = useState<string>('all')
   const [sortField, setSortField] = useState<SortField>('created_at')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
+  const [progressDialogNiche, setProgressDialogNiche] = useState<{id: string, name: string} | null>(null)
   
   // New niche form state
   const [newNiche, setNewNiche] = useState({
@@ -219,20 +226,30 @@ export default function ProductQueueTab() {
         .map(a => a.trim())
         .filter(a => a.length > 0)
       
-      const nicheId = `niche_${Date.now()}`
+      const requestBody = {
+        nicheName: newNiche.name,
+        asins: asins.join(','),
+        scheduledDate: new Date().toISOString()
+      }
       
-      const response = await fetch('/api/niches/process', {
+      console.log('Creating niche with data:', requestBody)
+      
+      const response = await fetch('/api/admin/niches', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nicheId,
-          nicheName: newNiche.name,
-          asins,
-          marketplace: newNiche.marketplace
-        })
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies
+        body: JSON.stringify(requestBody)
       })
 
-      if (!response.ok) throw new Error('Failed to create niche')
+      const responseData = await response.json()
+      console.log('Response status:', response.status)
+      console.log('Response data:', responseData)
+
+      if (!response.ok) {
+        throw new Error(responseData.error || responseData.details || 'Failed to create niche')
+      }
       
       // Reset form and close dialog
       setNewNiche({ name: '', asins: '', marketplace: 'US' })
@@ -242,24 +259,35 @@ export default function ProductQueueTab() {
       await loadNiches()
     } catch (error) {
       console.error('Error creating niche:', error)
-      alert('Failed to create niche')
+      alert(error instanceof Error ? error.message : 'Failed to create niche')
     } finally {
       setIsCreating(false)
     }
   }
 
-  const deleteNiche = async (nicheId: string, e: React.MouseEvent) => {
+  const deleteNiche = async (nicheId: string, e: React.MouseEvent, status: string) => {
     e.stopPropagation() // Prevent row click
     
-    if (!confirm('Are you sure you want to delete this niche group?')) return
+    const confirmMessage = status === 'processing' 
+      ? 'This niche is currently processing. Are you sure you want to delete it? This action cannot be undone.'
+      : 'Are you sure you want to delete this niche group?'
+    
+    if (!confirm(confirmMessage)) return
     
     try {
+      // If processing, we might need to clean up any active jobs
+      if (status === 'processing') {
+        console.log(`⚠️ Deleting niche in processing status: ${nicheId}`)
+      }
+      
       const { error } = await supabase
         .from('niches')
         .delete()
         .eq('id', nicheId)
       
       if (error) throw error
+      
+      console.log(`✅ Successfully deleted niche: ${nicheId}`)
       await loadNiches()
     } catch (error) {
       console.error('Error deleting niche:', error)
@@ -269,16 +297,33 @@ export default function ProductQueueTab() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { variant: 'secondary' as const, color: 'bg-gray-100 text-gray-700' },
-      processing: { variant: 'default' as const, color: 'bg-blue-100 text-blue-700' },
-      completed: { variant: 'default' as const, color: 'bg-green-100 text-green-700' },
-      failed: { variant: 'destructive' as const, color: 'bg-red-100 text-red-700' }
+      pending: { 
+        variant: 'secondary' as const, 
+        color: 'bg-gray-100 text-gray-700',
+        icon: <Clock className="h-3 w-3" />
+      },
+      processing: { 
+        variant: 'default' as const, 
+        color: 'bg-blue-100 text-blue-700',
+        icon: <RefreshCw className="h-3 w-3 animate-spin" />
+      },
+      completed: { 
+        variant: 'default' as const, 
+        color: 'bg-green-100 text-green-700',
+        icon: <CheckCircle className="h-3 w-3" />
+      },
+      failed: { 
+        variant: 'destructive' as const, 
+        color: 'bg-red-100 text-red-700',
+        icon: <AlertCircle className="h-3 w-3" />
+      }
     }
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
     
     return (
-      <Badge variant={config.variant} className={config.color}>
+      <Badge variant={config.variant} className={`${config.color} flex items-center gap-1`}>
+        {config.icon}
         {status}
       </Badge>
     )
@@ -517,6 +562,9 @@ export default function ProductQueueTab() {
                 </div>
               </TableHead>
               <TableHead className="text-center">
+                Status
+              </TableHead>
+              <TableHead className="text-center">
                 # of ASINs
               </TableHead>
               <TableHead className="text-center">
@@ -540,13 +588,13 @@ export default function ProductQueueTab() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12">
+                <TableCell colSpan={7} className="text-center py-12">
                   <RefreshCw className="h-8 w-8 animate-spin mx-auto text-gray-400" />
                 </TableCell>
               </TableRow>
             ) : niches.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12">
+                <TableCell colSpan={7} className="text-center py-12">
                   <p className="text-gray-500">No niche groups found</p>
                 </TableCell>
               </TableRow>
@@ -554,6 +602,9 @@ export default function ProductQueueTab() {
               niches.map((niche) => (
                 <TableRow key={niche.id} className="hover:bg-gray-50">
                   <TableCell className="font-medium">{niche.niche_name}</TableCell>
+                  <TableCell className="text-center">
+                    {getStatusBadge(niche.status)}
+                  </TableCell>
                   <TableCell className="text-center">{niche.total_products || 0}</TableCell>
                   <TableCell className="text-center">
                     {niche.total_keywords || 0}
@@ -566,6 +617,175 @@ export default function ProductQueueTab() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-1">
+                      {niche.status === 'processing' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            if (confirm('Reset this niche to pending status? This will allow you to restart processing.')) {
+                              try {
+                                const response = await fetch(`/api/admin/niches/${niche.id}/reset`, {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                  },
+                                  credentials: 'include'
+                                })
+                                
+                                if (response.ok) {
+                                  alert('Niche reset successfully! You can now start processing again.')
+                                  await loadNiches()
+                                } else {
+                                  const error = await response.json()
+                                  alert(`Failed to reset: ${error.error || 'Unknown error'}`)
+                                }
+                              } catch (error) {
+                                alert(`Error: ${error instanceof Error ? error.message : 'Failed to reset'}`)
+                              }
+                            }
+                          }}
+                          title="Reset Processing"
+                        >
+                          <RotateCcw className="h-4 w-4 text-orange-600" />
+                        </Button>
+                      )}
+                      {(niche.status === 'processing' || niche.status === 'pending') && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            // First fetch and log the current progress
+                            try {
+                              console.log(`🔍 Checking progress for niche: ${niche.niche_name} (${niche.id})`)
+                              const response = await fetch(`/api/admin/niches/${niche.id}/progress`)
+                              const data = await response.json()
+                              
+                              console.log('📊 Current Progress:', {
+                                status: data.niche.status,
+                                currentStep: data.progress.currentStep,
+                                completed: `${data.progress.completedAsins}/${data.progress.totalAsins}`,
+                                percentage: `${data.progress.percentComplete}%`,
+                                currentAsin: data.progress.currentAsin || 'None',
+                                errors: data.progress.errors
+                              })
+                              
+                              // Store error info for retry button
+                              if (data.progress.errors && data.progress.errors.length > 0) {
+                                niche.processing_errors = data.progress.errors
+                              }
+                              
+                              // Show alert with quick status
+                              if (data.niche.status === 'pending') {
+                                alert(`⏳ Status: PENDING\n\nThis niche hasn't started processing yet.\nClick the Play button to start processing.`)
+                              } else if (data.niche.status === 'processing') {
+                                alert(`🔄 Status: PROCESSING\n\nProgress: ${data.progress.completedAsins}/${data.progress.totalAsins} ASINs (${data.progress.percentComplete}%)\nCurrent: ${data.progress.currentStep}\n\nOpening detailed progress view...`)
+                              } else if (data.niche.status === 'completed') {
+                                alert(`✅ Status: COMPLETED\n\nProcessed: ${data.progress.completedAsins} ASINs\nKeywords Found: ${data.summary.totalKeywords}\nTotal Reviews: ${data.summary.totalReviews}`)
+                              } else if (data.niche.status === 'failed') {
+                                alert(`❌ Status: FAILED\n\nError: ${data.niche.errorMessage || 'Unknown error'}\nCompleted: ${data.progress.completedAsins}/${data.progress.totalAsins} ASINs`)
+                              }
+                            } catch (error) {
+                              console.error('Failed to fetch progress:', error)
+                            }
+                            
+                            // Open the progress dialog
+                            setProgressDialogNiche({ id: niche.id, name: niche.niche_name })
+                          }}
+                          title="Check Progress"
+                        >
+                          <Activity className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {niche.status === 'processing' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              console.log(`🔍 Debugging niche: ${niche.niche_name} (${niche.id})`)
+                              const response = await fetch(`/api/admin/niches/${niche.id}/debug`)
+                              const data = await response.json()
+                              
+                              console.log('🐛 Debug Info:', data.debug_info)
+                              console.log('⚠️ Recommendations:', data.recommendations)
+                              
+                              alert(`Debug Info:\n\n${JSON.stringify(data.debug_info, null, 2)}\n\nRecommendations:\n${data.recommendations.join('\n')}`)
+                            } catch (error) {
+                              console.error('Failed to debug:', error)
+                            }
+                          }}
+                          title="Debug Processing"
+                        >
+                          <Bug className="h-4 w-4 text-purple-600" />
+                        </Button>
+                      )}
+                      {niche.status === 'processing' && niche.processing_errors?.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            if (confirm(`Retry ${niche.processing_errors.length} failed ASINs?\n\n${niche.processing_errors.join('\n')}`)) {
+                              try {
+                                console.log(`🔄 Retrying failed ASINs for niche: ${niche.niche_name}`)
+                                const response = await fetch(`/api/admin/niches/${niche.id}/retry-failed`, {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                  },
+                                  credentials: 'include'
+                                })
+                                
+                                const data = await response.json()
+                                console.log('📊 Retry results:', data)
+                                
+                                if (response.ok) {
+                                  alert(`Retry Results:\n\nSucceeded: ${data.results.success_count}\nFailed: ${data.results.failed_count}\n\n${data.message}`)
+                                  await loadNiches()
+                                } else {
+                                  alert(`Failed to retry: ${data.error || 'Unknown error'}`)
+                                }
+                              } catch (error) {
+                                console.error('Retry error:', error)
+                                alert(`Error: ${error instanceof Error ? error.message : 'Failed to retry'}`)
+                              }
+                            }
+                          }}
+                          title="Retry Failed ASINs"
+                        >
+                          <RefreshCcw className="h-4 w-4 text-red-600" />
+                        </Button>
+                      )}
+                      {niche.status === 'pending' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(`/api/admin/niches/${niche.id}/analyze`, {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                credentials: 'include'
+                              })
+                              
+                              if (response.ok) {
+                                const data = await response.json()
+                                alert(`Analysis started! Run ID: ${data.analysisRunId}`)
+                                await loadNiches() // Reload to see updated status
+                              } else {
+                                const error = await response.json()
+                                alert(`Failed to start analysis: ${error.error || 'Unknown error'}`)
+                              }
+                            } catch (error) {
+                              alert(`Error: ${error instanceof Error ? error.message : 'Failed to start analysis'}`)
+                            }
+                          }}
+                          title="Start Analysis"
+                        >
+                          <PlayCircle className="h-4 w-4 text-green-600" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -590,10 +810,11 @@ export default function ProductQueueTab() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={(e) => deleteNiche(niche.id, e)}
-                        disabled={niche.status === 'processing'}
+                        onClick={(e) => deleteNiche(niche.id, e, niche.status)}
+                        className={niche.status === 'processing' ? 'hover:bg-red-50' : ''}
+                        title={niche.status === 'processing' ? 'Delete (Processing)' : 'Delete'}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash2 className={`h-4 w-4 ${niche.status === 'processing' ? 'text-red-600' : 'text-red-500'}`} />
                       </Button>
                     </div>
                   </TableCell>
@@ -757,6 +978,16 @@ export default function ProductQueueTab() {
             </div>
           </DialogContent>
         </Dialog>
+      )}
+      
+      {/* Progress Dialog */}
+      {progressDialogNiche && (
+        <NicheProgressDialog
+          nicheId={progressDialogNiche.id}
+          nicheName={progressDialogNiche.name}
+          open={!!progressDialogNiche}
+          onOpenChange={(open) => !open && setProgressDialogNiche(null)}
+        />
       )}
     </div>
   )

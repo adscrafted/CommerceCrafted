@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
 import { Button } from '@/components/ui/button'
-import { Expand, Minimize2, RotateCcw, Info, Maximize2, ZoomIn, ZoomOut } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Expand, Minimize2, RotateCcw, Info, Maximize2, ZoomIn, ZoomOut, Network, GitBranch, Share2, DollarSign, Hash, TrendingUp } from 'lucide-react'
 
 interface KeywordCluster {
   root: string
@@ -44,6 +45,9 @@ interface KeywordNetworkProps {
   revenueData?: any
   currentLevel?: 'root' | 'subroot' | 'level2'
   onNodeClick?: (nodeLabel: string) => void
+  onLevelChange?: (level: 'root' | 'subroot' | 'level2') => void
+  selectedNodeData?: any
+  overallMetrics?: any
 }
 
 export default function KeywordNetwork({ 
@@ -53,7 +57,10 @@ export default function KeywordNetwork({
   nodeColorScheme,
   revenueData,
   currentLevel = 'root',
-  onNodeClick
+  onNodeClick,
+  onLevelChange,
+  selectedNodeData,
+  overallMetrics
 }: KeywordNetworkProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const simulationRef = useRef<d3.Simulation<NetworkNode, NetworkLink> | null>(null)
@@ -108,7 +115,7 @@ export default function KeywordNetwork({
     d3.select(svgRef.current).selectAll('*').remove()
 
     // Increased padding to prevent node clipping, especially at the bottom
-    const padding = 300
+    const padding = 500
 
     // Create nodes and links
     const nodes: NetworkNode[] = []
@@ -165,15 +172,15 @@ export default function KeywordNetwork({
       return minSize + (maxSize - minSize) * scale
     }
 
-    // Add center node with better sizing
+    // Add center node with better sizing - position at true center
     nodes.push({
       id: 'center',
       label: primaryKeyword,
       type: 'center',
       size: 60,
       color: colors.center,
-      fx: width / 2 + padding,
-      fy: height / 2 + padding
+      fx: width / 2,
+      fy: height / 2
     })
 
     // Add cluster nodes and their connections
@@ -200,6 +207,12 @@ export default function KeywordNetwork({
       
       // Add cluster root node with revenue-based sizing
       const clusterId = `cluster-${clusterName}`
+      // Initialize node position near center to prevent out-of-bounds spawning
+      const angle = Math.random() * 2 * Math.PI
+      const radius = 150 + Math.random() * 100 // 150-250px from center
+      const startX = width / 2 + Math.cos(angle) * radius
+      const startY = height / 2 + Math.sin(angle) * radius
+      
       nodes.push({
         id: clusterId,
         label: cluster.root,
@@ -207,7 +220,9 @@ export default function KeywordNetwork({
         cluster: clusterName,
         size: nodeSize,
         color: nodeColor,
-        volume: revenue
+        volume: revenue,
+        x: startX,
+        y: startY
       })
 
       // Link cluster to center
@@ -232,6 +247,12 @@ export default function KeywordNetwork({
           const subrootRevenue = revenueData?.[subroot]?.totalRevenue || 0
           const subrootSize = calculateNodeSize(subrootRevenue, 'subroot')
           
+          // Initialize subroot position around the cluster node
+          const subrootAngle = Math.random() * 2 * Math.PI
+          const subrootRadius = 80 + Math.random() * 50 // 80-130px from cluster
+          const subrootStartX = (startX || width / 2) + Math.cos(subrootAngle) * subrootRadius
+          const subrootStartY = (startY || height / 2) + Math.sin(subrootAngle) * subrootRadius
+          
           nodes.push({
             id: subrootId,
             label: subroot,
@@ -239,7 +260,9 @@ export default function KeywordNetwork({
             cluster: clusterName,
             size: subrootSize,
             color: subrootColor,
-            volume: subrootRevenue
+            volume: subrootRevenue,
+            x: subrootStartX,
+            y: subrootStartY
           })
 
           // Link subroot to cluster
@@ -274,11 +297,11 @@ export default function KeywordNetwork({
       }
     })
 
-    // Create SVG with padding for overflow
+    // Create SVG with standard viewbox
     const svg = d3.select(svgRef.current)
       .attr('width', width)
       .attr('height', height)
-      .attr('viewBox', [-padding/2, -padding/2, width + padding, height + padding])
+      .attr('viewBox', [0, 0, width, height])
       .attr('preserveAspectRatio', 'xMidYMid meet')
 
     // Adjust force strength based on number of nodes for better fit
@@ -302,8 +325,21 @@ export default function KeywordNetwork({
         const textRadius = Math.max(textLength * 3, baseRadius * 1.5)
         return textRadius + 20 // Increased spacing
       }))
-      .force('x', d3.forceX(width / 2).strength(0.05))
-      .force('y', d3.forceY(height / 2).strength(0.05))
+      .force('x', d3.forceX(width / 2).strength(0.08))
+      .force('y', d3.forceY(height / 2).strength(0.08))
+      // Add boundary forces to keep nodes within viewport
+      .force('boundaryX', d3.forceX().x(d => {
+        const node = d as NetworkNode
+        const margin = 100
+        const x = node.x || width / 2
+        return Math.max(margin, Math.min(width - margin, x))
+      }).strength(0.1))
+      .force('boundaryY', d3.forceY().y(d => {
+        const node = d as NetworkNode
+        const margin = 100
+        const y = node.y || height / 2
+        return Math.max(margin, Math.min(height - margin, y))
+      }).strength(0.1))
 
     simulationRef.current = simulation
     setNodes(nodes)
@@ -584,8 +620,11 @@ export default function KeywordNetwork({
       const deltaX = event.clientX - lastPanPoint.x
       const deltaY = event.clientY - lastPanPoint.y
       
-      setPanX(prev => prev + deltaX)
-      setPanY(prev => prev + deltaY)
+      // Apply looser bounds to allow panning to see all nodes
+      const maxPanDistance = 1000 // Allow much wider panning range
+      
+      setPanX(prev => Math.max(-maxPanDistance, Math.min(maxPanDistance, prev + deltaX)))
+      setPanY(prev => Math.max(-maxPanDistance, Math.min(maxPanDistance, prev + deltaY)))
       
       setLastPanPoint({ x: event.clientX, y: event.clientY })
     }
@@ -595,8 +634,108 @@ export default function KeywordNetwork({
     setIsPanning(false)
   }
 
+  const handleWheel = (event: React.WheelEvent) => {
+    event.preventDefault()
+    
+    // Determine zoom direction
+    const delta = event.deltaY > 0 ? -0.1 : 0.1
+    
+    // Update zoom level with bounds
+    setZoomLevel(prev => Math.max(0.5, Math.min(3, prev + delta)))
+  }
+
   return (
     <div ref={containerRef} className={`relative bg-gray-50 ${className} ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}>
+      {/* Fullscreen Level Controls */}
+      {isFullscreen && onLevelChange && (
+        <div className="absolute top-4 left-4 z-10">
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+            {[
+              { id: 'root', label: 'Root Keywords', icon: Network },
+              { id: 'subroot', label: 'Subroots', icon: GitBranch },
+              { id: 'level2', label: 'Sub Roots (Level 2)', icon: Share2 }
+            ].map((tab) => (
+              <Button
+                key={tab.id}
+                variant={currentLevel === tab.id ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => onLevelChange(tab.id as any)}
+                className={`flex items-center space-x-2 ${
+                  currentLevel === tab.id
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <tab.icon className="h-4 w-4" />
+                <span>{tab.label}</span>
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen Scorecards */}
+      {isFullscreen && (selectedNodeData || overallMetrics) && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
+          <div className="flex gap-3">
+            {(() => {
+              const displayData = selectedNodeData || overallMetrics
+              return (
+                <>
+                  {/* Monthly Revenue */}
+                  <Card className="bg-white/95 backdrop-blur-sm">
+                    <CardContent className="p-4 text-center">
+                      <div className="flex items-center justify-center space-x-2 mb-2">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                        <h3 className="text-xs font-medium text-gray-600">Monthly Revenue</h3>
+                      </div>
+                      <div className="text-lg font-bold text-gray-900">
+                        ${displayData?.totalRevenue >= 1000000 
+                          ? (displayData.totalRevenue / 1000000).toFixed(2) + 'M'
+                          : displayData?.totalRevenue >= 1000
+                          ? (displayData.totalRevenue / 1000).toFixed(0) + 'K'
+                          : displayData?.totalRevenue?.toFixed(0) || '0'
+                        }
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Total Root Keywords */}
+                  <Card className="bg-white/95 backdrop-blur-sm">
+                    <CardContent className="p-4 text-center">
+                      <div className="flex items-center justify-center space-x-2 mb-2">
+                        <Hash className="h-4 w-4 text-purple-600" />
+                        <h3 className="text-xs font-medium text-gray-600">Total Root Keywords</h3>
+                      </div>
+                      <div className="text-lg font-bold text-gray-900">
+                        {selectedNodeData && selectedNodeData.type === 'root' 
+                          ? '1' 
+                          : displayData?.totalRootKeywords?.toLocaleString() || '0'
+                        }
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Total Keywords */}
+                  <Card className="bg-white/95 backdrop-blur-sm">
+                    <CardContent className="p-4 text-center">
+                      <div className="flex items-center justify-center space-x-2 mb-2">
+                        <TrendingUp className="h-4 w-4 text-blue-600" />
+                        <h3 className="text-xs font-medium text-gray-600">Total Keywords</h3>
+                      </div>
+                      <div className="text-lg font-bold text-gray-900">
+                        {displayData?.keywordCount?.toLocaleString() || '0'}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Zoom and Control Buttons */}
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         <Button
           variant="outline"
@@ -649,6 +788,7 @@ export default function KeywordNetwork({
         onMouseMove={handlePanMove}
         onMouseUp={handlePanEnd}
         onMouseLeave={handlePanEnd}
+        onWheel={handleWheel}
       >
         <div style={{ 
           transform: `scale(${zoomLevel}) translate(${panX}px, ${panY}px)`, 

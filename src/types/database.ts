@@ -137,6 +137,26 @@ export interface Database {
         Insert: NicheInsert
         Update: NicheUpdate
       }
+      customer_reviews: {
+        Row: CustomerReview
+        Insert: CustomerReviewInsert
+        Update: CustomerReviewUpdate
+      }
+      market_intelligence: {
+        Row: MarketIntelligence
+        Insert: MarketIntelligenceInsert
+        Update: MarketIntelligenceUpdate
+      }
+      keepa_review_history: {
+        Row: KeepaReviewHistory
+        Insert: KeepaReviewHistoryInsert
+        Update: KeepaReviewHistoryUpdate
+      }
+      keepa_sales_rank_history: {
+        Row: KeepaSalesRankHistory
+        Insert: KeepaSalesRankHistoryInsert
+        Update: KeepaSalesRankHistoryUpdate
+      }
     }
     Views: {
       [_ in never]: never
@@ -364,6 +384,22 @@ export interface Product {
   rating: number | null
   review_count: number | null
   image_urls: string | null
+  // Enhanced Keepa fields
+  length: number | null
+  width: number | null
+  height: number | null
+  weight: number | null
+  frequently_purchased_asins: string | null
+  variation_family: string | null
+  parent_asin: string | null
+  monthly_orders: number | null
+  video_urls: string | null
+  a_plus_content: string | null
+  fba_fees: string | null
+  referral_fee: number | null
+  bullet_points: string | null
+  // Niche-specific product support
+  niche_id: string | null
   status: Database['public']['Enums']['product_status']
   created_at: string
   updated_at: string
@@ -381,6 +417,22 @@ export interface ProductInsert {
   rating?: number | null
   review_count?: number | null
   image_urls?: string | null
+  // Enhanced Keepa fields
+  length?: number | null
+  width?: number | null
+  height?: number | null
+  weight?: number | null
+  frequently_purchased_asins?: string | null
+  variation_family?: string | null
+  parent_asin?: string | null
+  monthly_orders?: number | null
+  video_urls?: string | null
+  a_plus_content?: string | null
+  fba_fees?: string | null
+  referral_fee?: number | null
+  bullet_points?: string | null
+  // Niche-specific product support
+  niche_id?: string | null
   status?: Database['public']['Enums']['product_status']
   created_at?: string
   updated_at?: string
@@ -397,6 +449,20 @@ export interface ProductUpdate {
   rating?: number | null
   review_count?: number | null
   image_urls?: string | null
+  // Enhanced Keepa fields
+  length?: number | null
+  width?: number | null
+  height?: number | null
+  weight?: number | null
+  frequently_purchased_asins?: string | null
+  variation_family?: string | null
+  parent_asin?: string | null
+  monthly_orders?: number | null
+  video_urls?: string | null
+  a_plus_content?: string | null
+  fba_fees?: string | null
+  referral_fee?: number | null
+  bullet_points?: string | null
   status?: Database['public']['Enums']['product_status']
   updated_at?: string
 }
@@ -497,21 +563,29 @@ export interface KeywordUpdate {
 // Product Keyword types
 export interface ProductKeyword {
   product_id: string
-  keyword_id: string
-  relevance_score: number
-  position: number | null
+  keyword: string
+  match_type: string
+  suggested_bid: number
+  estimated_clicks: number
+  estimated_orders: number
+  created_at: string
 }
 
 export interface ProductKeywordInsert {
   product_id: string
-  keyword_id: string
-  relevance_score: number
-  position?: number | null
+  keyword: string
+  match_type?: string
+  suggested_bid?: number
+  estimated_clicks?: number
+  estimated_orders?: number
+  created_at?: string
 }
 
 export interface ProductKeywordUpdate {
-  relevance_score?: number
-  position?: number | null
+  match_type?: string
+  suggested_bid?: number
+  estimated_clicks?: number
+  estimated_orders?: number
 }
 
 // Daily Feature types
@@ -1414,6 +1488,144 @@ export interface AmazonReportWithRelations extends AmazonReport {
   user?: User
   report_data?: AmazonReportData
   search_terms?: SearchTerm[]
+}
+
+// Customer Reviews
+export interface CustomerReview {
+  id: string
+  product_id: string
+  reviewer_id: string
+  reviewer_name: string
+  reviewer_url?: string
+  rating: number
+  title?: string
+  content: string
+  review_date: string
+  verified_purchase: boolean
+  helpful_votes: number
+  total_votes: number
+  images?: string[]
+  variant?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CustomerReviewInsert {
+  product_id: string
+  reviewer_id: string
+  reviewer_name: string
+  reviewer_url?: string
+  rating: number
+  title?: string
+  content: string
+  review_date: string
+  verified_purchase?: boolean
+  helpful_votes?: number
+  total_votes?: number
+  images?: string[]
+  variant?: string
+}
+
+export interface CustomerReviewUpdate {
+  reviewer_name?: string
+  reviewer_url?: string
+  rating?: number
+  title?: string
+  content?: string
+  review_date?: string
+  verified_purchase?: boolean
+  helpful_votes?: number
+  total_votes?: number
+  images?: string[]
+  variant?: string
+}
+
+// Market Intelligence
+export interface MarketIntelligence {
+  id: string
+  product_id: string
+  niche_id?: string
+  customer_personas?: Json
+  voice_of_customer?: Json
+  emotional_triggers?: Json
+  raw_reviews?: Json
+  total_reviews_analyzed: number
+  analysis_date: string
+  created_at: string
+  updated_at: string
+}
+
+export interface MarketIntelligenceInsert {
+  product_id: string
+  niche_id?: string
+  customer_personas?: Json
+  voice_of_customer?: Json
+  emotional_triggers?: Json
+  raw_reviews?: Json
+  total_reviews_analyzed?: number
+  analysis_date: string
+}
+
+export interface MarketIntelligenceUpdate {
+  niche_id?: string
+  customer_personas?: Json
+  voice_of_customer?: Json
+  emotional_triggers?: Json
+  raw_reviews?: Json
+  total_reviews_analyzed?: number
+  analysis_date?: string
+}
+
+// Keepa Review History
+export interface KeepaReviewHistory {
+  id: string
+  asin: string
+  date_timestamp: number
+  review_count: number
+  average_rating: number
+  created_at: string
+  updated_at: string
+}
+
+export interface KeepaReviewHistoryInsert {
+  asin: string
+  date_timestamp: number
+  review_count: number
+  average_rating: number
+}
+
+export interface KeepaReviewHistoryUpdate {
+  review_count?: number
+  average_rating?: number
+}
+
+// Keepa Sales Rank History
+export interface KeepaSalesRankHistory {
+  id: string
+  asin: string
+  date_timestamp: number
+  sales_rank: number
+  category_rank: number
+  category: string | null
+  subcategory: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface KeepaSalesRankHistoryInsert {
+  asin: string
+  date_timestamp: number
+  sales_rank: number
+  category_rank: number
+  category?: string | null
+  subcategory?: string | null
+}
+
+export interface KeepaSalesRankHistoryUpdate {
+  sales_rank?: number
+  category_rank?: number
+  category?: string | null
+  subcategory?: string | null
 }
 
 // Utility types

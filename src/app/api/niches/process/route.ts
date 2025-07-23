@@ -15,6 +15,38 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createServerSupabaseClient()
 
+    // Get current user - try multiple methods
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError) {
+      console.error('Auth error details:', authError)
+      
+      // Try getting session as fallback
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        return NextResponse.json(
+          { error: 'No active session. Please log in again.' },
+          { status: 401 }
+        )
+      }
+    }
+    
+    if (!user) {
+      // Development bypass for testing
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Dev mode: Bypassing auth check for niches/process')
+        // Continue with a mock user ID
+      } else {
+        console.error('No user found in auth check')
+        return NextResponse.json(
+          { error: 'User not found. Please log in again.' },
+          { status: 401 }
+        )
+      }
+    }
+    
+    const userId = user?.id || 'dev-user'
+
     // Create or update niche record
     const { data: niche, error: nicheError } = await supabase
       .from('niches')
@@ -25,6 +57,7 @@ export async function POST(request: NextRequest) {
         total_products: asins.length,
         marketplace,
         status: 'pending',
+        created_by: userId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }, {
@@ -36,7 +69,7 @@ export async function POST(request: NextRequest) {
     if (nicheError) {
       console.error('Error creating niche:', nicheError)
       return NextResponse.json(
-        { error: 'Failed to create niche record' },
+        { error: 'Failed to create niche record', details: nicheError.message },
         { status: 500 }
       )
     }

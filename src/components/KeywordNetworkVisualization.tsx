@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import KeywordNetwork from './KeywordNetwork'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Network, GitBranch, Share2, Target, MousePointer, TrendingUp, DollarSign } from 'lucide-react'
+import { Network, GitBranch, Share2, Target, TrendingUp, DollarSign, Hash } from 'lucide-react'
 
 interface KeywordNetworkVisualizationProps {
   keywordHierarchy: any
@@ -30,39 +30,20 @@ export default function KeywordNetworkVisualization({
   // Calculate overall market metrics from all keyword data
   const calculateOverallMetrics = () => {
     let totalRevenue = 0
-    let totalClicks = 0
-    let totalOrders = 0
     let totalKeywords = 0
-    let cpcSum = 0
-    let cpcCount = 0
-    let conversionRateSum = 0
-    let conversionRateCount = 0
+    let totalRootKeywords = 0
 
     Object.values(keywordHierarchy || {}).forEach((rootData: any) => {
       totalRevenue += rootData.totalRevenue || 0
-      totalClicks += rootData.totalClicks || 0
-      totalOrders += rootData.totalOrders || 0
       totalKeywords += rootData.keywordCount || 0
-      
-      const cpc = parseFloat(rootData.avgCPC || '0')
-      if (cpc > 0) {
-        cpcSum += cpc
-        cpcCount++
-      }
-      
-      const conversionRate = parseFloat(rootData.avgConversionRate || '0')
-      if (conversionRate > 0) {
-        conversionRateSum += conversionRate
-        conversionRateCount++
-      }
+      totalRootKeywords += 1 // Count each root keyword
     })
 
     return {
       name: 'Entire Market',
       totalRevenue,
-      avgCPC: cpcCount > 0 ? (cpcSum / cpcCount).toFixed(2) : '0.00',
-      avgConversionRate: conversionRateCount > 0 ? (conversionRateSum / conversionRateCount).toFixed(0) : '0',
       keywordCount: totalKeywords,
+      totalRootKeywords,
       type: 'market'
     }
   }
@@ -99,6 +80,13 @@ export default function KeywordNetworkVisualization({
 
   // Handle node selection from KeywordNetwork
   const handleNodeClick = (nodeLabel: string) => {
+    // Check if this is the center/main node (primaryKeyword)
+    if (nodeLabel === primaryKeyword) {
+      // Reset to show overall market metrics
+      setSelectedNodeData(null)
+      return
+    }
+    
     // Find the node data in keywordHierarchy
     let foundNodeData = null
     
@@ -231,7 +219,7 @@ export default function KeywordNetworkVisualization({
           {[
             { id: 'root', label: 'Root Keywords', icon: Network },
             { id: 'subroot', label: 'Subroots', icon: GitBranch },
-            { id: 'level2', label: 'Level 2 Subroots', icon: Share2 }
+            { id: 'level2', label: 'Sub Roots (Level 2)', icon: Share2 }
           ].map((tab) => (
             <Button
               key={tab.id}
@@ -278,7 +266,7 @@ export default function KeywordNetworkVisualization({
       </div>
 
       {/* Scorecards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {(() => {
           const displayData = selectedNodeData || calculateOverallMetrics()
           return (
@@ -304,54 +292,37 @@ export default function KeywordNetworkVisualization({
                 </CardContent>
               </Card>
 
-              {/* Average CPC */}
+              {/* Total Root Keywords */}
               <Card>
                 <CardContent className="p-6 text-center">
                   <div className="flex items-center justify-center space-x-2 mb-2">
-                    <MousePointer className="h-5 w-5 text-blue-600" />
-                    <h3 className="text-sm font-medium text-gray-600">Average CPC</h3>
+                    <Hash className="h-5 w-5 text-purple-600" />
+                    <h3 className="text-sm font-medium text-gray-600">Total Root Keywords</h3>
                   </div>
                   <div className="text-2xl font-bold text-gray-900">
-                    ${displayData.avgCPC || '0.00'}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Cost per click</p>
-                </CardContent>
-              </Card>
-
-              {/* Conversion Rate */}
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <Target className="h-5 w-5 text-purple-600" />
-                    <h3 className="text-sm font-medium text-gray-600">Conversion Rate</h3>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    {displayData.avgConversionRate 
-                      ? parseFloat(displayData.avgConversionRate).toFixed(0) + '%'
-                      : '0%'
-                    }
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Click to order conversion</p>
-                </CardContent>
-              </Card>
-
-              {/* Relevancy */}
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <TrendingUp className="h-5 w-5 text-orange-600" />
-                    <h3 className="text-sm font-medium text-gray-600">
-                      {selectedNodeData ? 'Relevancy' : 'Total Keywords'}
-                    </h3>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    {selectedNodeData 
-                      ? `${displayData.relevancy || calculateRelevancy(displayData)}%`
-                      : displayData.keywordCount?.toLocaleString() || '0'
+                    {selectedNodeData && selectedNodeData.type === 'root' 
+                      ? '1' 
+                      : displayData.totalRootKeywords?.toLocaleString() || Object.keys(keywordHierarchy || {}).length.toLocaleString()
                     }
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    {selectedNodeData ? 'Keyword relevance' : 'Unique keywords tracked'}
+                    {selectedNodeData ? 'Selected root keyword' : 'Primary keyword categories'}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Total Keywords */}
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                    <h3 className="text-sm font-medium text-gray-600">Total Keywords</h3>
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {displayData.keywordCount?.toLocaleString() || '0'}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedNodeData ? `In ${displayData.name}` : 'Unique keywords tracked'}
                   </p>
                 </CardContent>
               </Card>
@@ -380,6 +351,9 @@ export default function KeywordNetworkVisualization({
             revenueData={keywordHierarchy}
             currentLevel={activeLevel}
             onNodeClick={handleNodeClick}
+            onLevelChange={setActiveLevel}
+            selectedNodeData={selectedNodeData}
+            overallMetrics={calculateOverallMetrics()}
           />
         ) : (
           <div className="h-[700px] flex items-center justify-center text-gray-500">
@@ -392,19 +366,6 @@ export default function KeywordNetworkVisualization({
         )}
       </div>
 
-      {/* Level Description */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="font-medium text-blue-900 mb-1">
-          {activeLevel === 'root' && 'Root Keywords View'}
-          {activeLevel === 'subroot' && 'Subroots View'}
-          {activeLevel === 'level2' && 'Level 2 Subroots View'}
-        </h4>
-        <p className="text-sm text-blue-700">
-          {activeLevel === 'root' && 'Shows only the root keywords connected to the center. Each node represents a high-level keyword category.'}
-          {activeLevel === 'subroot' && 'Shows root keywords connected to their subroots (two-word combinations). No individual keywords are displayed.'}
-          {activeLevel === 'level2' && 'Shows subroots connected to level 2 subroots (three-word phrases). Only the hierarchical structure is shown.'}
-        </p>
-      </div>
     </div>
   )
 }
