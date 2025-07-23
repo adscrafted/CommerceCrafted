@@ -11,6 +11,8 @@ interface DemandAnalysisRealProps {
 }
 
 export default function DemandAnalysisReal({ products }: DemandAnalysisRealProps) {
+  console.log('DemandAnalysisReal received products:', products?.length, products)
+  
   // Get product age from dedicated columns
   const getProductAge = (product: any) => {
     if (product.product_age_months !== null && product.product_age_category) {
@@ -55,6 +57,8 @@ export default function DemandAnalysisReal({ products }: DemandAnalysisRealProps
       ...p,
       productAge: getProductAge(p)
     })).filter(p => p.productAge !== null)
+    
+    console.log('Products with age data:', productsWithAge.length, productsWithAge)
     
     if (productsWithAge.length === 0) {
       return {

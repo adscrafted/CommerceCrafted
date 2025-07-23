@@ -127,9 +127,9 @@ export async function POST(request: NextRequest) {
       // Keepa metadata and product age
       lastUpdate: product.lastUpdate,
       lastPriceChange: product.lastPriceChange,
-      // Product first seen date (when it was first tracked by Keepa)
-      firstSeenTimestamp: product.csv?.[18] || null, // Keepa timebase
-      productAge: product.csv?.[18] ? calculateProductAge(product.csv[18]) : null,
+      // Product first seen date - check multiple possible locations
+      firstSeenTimestamp: getFirstSeenTimestamp(product),
+      productAge: getProductAge(product),
       releaseDate: product.releaseDate || null,
       tokensConsumed: data.tokensConsumed
     }
@@ -243,4 +243,43 @@ function calculateProductAge(keepaTimebase: number): { months: number, years: nu
     years: parseFloat(yearsDiff.toFixed(1)),
     category
   }
+}
+
+// Extract first seen timestamp from various Keepa data fields
+function getFirstSeenTimestamp(product: any): number | null {
+  // Check various possible locations for first seen data
+  if (product.trackingSince) {
+    return product.trackingSince
+  }
+  
+  // Check if csv[18] exists and is a number (old format)
+  if (product.csv?.[18] && typeof product.csv[18] === 'number') {
+    return product.csv[18]
+  }
+  
+  // Check if there's a firstSeenTimestamp array (new format)
+  if (product.firstSeenTimestamp && Array.isArray(product.firstSeenTimestamp) && product.firstSeenTimestamp.length > 0) {
+    // Return the first timestamp value
+    return product.firstSeenTimestamp[0]
+  }
+  
+  // Check stats for earliest data point
+  if (product.stats?.avg30?.length > 0) {
+    // Get the timebase from the first entry
+    return product.stats.avg30[0]
+  }
+  
+  return null
+}
+
+// Get product age using various methods
+function getProductAge(product: any): { months: number, years: number, category: string } | null {
+  const timestamp = getFirstSeenTimestamp(product)
+  
+  if (timestamp) {
+    return calculateProductAge(timestamp)
+  }
+  
+  // If no timestamp available, return null
+  return null
 }

@@ -19,6 +19,9 @@ interface ProductAnalysisPrompt {
   competitorData?: any
   keywordData?: any
   marketData?: any
+  productAgeMonths?: number
+  productAgeCategory?: string
+  firstSeenDate?: string
 }
 
 interface AIAnalysisResult {
@@ -92,6 +95,8 @@ PRODUCT DETAILS:
 - BSR: ${promptData.bsr ? `#${promptData.bsr.toLocaleString()}` : 'Unknown'}
 - Rating: ${promptData.rating || 'Unknown'}/5
 - Reviews: ${promptData.reviewCount?.toLocaleString() || 'Unknown'}
+- Product Age: ${promptData.productAgeMonths ? `${promptData.productAgeMonths} months (${promptData.productAgeCategory})` : 'Unknown'}
+- First Listed: ${promptData.firstSeenDate ? new Date(promptData.firstSeenDate).toLocaleDateString() : 'Unknown'}
 
 ADDITIONAL DATA:
 ${promptData.competitorData ? `Competitor Analysis: ${JSON.stringify(promptData.competitorData, null, 2)}` : ''}
@@ -180,12 +185,15 @@ Product: ${productData.title}
 Category: ${productData.category}
 Price Range: $${productData.price}
 Current BSR: ${productData.bsr}
+Product Age: ${productData.product_age_months ? `${productData.product_age_months} months (${productData.product_age_category})` : 'Unknown'}
+First Listed: ${productData.first_seen_date ? new Date(productData.first_seen_date).toLocaleDateString() : 'Unknown'}
 
 Focus on:
-1. Market trends and growth potential
+1. Market trends and growth potential (consider product age distribution)
 2. Customer behavior patterns
-3. Competitive dynamics
+3. Competitive dynamics (factor in how long competitors have been in market)
 4. Pricing strategies
+5. Market maturity based on product ages
 
 Keep insights concise, actionable, and specific to Amazon marketplace dynamics.`
 

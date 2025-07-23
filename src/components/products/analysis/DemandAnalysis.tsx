@@ -242,7 +242,7 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
           </Card>
 
 
-          {/* Competitor Age Analysis */}
+          {/* Competitor Age Analysis - Commented out in favor of DemandAnalysisReal component with actual data
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -254,88 +254,10 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {/* Age Distribution Chart */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Product Age Distribution</h4>
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={[
-                        { range: '0-6 months', count: 3, percentage: 15 },
-                        { range: '6-12 months', count: 5, percentage: 25 },
-                        { range: '1-2 years', count: 7, percentage: 35 },
-                        { range: '2-3 years', count: 3, percentage: 15 },
-                        { range: '3+ years', count: 2, percentage: 10 }
-                      ]}>
-                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                        <XAxis dataKey="range" className="text-xs" />
-                        <YAxis className="text-xs" />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)', 
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '6px'
-                          }}
-                        />
-                        <Bar dataKey="count" fill="#6366F1" radius={[4, 4, 0, 0]}>
-                          {/* Add percentage labels on bars */}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* Key Insights */}
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className="text-center p-3 bg-indigo-50 rounded-lg">
-                    <div className="text-2xl font-bold text-indigo-600">1.8</div>
-                    <div className="text-sm text-gray-600">Avg. Years in Market</div>
-                  </div>
-                  <div className="text-center p-3 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">40%</div>
-                    <div className="text-sm text-gray-600">Launched Last Year</div>
-                  </div>
-                  <div className="text-center p-3 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">85%</div>
-                    <div className="text-sm text-gray-600">Success Rate (1yr+)</div>
-                  </div>
-                </div>
-
-                {/* Market Lifecycle Insights */}
-                <div className="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">Market Lifecycle Stage</h4>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-sm text-gray-700">Growth Phase</div>
-                    <Badge variant="default" className="bg-green-600">Active Growth</Badge>
-                  </div>
-                  <p className="text-sm text-gray-700">
-                    The market shows healthy turnover with new entrants successfully establishing themselves. 
-                    Products older than 2 years maintain stable market share, indicating strong customer loyalty 
-                    for quality offerings.
-                  </p>
-                </div>
-
-                {/* Entry Timing */}
-                <div className="p-4 bg-yellow-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">Entry Timing Analysis</h4>
-                  <ul className="space-y-1 text-sm text-gray-700">
-                    <li className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
-                      <span>New products gaining traction within 3-6 months</span>
-                    </li>
-                    <li className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
-                      <span>Market not oversaturated - room for differentiation</span>
-                    </li>
-                    <li className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
-                      <span>Established products show vulnerability to innovation</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
+              ... Mock data removed - See DemandAnalysisReal for real product age data ...
             </CardContent>
           </Card>
+          */}
 
         </div>
       )}

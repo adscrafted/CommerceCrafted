@@ -196,6 +196,7 @@ export default function DemandPage({ params }: DemandPageProps) {
             keywordHierarchy: historyData.keywordHierarchy || {}
           })
           setNicheData(historyData)
+          console.log('Set nicheData with products:', historyData.products?.length)
           } else {
             console.error('Failed to fetch niche data')
             setProductData(fallbackProductData)
@@ -422,6 +423,7 @@ export default function DemandPage({ params }: DemandPageProps) {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Demand Analysis Component - Use real component if we have product data */}
+        {console.log('Render check - nicheData:', nicheData, 'products:', nicheData?.products)}
         {nicheData?.products && nicheData.products.length > 0 ? (
           <>
             <DemandAnalysis data={productData} />

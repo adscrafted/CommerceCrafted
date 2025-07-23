@@ -59,7 +59,10 @@ export async function POST(
       reviewCount: product.review_count,
       competitorData: product.product_analyses?.[0]?.competition_analysis || null,
       keywordData: product.keyword_analyses?.[0] || null,
-      marketData: product.product_analyses?.[0]?.market_analysis || null
+      marketData: product.product_analyses?.[0]?.market_analysis || null,
+      productAgeMonths: product.product_age_months,
+      productAgeCategory: product.product_age_category,
+      firstSeenDate: product.first_seen_date
     }
 
     // Generate AI analysis
