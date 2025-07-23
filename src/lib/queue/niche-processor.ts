@@ -116,6 +116,9 @@ export class NicheProcessor {
       // Calculate niche-level analytics
       await this.calculateNicheAnalytics(job.nicheId)
       
+      // Generate market insights for the niche
+      await this.generateMarketInsights(job.nicheId)
+      
       // Validate processing results
       const successCount = job.progress.completedAsins.length
       const failedCount = job.progress.failedAsins.length
@@ -1186,6 +1189,203 @@ Return JSON array of emotional triggers:
       console.error('Error generating emotional triggers:', error)
     }
     return []
+  }
+
+  /**
+   * Generate Amazon marketplace insights for the niche
+   */
+  private async generateMarketInsights(nicheId: string) {
+    const supabase = createServiceSupabaseClient()
+    
+    console.log(`🔮 Generating Amazon marketplace insights for niche ${nicheId}...`)
+    
+    try {
+      // Get niche data with products and keywords
+      const { data: niche } = await supabase
+        .from('niches')
+        .select('*')
+        .eq('id', nicheId)
+        .single()
+      
+      if (!niche) {
+        console.error(`❌ Niche ${nicheId} not found`)
+        return
+      }
+      
+      // Get ASINs for this niche
+      const nicheAsins = niche.asins?.split(',').map((a: string) => a.trim()) || []
+      
+      // Get products data
+      const { data: products } = await supabase
+        .from('products')
+        .select('*')
+        .in('id', nicheAsins)
+      
+      // Get keywords data
+      const { data: keywords } = await supabase
+        .from('product_keywords')
+        .select('keyword, product_id, suggested_bid, estimated_clicks, estimated_orders')
+        .in('product_id', nicheAsins)
+      
+      if (!products || products.length === 0) {
+        console.warn(`⚠️ No products found for niche ${nicheId}`)
+        return
+      }
+      
+      // Prepare market data for AI analysis
+      const marketData = {
+        nicheName: niche.niche_name || 'Product Category',
+        productCount: products.length,
+        priceRange: {
+          min: Math.min(...products.map((p: any) => p.price || 0)),
+          max: Math.max(...products.map((p: any) => p.price || 0)),
+          avg: products.reduce((sum: number, p: any) => sum + (p.price || 0), 0) / products.length
+        },
+        avgRating: products.reduce((sum: number, p: any) => sum + (p.rating || 0), 0) / products.length,
+        totalReviews: products.reduce((sum: number, p: any) => sum + (p.review_count || 0), 0),
+        avgBSR: products.reduce((sum: number, p: any) => sum + (p.bsr || 0), 0) / products.length,
+        keywordCount: keywords?.length || 0,
+        topKeywords: keywords?.slice(0, 10).map((k: any) => k.keyword) || [],
+        productAges: products.map((p: any) => ({
+          months: p.product_age_months || 0,
+          category: p.product_age_category || 'Unknown'
+        })),
+        brands: [...new Set(products.map((p: any) => p.brand).filter(Boolean))],
+        categories: [...new Set(products.map((p: any) => p.category).filter(Boolean))]
+      }
+
+      // Generate AI analysis using the same prompt as the API
+      const analysisPrompt = `As an Amazon marketplace analyst, provide specific insights about selling ${marketData.nicheName} products on Amazon based on this data:
+
+AMAZON MARKETPLACE DATA:
+- ${marketData.productCount} active listings analyzed
+- Price range: $${marketData.priceRange.min.toFixed(2)} - $${marketData.priceRange.max.toFixed(2)} (avg: $${marketData.priceRange.avg.toFixed(2)})
+- Average customer rating: ${marketData.avgRating.toFixed(1)}/5 across ${marketData.totalReviews.toLocaleString()} reviews
+- Average Best Sellers Rank: ${Math.round(marketData.avgBSR).toLocaleString()}
+- ${marketData.brands.length} competing brands on Amazon
+- ${marketData.keywordCount} searchable keywords
+
+SELLER LANDSCAPE:
+${marketData.productAges.filter((p: any) => p.category !== 'Unknown').length > 0 ? 
+  Object.entries(
+    marketData.productAges.reduce((acc: any, p: any) => {
+      acc[p.category] = (acc[p.category] || 0) + 1
+      return acc
+    }, {})
+  ).map(([category, count]) => `- ${category}: ${count} products`).join('\n') 
+  : '- No age data available'}
+
+TOP AMAZON SEARCH TERMS:
+${marketData.topKeywords.slice(0, 5).join(', ')}
+
+Provide analysis in this JSON structure. Focus ONLY on:
+- Amazon marketplace health and saturation levels
+- FBA vs FBM opportunities and challenges
+- Amazon policy changes and compliance requirements
+- Platform-specific trends (Prime Day impact, Subscribe & Save potential, etc.)
+- Amazon customer behavior and expectations
+- Marketplace risks (account health, policy violations, competition from Amazon Basics)
+
+DO NOT discuss:
+- Keyword optimization or SEO strategies
+- Product listing improvements
+- Specific competitive advantages or positioning
+- Pricing strategies or price points
+- Individual product features or quality
+- Brand-specific strategies
+
+Structure your response as follows:
+{
+  "marketTrends": {
+    "currentPhase": "Emerging|Growing|Mature|Declining",
+    "growthIndicators": ["indicator1", "indicator2", "indicator3"],
+    "marketMaturity": "Early|Developing|Established|Saturated"
+  },
+  "industryInsights": [
+    {
+      "title": "Amazon-specific trend",
+      "description": "Specific observation about Amazon marketplace dynamics",
+      "impact": "high|medium|low",
+      "timeframe": "short-term|medium-term|long-term"
+    }
+  ],
+  "demandPatterns": {
+    "volumeTrend": "increasing|stable|decreasing",
+    "seasonalFactors": ["Prime Day", "Holiday Shopping", "etc"],
+    "demandDrivers": ["Amazon customer behavior driver1", "driver2", "driver3"]
+  },
+  "marketOpportunities": [
+    {
+      "opportunity": "Specific Amazon selling opportunity",
+      "rationale": "Why this opportunity exists on Amazon",
+      "difficulty": "low|medium|high"
+    }
+  ],
+  "riskFactors": [
+    {
+      "risk": "Specific Amazon marketplace risk",
+      "likelihood": "low|medium|high",
+      "mitigation": "How to avoid this Amazon-specific issue"
+    }
+  ],
+  "futureOutlook": {
+    "projection": "1-2 year Amazon marketplace projection",
+    "keyFactors": ["Amazon trend1", "platform change2", "policy update3"],
+    "recommendation": "Strategic recommendation for new Amazon sellers"
+  }
+}`
+
+      // Call OpenAI API
+      const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { 
+              role: 'system', 
+              content: 'You are an expert Amazon marketplace analyst specializing in FBA product opportunities. Provide specific, data-driven insights about selling on Amazon based on the actual metrics provided. Focus on Amazon-specific marketplace dynamics, seller opportunities, and platform trends. IMPORTANT: Avoid discussing keyword optimization, SEO, listing optimization, product-specific details, pricing strategies, or competitive positioning as these are covered in other sections.'
+            },
+            { role: 'user', content: analysisPrompt }
+          ],
+          temperature: 0.7,
+          response_format: { type: 'json_object' }
+        })
+      })
+
+      if (!openAIResponse.ok) {
+        throw new Error(`OpenAI API error: ${openAIResponse.status}`)
+      }
+
+      const aiData = await openAIResponse.json()
+      const analysis = JSON.parse(aiData.choices[0].message.content)
+
+      // Store the analysis in the niche's ai_analysis field
+      const { error: updateError } = await supabase
+        .from('niches')
+        .update({
+          ai_analysis: {
+            marketInsights: analysis,
+            generatedAt: new Date().toISOString(),
+            productCount: marketData.productCount,
+            keywordCount: marketData.keywordCount
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', nicheId)
+
+      if (updateError) {
+        console.error(`❌ Failed to store market insights for niche ${nicheId}:`, updateError)
+      } else {
+        console.log(`✅ Generated and stored Amazon marketplace insights for niche ${nicheId}`)
+      }
+
+    } catch (error) {
+      console.error(`🚨 Market insights generation failed for niche ${nicheId}:`, error)
+    }
   }
 
   /**

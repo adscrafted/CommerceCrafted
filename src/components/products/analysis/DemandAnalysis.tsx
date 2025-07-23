@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import { ResponsiveContainer, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from 'recharts'
 import KeywordNetworkVisualization from '@/components/KeywordNetworkVisualization'
+import DemandAnalysisReal from './DemandAnalysisReal'
 
 interface DemandAnalysisProps {
   data: {
@@ -106,10 +107,15 @@ interface DemandAnalysisProps {
       }
     }
   }
+  nicheId?: string | null
+  nicheData?: any
 }
 
-export default function DemandAnalysis({ data }: DemandAnalysisProps) {
+export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnalysisProps) {
   const [activeTab, setActiveTab] = useState('market')
+  const [aiInsights, setAiInsights] = useState<any>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
   
   // Initialize with all competitors selected by default
   const [selectedCompetitors, setSelectedCompetitors] = useState<string[]>(() => {
@@ -133,6 +139,34 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
       setSelectedCompetitors(allCompetitorAsins)
     }
   }, [data.demandData._nicheProducts])
+
+  // Fetch AI market insights when component mounts (not just when tab is active)
+  useEffect(() => {
+    const fetchAIInsights = async () => {
+      if (!nicheId) return
+      
+      setAiLoading(true)
+      setAiError(null)
+      
+      try {
+        const response = await fetch(`/api/niches/${nicheId}/market-trends`)
+        const result = await response.json()
+        
+        if (result.hasData && result.analysis) {
+          setAiInsights(result.analysis)
+        } else {
+          setAiError(result.error || 'Unable to generate market insights')
+        }
+      } catch (error) {
+        console.error('Failed to fetch AI insights:', error)
+        setAiError('Failed to load market insights')
+      } finally {
+        setAiLoading(false)
+      }
+    }
+
+    fetchAIInsights()
+  }, [nicheId]) // Remove activeTab dependency so it loads immediately
 
   // Helper function to get color for competitor lines
   const getCompetitorColor = (index: number) => {
@@ -175,72 +209,224 @@ export default function DemandAnalysis({ data }: DemandAnalysisProps) {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Sparkles className="h-5 w-5 text-purple-600" />
-                <span>AI-Powered Market Insights</span>
+                <span>Market Insights</span>
               </CardTitle>
               <CardDescription>
-                Machine learning analysis of market conditions and opportunities
+                Amazon marketplace dynamics and selling opportunities
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">Market Assessment</h4>
-                  <p className="text-sm text-gray-700">
-                    This market shows strong growth potential with improving BSR trends and increasing customer demand. 
-                    The niche is in an expansion phase with room for new entrants who can differentiate effectively.
+              {aiLoading ? (
+                <div className="space-y-4">
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  </div>
+                </div>
+              ) : aiError ? (
+                <div className="p-4 bg-yellow-50 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-4 h-4 bg-yellow-400 rounded-full"></div>
+                    <p className="text-sm font-medium text-yellow-800">Market Insights Pending</p>
+                  </div>
+                  <p className="text-sm text-yellow-700">{aiError}</p>
+                  <p className="text-xs text-yellow-600 mt-1">
+                    Market insights are generated during niche processing and will appear here once complete.
                   </p>
                 </div>
-                
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Key Opportunities</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-start space-x-2">
-                      <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-green-600">1</span>
+              ) : aiInsights ? (
+                <div className="space-y-6">
+                  {/* Market Phase & Maturity */}
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-3">Market Status</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-xs text-gray-600">Current Phase</span>
+                        <p className="text-sm font-semibold text-gray-900 capitalize">{aiInsights.marketTrends?.currentPhase}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Premium Segment Underserved</p>
-                        <p className="text-xs text-gray-600">Only 19% of products target the $30+ price range despite strong demand</p>
+                        <span className="text-xs text-gray-600">Market Maturity</span>
+                        <p className="text-sm font-semibold text-gray-900 capitalize">{aiInsights.marketTrends?.marketMaturity}</p>
                       </div>
                     </div>
-                    <div className="flex items-start space-x-2">
-                      <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-green-600">2</span>
+                    {aiInsights.marketTrends?.growthIndicators && (
+                      <div className="mt-3">
+                        <span className="text-xs text-gray-600">Growth Indicators</span>
+                        <ul className="mt-1 space-y-1">
+                          {aiInsights.marketTrends.growthIndicators.map((indicator: string, idx: number) => (
+                            <li key={idx} className="text-sm text-gray-700 flex items-start">
+                              <span className="text-purple-600 mr-2">•</span>
+                              {indicator}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Seasonal Opportunity</p>
-                        <p className="text-xs text-gray-600">Q4 shows 40% higher demand - prepare inventory for holiday season</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-green-600">3</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Feature Gap in Market</p>
-                        <p className="text-xs text-gray-600">Customers seeking eco-friendly options - only 12% of products address this</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
-                </div>
 
-                <div className="p-4 bg-yellow-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">Risk Factors</h4>
-                  <div className="space-y-1 text-sm text-gray-700">
-                    <div className="flex items-center">
-                      <span className="text-yellow-600 mr-2">⚠</span>
-                      <span>Increasing competition from Chinese manufacturers</span>
+                  {/* Industry Insights */}
+                  {aiInsights.industryInsights && aiInsights.industryInsights.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-3">Industry Trends</h4>
+                      <div className="space-y-3">
+                        {aiInsights.industryInsights.map((insight: any, idx: number) => (
+                          <div key={idx} className={`p-3 rounded-lg border ${
+                            insight.impact === 'high' ? 'border-red-200 bg-red-50' :
+                            insight.impact === 'medium' ? 'border-yellow-200 bg-yellow-50' :
+                            'border-blue-200 bg-blue-50'
+                          }`}>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-900">{insight.title}</p>
+                                <p className="text-xs text-gray-600 mt-1">{insight.description}</p>
+                              </div>
+                              <div className="flex gap-2 ml-3">
+                                <Badge variant="outline" className="text-xs">
+                                  {insight.impact} impact
+                                </Badge>
+                                <Badge variant="outline" className="text-xs">
+                                  {insight.timeframe}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <span className="text-yellow-600 mr-2">⚠</span>
-                      <span>Price sensitivity in budget segment affecting margins</span>
+                  )}
+
+                  {/* Demand Patterns */}
+                  {aiInsights.demandPatterns && (
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-2">Demand Analysis</h4>
+                      <div className="grid grid-cols-2 gap-4 mb-3">
+                        <div>
+                          <span className="text-xs text-gray-600">Volume Trend</span>
+                          <p className="text-sm font-semibold text-gray-900 capitalize">{aiInsights.demandPatterns.volumeTrend}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-600">Seasonal Factors</span>
+                          <p className="text-sm text-gray-700">{aiInsights.demandPatterns.seasonalFactors?.join(', ') || 'None identified'}</p>
+                        </div>
+                      </div>
+                      {aiInsights.demandPatterns.demandDrivers && (
+                        <div>
+                          <span className="text-xs text-gray-600">Key Demand Drivers</span>
+                          <ul className="mt-1 space-y-1">
+                            {aiInsights.demandPatterns.demandDrivers.map((driver: string, idx: number) => (
+                              <li key={idx} className="text-sm text-gray-700 flex items-start">
+                                <span className="text-blue-600 mr-2">→</span>
+                                {driver}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
+
+                  {/* Market Opportunities */}
+                  {aiInsights.marketOpportunities && aiInsights.marketOpportunities.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-3">Market Opportunities</h4>
+                      <div className="space-y-2">
+                        {aiInsights.marketOpportunities.map((opp: any, idx: number) => (
+                          <div key={idx} className="flex items-start space-x-2">
+                            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-bold text-green-600">{idx + 1}</span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900">{opp.opportunity}</p>
+                              <p className="text-xs text-gray-600">{opp.rationale}</p>
+                              <Badge variant="outline" className="text-xs mt-1">
+                                {opp.difficulty} difficulty
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Risk Factors */}
+                  {aiInsights.riskFactors && aiInsights.riskFactors.length > 0 && (
+                    <div className="p-4 bg-yellow-50 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-2">Risk Factors</h4>
+                      <div className="space-y-2">
+                        {aiInsights.riskFactors.map((risk: any, idx: number) => (
+                          <div key={idx} className="space-y-1">
+                            <div className="flex items-start">
+                              <span className={`mr-2 ${
+                                risk.likelihood === 'high' ? 'text-red-600' :
+                                risk.likelihood === 'medium' ? 'text-yellow-600' :
+                                'text-blue-600'
+                              }`}>⚠</span>
+                              <div className="flex-1">
+                                <span className="text-sm text-gray-700">{risk.risk}</span>
+                                <Badge variant="outline" className="text-xs ml-2">
+                                  {risk.likelihood} likelihood
+                                </Badge>
+                              </div>
+                            </div>
+                            {risk.mitigation && (
+                              <p className="text-xs text-gray-600 ml-6">Mitigation: {risk.mitigation}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Future Outlook */}
+                  {aiInsights.futureOutlook && (
+                    <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-2">Future Outlook</h4>
+                      <p className="text-sm text-gray-700 mb-3">{aiInsights.futureOutlook.projection}</p>
+                      {aiInsights.futureOutlook.keyFactors && (
+                        <div className="mb-3">
+                          <span className="text-xs text-gray-600">Key Factors to Watch</span>
+                          <ul className="mt-1 space-y-1">
+                            {aiInsights.futureOutlook.keyFactors.map((factor: string, idx: number) => (
+                              <li key={idx} className="text-sm text-gray-700 flex items-start">
+                                <span className="text-indigo-600 mr-2">•</span>
+                                {factor}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {aiInsights.futureOutlook.recommendation && (
+                        <div className="mt-3 p-3 bg-white bg-opacity-70 rounded">
+                          <span className="text-xs text-gray-600">Strategic Recommendation</span>
+                          <p className="text-sm text-gray-900 font-medium mt-1">{aiInsights.futureOutlook.recommendation}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
+              ) : !nicheId ? (
+                <div className="p-4 bg-gray-50 rounded-lg text-center">
+                  <p className="text-sm text-gray-600">
+                    AI market analysis requires niche data. Create or select a niche to see insights.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 bg-gray-50 rounded-lg text-center">
+                  <p className="text-sm text-gray-600">
+                    Loading market insights...
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
+          {/* Competitor Market Age Analysis */}
+          {nicheData?.products && nicheData.products.length > 0 && (
+            <DemandAnalysisReal products={nicheData.products} />
+          )}
 
           {/* Competitor Age Analysis - Commented out in favor of DemandAnalysisReal component with actual data
           <Card>
