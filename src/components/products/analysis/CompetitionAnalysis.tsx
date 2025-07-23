@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -33,7 +33,9 @@ import {
   Activity,
   ChevronDown,
   ChevronRight,
-  ShoppingCart
+  ShoppingCart,
+  Package,
+  Ruler
 } from 'lucide-react'
 
 interface CompetitionAnalysisProps {
@@ -72,51 +74,89 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
       [metric]: !prev[metric]
     }))
   }
-
+  
   const toggleCompetitor = (asin: string) => {
     setExpandedCompetitors(prev => ({
       ...prev,
       [asin]: !prev[asin]
     }))
   }
-
+  
   const openEnlargedImage = (image: string, allImages: string[], index: number) => {
     setEnlargedImage(image)
     setEnlargedImageSet(allImages)
     setEnlargedImageIndex(index)
   }
-
+  
   const closeEnlargedImage = () => {
     setEnlargedImage(null)
     setEnlargedImageSet([])
     setEnlargedImageIndex(0)
   }
-
-  const navigateImage = (direction: 'prev' | 'next') => {
-    if (enlargedImageSet.length === 0) return
-    
-    let newIndex
-    if (direction === 'prev') {
-      newIndex = enlargedImageIndex > 0 ? enlargedImageIndex - 1 : enlargedImageSet.length - 1
-    } else {
-      newIndex = enlargedImageIndex < enlargedImageSet.length - 1 ? enlargedImageIndex + 1 : 0
-    }
-    
-    setEnlargedImageIndex(newIndex)
-    setEnlargedImage(enlargedImageSet[newIndex])
-  }
-
-  // Helper function to categorize competitors
+  
   const categorizeCompetitor = (competitor: any) => {
-    const rating = competitor.rating || 0
-    const bsr = competitor.bsr || 50000
-    
-    if (rating >= 4.3 && bsr <= 20000) return 'strong'
-    if ((rating >= 3.8 && rating < 4.3) || (bsr > 20000 && bsr <= 50000)) return 'average'
+    const score = calculateCompetitorScore(competitor)
+    if (score >= 80) return 'strong'
+    if (score >= 60) return 'average'
     return 'weak'
   }
-
-  // Filter competitors based on selected filter
+  
+  const calculateCompetitorScore = (competitor: any) => {
+    let score = 0
+    
+    // Rating score (0-25 points)
+    const rating = competitor.rating || 0
+    score += (rating / 5) * 25
+    
+    // Review count score (0-25 points)
+    const reviews = competitor.review_count || 0
+    if (reviews >= 1000) score += 25
+    else if (reviews >= 500) score += 20
+    else if (reviews >= 100) score += 10
+    else score += 5
+    
+    // BSR score (0-20 points)
+    const bsr = competitor.bsr || 999999
+    if (bsr <= 1000) score += 20
+    else if (bsr <= 5000) score += 15
+    else if (bsr <= 10000) score += 10
+    else if (bsr <= 50000) score += 5
+    
+    // Price competitiveness (0-15 points)
+    const avgPrice = data.competitors?.reduce((sum: number, c: any) => sum + (c.price || 0), 0) / (data.competitors?.length || 1)
+    const priceDiff = Math.abs((competitor.price || 0) - avgPrice) / avgPrice
+    if (priceDiff <= 0.1) score += 15
+    else if (priceDiff <= 0.2) score += 10
+    else if (priceDiff <= 0.3) score += 5
+    else score += 2
+    
+    // Keyword ownership score (0-15 points) - calculated from keyword data
+    const keywordOwnership = calculateAverageKeywordOwnership(competitor.asin)
+    score += (keywordOwnership / 100) * 15
+    
+    return Math.round(score)
+  }
+  
+  const calculateAverageKeywordOwnership = (asin: string) => {
+    if (!keywordData || keywordData.length === 0) return 0
+    
+    let totalOwnership = 0
+    let keywordCount = 0
+    
+    keywordData.forEach(group => {
+      group.subroots?.forEach((subroot: any) => {
+        subroot.keywords?.forEach((kw: any) => {
+          if (kw.ownership && kw.ownership[asin]) {
+            totalOwnership += kw.ownership[asin]
+            keywordCount++
+          }
+        })
+      })
+    })
+    
+    return keywordCount > 0 ? totalOwnership / keywordCount : 0
+  }
+  
   const getFilteredCompetitors = () => {
     if (competitorFilter === 'all') return data.competitors || []
     
@@ -125,7 +165,24 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
     )
   }
   
-  const processKeywordData = () => {
+  const generateHistoricalData = (competitor: any) => {
+    // Generate mock historical data for the chart
+    const days = 30
+    const basePrice = competitor.price || 25
+    const baseBSR = competitor.bsr || 5000
+    const baseRating = competitor.rating || 4.5
+    const baseReviews = competitor.review_count || 1000
+    
+    return Array.from({ length: days }, (_, i) => ({
+      day: `Day ${i + 1}`,
+      price: basePrice + (Math.random() - 0.5) * 5,
+      bsr: baseBSR / 1000 + (Math.random() - 0.5) * 2,
+      rating: Math.max(3.5, Math.min(5, baseRating + (Math.random() - 0.5) * 0.3)),
+      reviews: baseReviews / 100 + (Math.random() - 0.5) * 5
+    }))
+  }
+  
+  const processKeywordData = useCallback(() => {
     try {
       const keywordGroups: any[] = []
       
@@ -154,9 +211,8 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
               searchVolume: kw.searchVolume || kw.totalSearches || 0,
               cpc: kw.avgCPC || kw.cpc || 0,
               totalRevenue: kw.totalRevenue || 0,
-              // Simulate ownership data - in production this would come from ranking data
+              // Simulate ownership data
               ownership: data.competitors?.reduce((acc: any, comp: any, index: number) => {
-                // For demo purposes, assign higher ownership to earlier competitors
                 const baseOwnership = Math.max(0, 80 - (index * 15))
                 const variance = Math.floor(Math.random() * 20) - 10
                 acc[comp.asin] = Math.max(0, Math.min(100, baseOwnership + variance))
@@ -182,130 +238,100 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
     } catch (error) {
       console.error('Error processing keyword data:', error)
     }
-  }
-
-  // Process keyword data when switching to keyword tab
+  }, [data])
+  
+  // Process keyword data when component mounts or data changes
   useEffect(() => {
-    if (activeTab === 'keyword' && data?.keywordHierarchy) {
+    if (data?.keywordHierarchy) {
       processKeywordData()
     }
-  }, [activeTab, data])
-
+  }, [data, processKeywordData])
+  
   const toggleGroup = (groupKey: string) => {
     setExpandedGroups(prev => ({
       ...prev,
       [groupKey]: !prev[groupKey]
     }))
   }
-
+  
+  const generatePriceDistribution = (competitors: any[]) => {
+    const ranges = [
+      { range: '$0-20', min: 0, max: 20, count: 0 },
+      { range: '$20-30', min: 20, max: 30, count: 0 },
+      { range: '$30-40', min: 30, max: 40, count: 0 },
+      { range: '$40-50', min: 40, max: 50, count: 0 },
+      { range: '$50+', min: 50, max: Infinity, count: 0 }
+    ]
+    
+    competitors?.forEach(comp => {
+      const price = comp.price || 0
+      const range = ranges.find(r => price >= r.min && price < r.max)
+      if (range) range.count++
+    })
+    
+    return ranges
+  }
+  
   // Amazon Simulator function
   const runSimulation = async () => {
     if (!searchTerm.trim()) {
       alert('Please enter a search term to run the simulation')
       return
     }
-
+    
     setSimulationLoading(true)
     setSimulationRun(true)
-
+    
     try {
-      // Call the keepa-search API
-      const response = await fetch('/api/keepa-search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          searchTerm,
-          domain: getMarketplaceDomain(marketplace)
-        }),
-      })
-
-      const result = await response.json()
-
-      if (!result.success || !result.data) {
-        throw new Error(result.message || 'Failed to fetch search results')
-      }
-
-      // Transform the API results to match our component's expected format
-      const transformedResults = result.data.map((item: any, index: number) => ({
-        asin: item.asin,
-        title: item.title,
-        brand: item.brand,
-        price: item.currentPrice / 100, // Convert from cents
-        rating: item.rating / 10, // Convert from 0-50 to 0-5 scale
-        reviewCount: item.reviewCount,
-        bsr: Math.floor(Math.random() * 50000) + 1000, // Mock BSR for now
-        image: item.imageUrl || `https://via.placeholder.com/150x150?text=Product+${index + 1}`,
+      // Simulate search results using existing competitor data
+      const results = (data.competitors || []).map((comp: any, index: number) => ({
         position: index + 1,
-        isYourProduct: yourAsin && item.asin === yourAsin.toUpperCase()
+        asin: comp.asin,
+        title: comp.title || comp.name,
+        price: comp.price || 29.99,
+        rating: comp.rating || 4.2,
+        reviews: comp.review_count || 1000,
+        bsr: comp.bsr || Math.floor(Math.random() * 10000) + 1000,
+        image: comp.image || 'https://via.placeholder.com/150x150?text=Product',
+        isYourProduct: yourAsin && comp.asin === yourAsin
       }))
-
-      // If user provided an ASIN but it's not in results, try to insert it randomly
-      if (yourAsin && !transformedResults.some(r => r.isYourProduct)) {
-        try {
-          // Try to get user's product data
-          const productResponse = await fetch('/api/product-details', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              asin: yourAsin.toUpperCase(),
-              domain: getMarketplaceDomain(marketplace)
-            }),
-          })
-
-          const productResult = await productResponse.json()
-          
-          if (productResult.success && productResult.data) {
-            const userProduct = {
-              asin: yourAsin.toUpperCase(),
-              title: productResult.data.title || `Your Product ${yourAsin}`,
-              brand: productResult.data.brand || 'Your Brand',
-              price: (productResult.data.currentPrice || 2999) / 100,
-              rating: productResult.data.rating ? productResult.data.rating / 10 : 4.5,
-              reviewCount: productResult.data.reviewCount > 0 ? productResult.data.reviewCount : 0,
-              bsr: Math.floor(Math.random() * 50000) + 1000,
-              image: productResult.data.imageUrl || `https://via.placeholder.com/150x150?text=Your+Product`,
-              position: Math.floor(Math.random() * 5) + 1, // Random position in top 5
-              isYourProduct: true
-            }
-
-            // Insert user's product and adjust positions
-            transformedResults.splice(userProduct.position - 1, 0, userProduct)
-            transformedResults.forEach((item, index) => {
-              item.position = index + 1
-            })
-          }
-        } catch (error) {
-          console.warn('Could not fetch user product data:', error)
-        }
+      
+      // If user provided their ASIN and it's not in the results, add it
+      if (yourAsin && !results.some((r: any) => r.asin === yourAsin)) {
+        results.push({
+          position: results.length + 1,
+          asin: yourAsin,
+          title: `Your Product ${yourAsin}`,
+          price: 35.99,
+          rating: 4.5,
+          reviews: 250,
+          bsr: 8500,
+          image: 'https://via.placeholder.com/150x150?text=Your+Product',
+          isYourProduct: true
+        })
       }
-
-      setSimulationResults(transformedResults)
+      
+      // Sort by a relevance score (combine rating and reviews)
+      results.sort((a: any, b: any) => {
+        const scoreA = (a.rating * 20) + (Math.log10(a.reviews + 1) * 10)
+        const scoreB = (b.rating * 20) + (Math.log10(b.reviews + 1) * 10)
+        return scoreB - scoreA
+      })
+      
+      // Update positions after sorting
+      results.forEach((result: any, index: number) => {
+        result.position = index + 1
+      })
+      
+      setSimulationResults(results.slice(0, 20)) // Show top 20 results
     } catch (error) {
       console.error('Simulation error:', error)
-      alert(error instanceof Error ? error.message : 'Failed to run simulation')
+      alert('Failed to run simulation')
     } finally {
       setSimulationLoading(false)
     }
   }
-
-  // Helper function to convert marketplace to domain ID
-  const getMarketplaceDomain = (marketplace: string): number => {
-    const domainMap: { [key: string]: number } = {
-      'us': 1,
-      'uk': 2,
-      'de': 3,
-      'fr': 4,
-      'ca': 6,
-      'it': 8,
-      'es': 9
-    }
-    return domainMap[marketplace] || 1
-  }
-
+  
   return (
     <div className="space-y-6">
       {/* Tab Navigation */}
@@ -369,10 +395,7 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                     }`}
                   >
                     <div className="text-2xl font-bold text-green-600">
-                      {(() => {
-                        const strong = (data.competitors || []).filter((c: any) => categorizeCompetitor(c) === 'strong').length
-                        return strong
-                      })()}
+                      {(data.competitors || []).filter((c: any) => categorizeCompetitor(c) === 'strong').length}
                     </div>
                     <div className="text-sm text-gray-600">Strong</div>
                   </button>
@@ -385,10 +408,7 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                     }`}
                   >
                     <div className="text-2xl font-bold text-yellow-600">
-                      {(() => {
-                        const average = (data.competitors || []).filter((c: any) => categorizeCompetitor(c) === 'average').length
-                        return average
-                      })()}
+                      {(data.competitors || []).filter((c: any) => categorizeCompetitor(c) === 'average').length}
                     </div>
                     <div className="text-sm text-gray-600">Average</div>
                   </button>
@@ -401,10 +421,7 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                     }`}
                   >
                     <div className="text-2xl font-bold text-red-600">
-                      {(() => {
-                        const weak = (data.competitors || []).filter((c: any) => categorizeCompetitor(c) === 'weak').length
-                        return weak
-                      })()}
+                      {(data.competitors || []).filter((c: any) => categorizeCompetitor(c) === 'weak').length}
                     </div>
                     <div className="text-sm text-gray-600">Weak</div>
                   </button>
@@ -435,27 +452,20 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
               
               <div className="space-y-8">
                 {getFilteredCompetitors().map((competitor: any, index: number) => {
-                  // Parse additional data if available
-                  const bulletPoints = competitor.bullet_points ? JSON.parse(competitor.bullet_points) : []
-                  const aPlusContent = competitor.a_plus_content ? JSON.parse(competitor.a_plus_content) : {}
-                  const videoUrls = competitor.video_urls ? JSON.parse(competitor.video_urls) : []
+                  const isExpanded = expandedCompetitors[competitor.asin] || false
                   const imageUrls = competitor.image_urls ? competitor.image_urls.split(',').map((url: string) => url.trim()) : []
                   const allImages = imageUrls.length > 0 ? imageUrls.map((url: string) => `https://m.media-amazon.com/images/I/${url}`) : []
                   
-                  const isExpanded = expandedCompetitors[competitor.asin] || false
-                  
                   return (
                     <div key={index} className="border rounded-lg bg-gradient-to-r from-gray-50 to-blue-50">
-                      {/* Collapsible Header - Only show when collapsed */}
+                      {/* Collapsible Header */}
                       {!isExpanded && (
                         <div 
                           className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100/50"
                           onClick={() => toggleCompetitor(competitor.asin)}
                         >
                           <div className="flex items-center space-x-4">
-                            <div className="flex items-center">
-                              <ChevronRight className="h-5 w-5 text-gray-500" />
-                            </div>
+                            <ChevronRight className="h-5 w-5 text-gray-500" />
                             <img 
                               src={competitor.image || allImages[0] || 'https://via.placeholder.com/120x120?text=No+Image'}
                               alt={competitor.name || competitor.title}
@@ -484,10 +494,25 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                                 <span className="text-xs text-gray-600">
                                   {competitor.review_count ? competitor.review_count.toLocaleString() : '0'} reviews
                                 </span>
-                                <span className="text-xs font-semibold text-green-600">
-                                  ${(competitor.price || 0).toFixed(2)}
-                                </span>
                               </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-green-600">
+                              ${(competitor.price || 0).toFixed(2)}
+                            </div>
+                            <div className="text-xs text-gray-500">BSR: {competitor.bsr ? `#${competitor.bsr.toLocaleString()}` : 'N/A'}</div>
+                            <div className="mt-1">
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs ${
+                                  categorizeCompetitor(competitor) === 'strong' ? 'border-green-500 text-green-700' :
+                                  categorizeCompetitor(competitor) === 'average' ? 'border-yellow-500 text-yellow-700' :
+                                  'border-red-500 text-red-700'
+                                }`}
+                              >
+                                {categorizeCompetitor(competitor).charAt(0).toUpperCase() + categorizeCompetitor(competitor).slice(1)}
+                              </Badge>
                             </div>
                           </div>
                         </div>
@@ -496,351 +521,441 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                       {/* Expandable Content */}
                       {isExpanded && (
                         <div>
-                          {/* Clickable Header to Collapse */}
+                          {/* Header when expanded */}
                           <div 
-                            className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100/50 border-b"
+                            className="flex items-center justify-between p-4 cursor-pointer bg-white border-b"
                             onClick={() => toggleCompetitor(competitor.asin)}
                           >
                             <div className="flex items-center space-x-4">
-                              <div className="flex items-center">
-                                <ChevronDown className="h-5 w-5 text-gray-500" />
-                              </div>
-                              <img 
-                                src={competitor.image || allImages[0] || 'https://via.placeholder.com/120x120?text=No+Image'}
-                                alt={competitor.name || competitor.title}
-                                className="w-16 h-16 rounded object-cover border border-gray-200"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  openEnlargedImage(competitor.image || allImages[0], allImages, 0)
-                                }}
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = 'https://via.placeholder.com/48x48?text=No+Image';
-                                }}
-                              />
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-sm text-gray-900 line-clamp-1">
-                                  {competitor.name || competitor.title || 'Unknown Product'}
-                                </h3>
-                                <div className="flex items-center space-x-4 mt-1">
-                                  <span className="text-xs text-gray-600 font-mono">{competitor.asin}</span>
-                                  <div className="flex items-center space-x-1">
-                                    <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                                    <span className="text-xs text-gray-600">
-                                      {competitor.rating ? competitor.rating.toFixed(1) : '0.0'}
-                                    </span>
-                                  </div>
-                                  <span className="text-xs text-gray-600">
-                                    {competitor.review_count ? competitor.review_count.toLocaleString() : '0'} reviews
-                                  </span>
-                                  <span className="text-xs font-semibold text-green-600">
-                                    ${(competitor.price || 0).toFixed(2)}
-                                  </span>
-                                </div>
-                              </div>
+                              <ChevronDown className="h-5 w-5 text-gray-500" />
+                              <h3 className="font-semibold text-lg text-gray-900">
+                                {competitor.name || competitor.title || 'Unknown Product'}
+                              </h3>
                             </div>
+                            <Button variant="ghost" size="sm">Collapse</Button>
                           </div>
                           
-                          {/* Expanded Content */}
-                          <div className="p-6">
-                            {/* Main Product Overview */}
-                            <div className="grid md:grid-cols-4 gap-6 mb-6">
-                        {/* Product Images & Info */}
-                        <div className="md:col-span-2">
-                          <div className="flex items-start space-x-4">
-                            <div className="flex-shrink-0">
-                              <img 
-                                src={competitor.image || allImages[0] || 'https://via.placeholder.com/120x120?text=No+Image'}
-                                alt={competitor.name || competitor.title}
-                                className="w-48 h-48 rounded-lg object-cover border-2 border-gray-200 cursor-pointer hover:opacity-80"
-                                onClick={() => openEnlargedImage(competitor.image || allImages[0], allImages, 0)}
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = 'https://via.placeholder.com/120x120?text=No+Image';
-                                }}
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-2">
-                                {competitor.brand && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    {competitor.brand}
-                                  </Badge>
+                          {/* Detailed content */}
+                          <div className="p-6 bg-white space-y-6">
+                            {/* Product Images Gallery */}
+                            <div className="flex items-start space-x-6">
+                              <div className="flex-shrink-0">
+                                <img 
+                                  src={competitor.image || allImages[0] || 'https://via.placeholder.com/200x200?text=No+Image'}
+                                  alt={competitor.name || competitor.title}
+                                  className="w-48 h-48 rounded-lg object-cover border border-gray-200 cursor-pointer hover:opacity-90"
+                                  onClick={() => openEnlargedImage(competitor.image || allImages[0], allImages, 0)}
+                                />
+                                {allImages.length > 1 && (
+                                  <div className="grid grid-cols-4 gap-2 mt-2">
+                                    {allImages.slice(0, 4).map((image: string, imgIndex: number) => (
+                                      <img 
+                                        key={imgIndex}
+                                        src={image}
+                                        alt={`${competitor.name || competitor.title} - Image ${imgIndex + 1}`}
+                                        className="w-10 h-10 rounded object-cover border border-gray-200 cursor-pointer hover:opacity-90"
+                                        onClick={() => openEnlargedImage(image, allImages, imgIndex)}
+                                      />
+                                    ))}
+                                  </div>
                                 )}
                               </div>
-                              <a 
-                                href={`https://www.amazon.com/dp/${competitor.asin}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block font-semibold text-sm text-blue-600 hover:text-blue-800 hover:underline mb-2 line-clamp-2"
-                              >
-                                {competitor.name || competitor.title || 'Unknown Product'}
-                              </a>
-                              <p className="text-xs text-gray-600 mb-2">
-                                ASIN: {competitor.asin}
-                              </p>
-                              <div className="flex items-center space-x-1">
-                                <div className="flex items-center">
-                                  {[...Array(5)].map((_, i) => (
-                                    <Star 
-                                      key={i} 
-                                      className={`h-3 w-3 ${i < Math.floor(competitor.rating || 4.5) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-                                    />
-                                  ))}
+                              
+                              {/* Basic Info Grid */}
+                              <div className="flex-1 grid grid-cols-2 gap-4">
+                                <div>
+                                  <p className="text-sm text-gray-600">Price</p>
+                                  <p className="text-xl font-bold text-green-600">${(competitor.price || 0).toFixed(2)}</p>
+                                  {competitor.fee && (
+                                    <p className="text-xs text-gray-500">FBA Fee: ${competitor.fee.toFixed(2)}</p>
+                                  )}
                                 </div>
-                                <span className="text-xs text-gray-600">
-                                  {competitor.rating ? competitor.rating.toFixed(1) : '4.5'} ({competitor.review_count ? competitor.review_count.toLocaleString() : '1,234'})
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Right Column - Metrics and Specs */}
-                        <div className="md:col-span-2 space-y-4">
-                          {/* Key Metrics */}
-                          <div>
-                            <h4 className="text-xs font-semibold text-gray-700 mb-3">Key Metrics</h4>
-                            <div className="grid grid-cols-3 gap-3">
-                              <div className="bg-white p-2 rounded border">
-                                <div className="text-xs text-gray-600">Price</div>
-                                <div className="text-lg font-bold text-green-600">${(competitor.price || 0).toFixed(2)}</div>
-                              </div>
-                              <div className="bg-white p-2 rounded border">
-                                <div className="text-xs text-gray-600">BSR</div>
-                                <div className="text-sm font-semibold text-purple-600">#{(competitor.bsr || 0).toLocaleString()}</div>
-                              </div>
-                              <div className="bg-white p-2 rounded border">
-                                <div className="text-xs text-gray-600">FBA Fees</div>
-                                <div className="text-sm font-medium text-orange-600">
-                                  ${competitor.fee ? competitor.fee.toFixed(2) : 'N/A'}
+                                <div>
+                                  <p className="text-sm text-gray-600">Rating</p>
+                                  <div className="flex items-center space-x-1">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star 
+                                        key={i} 
+                                        className={`h-4 w-4 ${i < Math.floor(competitor.rating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                                      />
+                                    ))}
+                                    <span className="text-sm ml-1">{(competitor.rating || 0).toFixed(1)}</span>
+                                  </div>
+                                  <p className="text-xs text-gray-500">{(competitor.review_count || 0).toLocaleString()} reviews</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-600">BSR</p>
+                                  <p className="text-lg font-bold">#{(competitor.bsr || 0).toLocaleString()}</p>
+                                  <p className="text-xs text-gray-500">{competitor.category || 'N/A'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-600">Monthly Sales</p>
+                                  <p className="text-lg font-bold">{(competitor.monthly_orders || 0).toLocaleString()}</p>
+                                  <p className="text-xs text-gray-500">Est. Revenue: ${((competitor.monthly_orders || 0) * (competitor.price || 0)).toLocaleString()}</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-600">Competitor Score</p>
+                                  <div className="flex items-center space-x-2">
+                                    <div className={`text-lg font-bold ${
+                                      calculateCompetitorScore(competitor) >= 80 ? 'text-green-600' :
+                                      calculateCompetitorScore(competitor) >= 60 ? 'text-yellow-600' :
+                                      'text-red-600'
+                                    }`}>
+                                      {calculateCompetitorScore(competitor)}/100
+                                    </div>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`text-xs ${
+                                        categorizeCompetitor(competitor) === 'strong' ? 'border-green-500 text-green-700' :
+                                        categorizeCompetitor(competitor) === 'average' ? 'border-yellow-500 text-yellow-700' :
+                                        'border-red-500 text-red-700'
+                                      }`}
+                                    >
+                                      {categorizeCompetitor(competitor).charAt(0).toUpperCase() + categorizeCompetitor(competitor).slice(1)}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-gray-500">Based on metrics & keywords</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-600">Keyword Ownership</p>
+                                  <div className="flex items-center space-x-2">
+                                    <div className={`text-lg font-bold ${
+                                      calculateAverageKeywordOwnership(competitor.asin) >= 70 ? 'text-green-600' :
+                                      calculateAverageKeywordOwnership(competitor.asin) >= 40 ? 'text-yellow-600' :
+                                      calculateAverageKeywordOwnership(competitor.asin) >= 20 ? 'text-orange-600' :
+                                      'text-red-600'
+                                    }`}>
+                                      {Math.round(calculateAverageKeywordOwnership(competitor.asin))}%
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-gray-500">Avg across all keywords</p>
                                 </div>
                               </div>
                             </div>
-                          </div>
-
-                          {/* Product Specifications */}
-                          <div>
-                          <h4 className="text-xs font-semibold text-gray-700 mb-3">Specifications</h4>
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">Dimensions:</span>
-                              <span>
-                                {competitor.length > 0 && competitor.width > 0 && competitor.height > 0 ? 
-                                  `${competitor.length}" × ${competitor.width}" × ${competitor.height}"` : 
-                                  competitor.dimensions?.length > 0 ? 
-                                    `${competitor.dimensions.length}" × ${competitor.dimensions.width}" × ${competitor.dimensions.height}"` : 
-                                    'N/A'
-                                }
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">Weight:</span>
-                              <span>
-                                {competitor.weight > 0 ? 
-                                  `${competitor.weight} lbs` : 
-                                  competitor.dimensions?.weight > 0 ? 
-                                    `${competitor.dimensions.weight} lbs` : 
-                                    'N/A'
-                                }
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">FBA Tier:</span>
-                              <span className="font-medium">{competitor.tier || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">Category:</span>
-                              <span className="truncate ml-2" title={competitor.category || 'Health & Personal Care'}>
-                                {competitor.category || 'Health & Personal Care'}
-                              </span>
-                            </div>
-                            {competitor.parent_asin && competitor.parent_asin !== 'N/A' && (
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-600">Parent ASIN:</span>
-                                <span>{competitor.parent_asin}</span>
+                            
+                            {/* Product Details Tabs */}
+                            <div className="border-t pt-4">
+                              <div className="flex space-x-4 border-b">
+                                {['details', 'dimensions', 'keywords'].map((tab) => (
+                                  <button
+                                    key={tab}
+                                    onClick={() => setSelectedCompetitor({ ...competitor, activeTab: tab })}
+                                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                                      selectedCompetitor?.activeTab === tab 
+                                        ? 'text-blue-600 border-blue-600' 
+                                        : 'text-gray-500 border-transparent hover:text-gray-700'
+                                    }`}
+                                  >
+                                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                  </button>
+                                ))}
                               </div>
-                            )}
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">Launch Date:</span>
-                              <span>{competitor.created_at ? new Date(competitor.created_at).toLocaleDateString() : 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">Trend:</span>
-                              <span className={Math.random() > 0.5 ? 'text-green-600' : 'text-red-600'}>
-                                {Math.random() > 0.5 ? '↗ Growing' : '↘ Declining'}
-                              </span>
-                            </div>
-                          </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Secondary Images */}
-                      {allImages.length > 1 && (
-                        <div className="mb-6">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3">Additional Images</h4>
-                          <div className="flex gap-3 overflow-x-auto pb-2">
-                            {allImages.slice(1, 9).map((image, imgIndex) => (
-                              <img 
-                                key={imgIndex}
-                                src={image}
-                                alt={`${competitor.name || competitor.title} - Image ${imgIndex + 2}`}
-                                className="w-24 h-24 rounded object-cover border border-gray-200 cursor-pointer hover:opacity-80 flex-shrink-0"
-                                onClick={() => openEnlargedImage(image, allImages.slice(1, 9), imgIndex)}
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = 'https://via.placeholder.com/64x64?text=No+Image';
-                                }}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Bullet Points */}
-                      {bulletPoints.length > 0 && (
-                        <div className="mb-6">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3">Bullet Points</h4>
-                          <ul className="space-y-2">
-                            {bulletPoints.map((point: string, pointIndex: number) => (
-                              <li key={pointIndex} className="text-sm text-gray-600 flex items-start space-x-2">
-                                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                                <span>{point}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* Performance Analysis */}
-                      <div className="mb-6">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-sm font-semibold text-gray-700">Historical Performance Analysis</h4>
-                          <div className="flex items-center space-x-2">
-                            {[
-                              { key: 'price', label: 'Price', color: 'bg-green-100 text-green-700' },
-                              { key: 'bsr', label: 'BSR', color: 'bg-purple-100 text-purple-700' },
-                              { key: 'rating', label: 'Rating', color: 'bg-blue-100 text-blue-700' },
-                              { key: 'reviews', label: 'Reviews', color: 'bg-orange-100 text-orange-700' }
-                            ].map((metric) => (
-                              <button
-                                key={metric.key}
-                                onClick={() => toggleMetric(metric.key)}
-                                className={`px-2 py-1 text-xs rounded transition-colors ${
-                                  visibleMetrics[metric.key] 
-                                    ? metric.color 
-                                    : 'bg-gray-100 text-gray-500'
-                                }`}
-                              >
-                                {metric.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="bg-white rounded-lg border p-4">
-                          <div className="grid grid-cols-4 gap-4 mb-4">
-                            <div className="text-center">
-                              <div className="text-lg font-bold text-purple-600">
-                                #{(competitor.bsr || Math.floor(Math.random() * 50000) + 10000).toLocaleString()}
-                              </div>
-                              <div className="text-xs text-gray-600">Current BSR</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-lg font-bold text-green-600">
-                                ${(competitor.price || (Math.random() * 50 + 10)).toFixed(2)}
-                              </div>
-                              <div className="text-xs text-gray-600">Current Price</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-lg font-bold text-blue-600">
-                                {(competitor.rating || (4.0 + Math.random())).toFixed(1)}★
-                              </div>
-                              <div className="text-xs text-gray-600">Rating</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-lg font-bold text-orange-600">
-                                {(competitor.review_count || Math.floor(Math.random() * 5000) + 500).toLocaleString()}
-                              </div>
-                              <div className="text-xs text-gray-600">Reviews</div>
-                            </div>
-                          </div>
-                          
-                          {/* Multi-Metric Performance Chart */}
-                          <div className="h-80 mt-4">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <AreaChart data={(() => {
-                                // Use real review history if available, otherwise generate realistic mock data
-                                const reviewHistory = data.reviewHistory?.[competitor.asin]
+                              
+                              <div className="mt-4">
+                                {/* Details Tab */}
+                                {(!selectedCompetitor?.activeTab || selectedCompetitor?.activeTab === 'details') && (
+                                  <div className="space-y-4">
+                                    {/* Bullet Points */}
+                                    {(() => {
+                                      const bulletPoints = competitor.bullet_points ? 
+                                        (typeof competitor.bullet_points === 'string' ? 
+                                          JSON.parse(competitor.bullet_points) : 
+                                          competitor.bullet_points) : []
+                                      
+                                      return bulletPoints.length > 0 ? (
+                                        <div>
+                                          <h5 className="font-medium text-sm text-gray-700 mb-2">Key Features</h5>
+                                          <ul className="space-y-2">
+                                            {bulletPoints.map((point: string, index: number) => (
+                                              <li key={index} className="flex items-start space-x-2 text-sm text-gray-600">
+                                                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                                                <span>{point}</span>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      ) : null
+                                    })()}
+                                    
+                                    {/* Brand & ASIN Info */}
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                      <div>
+                                        <span className="text-gray-600">Brand:</span>
+                                        <span className="ml-2 font-medium">{competitor.brand || 'Unknown'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-600">ASIN:</span>
+                                        <span className="ml-2 font-mono text-xs">{competitor.asin}</span>
+                                      </div>
+                                      {competitor.parent_asin && (
+                                        <div>
+                                          <span className="text-gray-600">Parent ASIN:</span>
+                                          <span className="ml-2 font-mono text-xs">{competitor.parent_asin}</span>
+                                        </div>
+                                      )}
+                                      <div>
+                                        <span className="text-gray-600">Status:</span>
+                                        <Badge variant={competitor.status === 'ACTIVE' ? 'default' : 'secondary'} className="ml-2">
+                                          {competitor.status || 'ACTIVE'}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                                 
-                                if (reviewHistory && reviewHistory.length > 0) {
-                                  // Use real review history data for ratings and reviews (generated from actual Keepa data)
-                                  return reviewHistory.slice(-30).map((record: any, i: number) => {
-                                    const date = new Date(record.date)
-                                    const basePrice = competitor.price || 25
-                                    const baseBSR = competitor.bsr || 15000
-                                    
-                                    return {
-                                      day: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                                      price: basePrice * (1 + (Math.sin(i / 10) * 0.1) + (Math.random() - 0.5) * 0.05), // Still mock for price
-                                      bsr: (baseBSR * (1 + (Math.sin(i / 15) * 0.2) + (Math.random() - 0.5) * 0.1)) / 1000, // Still mock for BSR
-                                      rating: record.averageRating,
-                                      reviews: record.reviewCount / 100 // Normalize for chart
-                                    }
-                                  })
-                                } else {
-                                  // Generate realistic mock data based on current product data
-                                  const basePrice = competitor.price || 25
-                                  const baseBSR = competitor.bsr || 15000
-                                  const baseRating = competitor.rating || 4.2
-                                  const baseReviews = competitor.review_count || 1000
-                                  
-                                  return Array.from({length: 30}, (_, i) => {
-                                    const date = new Date()
-                                    date.setDate(date.getDate() - (30 - i))
-                                    
-                                    // Simulate realistic review growth (more reviews over time)
-                                    const growthFactor = 0.7 + (i / 30 * 0.3) // Start at 70%, grow to 100%
-                                    const simulatedReviews = Math.round(baseReviews * growthFactor)
-                                    
-                                    // Simulate slight rating fluctuations (±0.2 stars)
-                                    const ratingVariation = (Math.sin(i / 5) * 0.1) + (Math.random() - 0.5) * 0.1
-                                    const simulatedRating = Math.max(3.5, Math.min(5.0, baseRating + ratingVariation))
-                                    
-                                    return {
-                                      day: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                                      price: basePrice * (1 + (Math.sin(i / 10) * 0.1) + (Math.random() - 0.5) * 0.05),
-                                      bsr: (baseBSR * (1 + (Math.sin(i / 15) * 0.2) + (Math.random() - 0.5) * 0.1)) / 1000,
-                                      rating: simulatedRating,
-                                      reviews: simulatedReviews / 100 // Normalize for chart
-                                    }
-                                  })
-                                }
-                              })()}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="day" />
-                                <Tooltip 
-                                  formatter={(value: any, name: string) => {
-                                    if (name === 'bsr') return [`${(value * 1000).toFixed(0)}`, 'BSR']
-                                    if (name === 'reviews') return [`${(value * 100).toFixed(0)}`, 'Reviews']
-                                    if (name === 'price') return [`$${value.toFixed(2)}`, 'Price']
-                                    if (name === 'rating') return [`${value.toFixed(1)}★`, 'Rating']
-                                    return [value, name]
-                                  }}
-                                />
-                                {visibleMetrics.price && <Area type="monotone" dataKey="price" stackId="1" stroke="#059669" fill="#d1fae5" />}
-                                {visibleMetrics.bsr && <Area type="monotone" dataKey="bsr" stackId="2" stroke="#7c3aed" fill="#ede9fe" />}
-                                {visibleMetrics.rating && <Area type="monotone" dataKey="rating" stackId="3" stroke="#2563eb" fill="#dbeafe" />}
-                                {visibleMetrics.reviews && <Area type="monotone" dataKey="reviews" stackId="4" stroke="#ea580c" fill="#fed7aa" />}
-                              </AreaChart>
-                            </ResponsiveContainer>
+                                {/* Dimensions Tab */}
+                                {selectedCompetitor?.activeTab === 'dimensions' && (
+                                  <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                        <h5 className="font-medium text-sm text-gray-700">Package Dimensions</h5>
+                                        <div className="space-y-1 text-sm">
+                                          <div className="flex justify-between">
+                                            <span className="text-gray-600">Length:</span>
+                                            <span>{competitor.length || competitor.dimensions?.length || 'N/A'}"</span>
+                                          </div>
+                                          <div className="flex justify-between">
+                                            <span className="text-gray-600">Width:</span>
+                                            <span>{competitor.width || competitor.dimensions?.width || 'N/A'}"</span>
+                                          </div>
+                                          <div className="flex justify-between">
+                                            <span className="text-gray-600">Height:</span>
+                                            <span>{competitor.height || competitor.dimensions?.height || 'N/A'}"</span>
+                                          </div>
+                                          <div className="flex justify-between">
+                                            <span className="text-gray-600">Weight:</span>
+                                            <span>{competitor.weight || competitor.dimensions?.weight || 'N/A'} lbs</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <h5 className="font-medium text-sm text-gray-700">FBA Details</h5>
+                                        <div className="space-y-1 text-sm">
+                                          <div className="flex justify-between">
+                                            <span className="text-gray-600">FBA Tier:</span>
+                                            <span>{competitor.tier || 'Standard'}</span>
+                                          </div>
+                                          <div className="flex justify-between">
+                                            <span className="text-gray-600">FBA Fee:</span>
+                                            <span className="font-medium">${competitor.fee ? competitor.fee.toFixed(2) : 'N/A'}</span>
+                                          </div>
+                                          {competitor.fba_fees && (
+                                            <div className="flex justify-between">
+                                              <span className="text-gray-600">Fee Details:</span>
+                                              <button 
+                                                className="text-blue-600 hover:text-blue-800 text-xs"
+                                                onClick={() => console.log('FBA Fees:', competitor.fba_fees)}
+                                              >
+                                                View Details
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Keywords Tab */}
+                                {selectedCompetitor?.activeTab === 'keywords' && (
+                                  <div className="space-y-4">
+                                    <p className="text-sm text-gray-600">
+                                      Keyword ownership analysis helps determine competitor strength
+                                    </p>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => setActiveTab('keyword')}
+                                    >
+                                      View Keyword Ownership Matrix
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Historical Performance Analysis */}
+                            <div className="border-t pt-4">
+                              <h4 className="font-semibold text-sm text-gray-900 mb-4 flex items-center space-x-2">
+                                <TrendingUp className="h-4 w-4 text-blue-600" />
+                                <span>Historical Performance Analysis</span>
+                              </h4>
+                              
+                              {/* Metric Toggle Buttons */}
+                              <div className="flex space-x-2 mb-4">
+                                {['price', 'bsr', 'rating', 'reviews'].map((metric) => (
+                                  <button
+                                    key={metric}
+                                    onClick={() => toggleMetric(metric)}
+                                    className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                      visibleMetrics[metric]
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'bg-gray-100 text-gray-500'
+                                    }`}
+                                  >
+                                    {metric.charAt(0).toUpperCase() + metric.slice(1)}
+                                  </button>
+                                ))}
+                              </div>
+                              
+                              {/* Chart */}
+                              <div className="h-64">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <AreaChart data={generateHistoricalData(competitor)}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="day" />
+                                    <Tooltip 
+                                      formatter={(value: any, name: string) => {
+                                        if (name === 'bsr') return [`#${(value * 1000).toFixed(0)}`, 'BSR']
+                                        if (name === 'reviews') return [`${(value * 100).toFixed(0)}`, 'Reviews']
+                                        if (name === 'price') return [`$${value.toFixed(2)}`, 'Price']
+                                        if (name === 'rating') return [`${value.toFixed(1)}★`, 'Rating']
+                                        return [value, name]
+                                      }}
+                                    />
+                                    {visibleMetrics.price && <Area type="monotone" dataKey="price" stackId="1" stroke="#059669" fill="#d1fae5" />}
+                                    {visibleMetrics.bsr && <Area type="monotone" dataKey="bsr" stackId="2" stroke="#7c3aed" fill="#ede9fe" />}
+                                    {visibleMetrics.rating && <Area type="monotone" dataKey="rating" stackId="3" stroke="#2563eb" fill="#dbeafe" />}
+                                    {visibleMetrics.reviews && <Area type="monotone" dataKey="reviews" stackId="4" stroke="#ea580c" fill="#fed7aa" />}
+                                  </AreaChart>
+                                </ResponsiveContainer>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   )
                 })}
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Keyword Ownership Tab */}
+      {activeTab === 'keyword' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Search className="h-5 w-5 text-purple-600" />
+                <span>Keyword Ownership Matrix</span>
+              </CardTitle>
+              <CardDescription>
+                Competitive analysis of keyword rankings and ownership percentages
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {keywordData.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Keyword Group</th>
+                        {data.competitors?.map((comp: any, index: number) => (
+                          <th key={comp.asin} className="text-center py-3 px-2 text-sm font-medium text-gray-700">
+                            <div className="flex flex-col items-center">
+                              <span className="line-clamp-1">{comp.brand || `Comp ${index + 1}`}</span>
+                              <span className="text-xs text-gray-500 font-normal">{comp.asin}</span>
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {keywordData.map((group, groupIndex) => {
+                        const rows = []
+                        
+                        // Root keyword row
+                        rows.push(
+                          <tr key={`group-${groupIndex}`} className="border-b hover:bg-gray-50">
+                            <td className="py-3 px-2">
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => toggleGroup(`group-${groupIndex}`)}
+                                  className="text-gray-500 hover:text-gray-700"
+                                >
+                                  {expandedGroups[`group-${groupIndex}`] ? (
+                                    <ChevronDown className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4" />
+                                  )}
+                                </button>
+                                <span className="capitalize text-gray-900 font-medium">{group.root}</span>
+                                <Badge variant="outline" className="text-xs">{group.keywordCount} keywords</Badge>
+                              </div>
+                            </td>
+                            {data.competitors?.map((comp: any, compIndex: number) => {
+                              // Calculate average ownership for root
+                              const rootOwnership = group.subroots.length > 0
+                                ? Math.round(group.subroots.reduce((sum: number, subroot: any) => {
+                                    const avgOwnership = subroot.keywords.length > 0
+                                      ? subroot.keywords.reduce((s: number, kw: any) => s + (kw.ownership?.[comp.asin] || 0), 0) / subroot.keywords.length
+                                      : 0
+                                    return sum + avgOwnership
+                                  }, 0) / group.subroots.length)
+                                : 0
+                              
+                              return (
+                                <td key={compIndex} className="text-center py-3 px-2">
+                                  <div className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                    rootOwnership >= 70 ? 'bg-green-100 text-green-800' :
+                                    rootOwnership >= 40 ? 'bg-yellow-100 text-yellow-800' :
+                                    rootOwnership >= 20 ? 'bg-orange-100 text-orange-800' :
+                                    rootOwnership > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-500'
+                                  }`}>
+                                    {rootOwnership > 0 ? `${rootOwnership}%` : '-'}
+                                  </div>
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        )
+                        
+                        // Subroot rows (expanded)
+                        if (expandedGroups[`group-${groupIndex}`]) {
+                          group.subroots.forEach((subroot: any, subrootIndex: number) => {
+                            rows.push(
+                              <tr key={`subroot-${groupIndex}-${subrootIndex}`} className="border-b bg-gray-50 hover:bg-gray-100">
+                                <td className="py-3 px-2 pl-10">
+                                  <span className="text-sm text-gray-700">{subroot.name}</span>
+                                  <span className="text-xs text-gray-500 ml-2">({subroot.keywordCount} keywords)</span>
+                                </td>
+                                {data.competitors?.map((comp: any, compIndex: number) => {
+                                  const ownership = subroot.keywords.length > 0
+                                    ? Math.round(subroot.keywords.reduce((sum: number, kw: any) => 
+                                        sum + (kw.ownership?.[comp.asin] || 0), 0) / subroot.keywords.length)
+                                    : 0
+                                  
+                                  return (
+                                    <td key={compIndex} className="text-center py-3 px-2">
+                                      <div className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                        ownership >= 70 ? 'bg-green-100 text-green-800' :
+                                        ownership >= 40 ? 'bg-yellow-100 text-yellow-800' :
+                                        ownership >= 20 ? 'bg-orange-100 text-orange-800' :
+                                        ownership > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-500'
+                                      }`}>
+                                        {ownership > 0 ? `${ownership}%` : '-'}
+                                      </div>
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                            )
+                          })
+                        }
+                        
+                        return rows
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No keyword data available. Please ensure keyword hierarchy data is provided.
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -878,7 +993,6 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                 </div>
               </CardContent>
             </Card>
-            
             
             <Card>
               <CardContent className="p-6">
@@ -1141,499 +1255,6 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
         </div>
       )}
 
-      {/* Simulator Tab */}
-      {activeTab === 'simulator' && (
-        <div className="space-y-6">
-          {/* Search Configuration */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5 text-blue-600" />
-                <span>Amazon Marketplace Simulator</span>
-              </CardTitle>
-              <CardDescription>
-                Search for products and analyze competitive positioning using real Amazon data
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="search-term">Search Term</Label>
-                    <Input 
-                      id="search-term"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="e.g., berberine supplement"
-                      className="mt-1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="marketplace">Amazon Marketplace</Label>
-                    <Select value={marketplace} onValueChange={setMarketplace}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select marketplace" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="us">Amazon.com (US)</SelectItem>
-                        <SelectItem value="uk">Amazon.co.uk (UK)</SelectItem>
-                        <SelectItem value="de">Amazon.de (Germany)</SelectItem>
-                        <SelectItem value="fr">Amazon.fr (France)</SelectItem>
-                        <SelectItem value="es">Amazon.es (Spain)</SelectItem>
-                        <SelectItem value="it">Amazon.it (Italy)</SelectItem>
-                        <SelectItem value="ca">Amazon.ca (Canada)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="your-asin">Your ASIN (Optional)</Label>
-                    <Input 
-                      id="your-asin"
-                      value={yourAsin}
-                      onChange={(e) => setYourAsin(e.target.value)}
-                      placeholder="e.g., B08EXAMPLE"
-                      className="mt-1"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter your ASIN to see how you rank against competitors
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-medium text-blue-900 mb-2">How It Works</h4>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                      <li>• Search Amazon with your target keyword</li>
-                      <li>• Analyze competitor products and metrics</li>
-                      <li>• See pricing, ratings, and review counts</li>
-                      <li>• Identify opportunities to compete</li>
-                      <li>• Compare against current competitors</li>
-                    </ul>
-                  </div>
-                  
-                  <Button 
-                    className="w-full" 
-                    size="lg"
-                    onClick={runSimulation}
-                    disabled={simulationLoading || !searchTerm.trim()}
-                  >
-                    {simulationLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Running Simulation...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="h-4 w-4 mr-2" />
-                        Run Simulation
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Competitive Analysis Results */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <BarChart3 className="h-5 w-5 text-green-600" />
-                <span>Competitive Analysis</span>
-              </CardTitle>
-              <CardDescription>
-                The only way to beat competitors is through better pricing, listings, or reviews
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Competitive Advantages */}
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className="p-4 border-2 border-green-200 rounded-lg bg-green-50">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <DollarSign className="h-5 w-5 text-green-600" />
-                      <h4 className="font-medium text-green-900">Price Advantage</h4>
-                    </div>
-                    <p className="text-sm text-green-800 mb-2">
-                      Beat competitors on pricing while maintaining profitability
-                    </p>
-                    <div className="text-xs text-green-700">
-                      Current price range: $19.99 - $49.99
-                    </div>
-                  </div>
-                  
-                  <div className="p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <FileText className="h-5 w-5 text-blue-600" />
-                      <h4 className="font-medium text-blue-900">Listing Quality</h4>
-                    </div>
-                    <p className="text-sm text-blue-800 mb-2">
-                      Superior product descriptions, images, and optimization
-                    </p>
-                    <div className="text-xs text-blue-700">
-                      Focus on keywords, A+ content, and images
-                    </div>
-                  </div>
-                  
-                  <div className="p-4 border-2 border-purple-200 rounded-lg bg-purple-50">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <Star className="h-5 w-5 text-purple-600" />
-                      <h4 className="font-medium text-purple-900">Review Strategy</h4>
-                    </div>
-                    <p className="text-sm text-purple-800 mb-2">
-                      Build trust through authentic customer reviews
-                    </p>
-                    <div className="text-xs text-purple-700">
-                      Target 4.5+ rating with 1000+ reviews
-                    </div>
-                  </div>
-                </div>
-
-                {/* Simulation Results or Placeholder */}
-                {simulationRun && simulationResults.length > 0 ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-gray-900">
-                        Search Results for "{searchTerm}" on Amazon.{marketplace === 'us' ? 'com' : marketplace}
-                      </h4>
-                      <Badge variant="outline">{simulationResults.length} products</Badge>
-                    </div>
-                    
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm border rounded-lg">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="text-left py-3 px-4 font-medium text-gray-700">Position</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-700">Product</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-700">Price</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-700">Rating</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-700">Reviews</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-700">BSR</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-700">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {simulationResults.map((result, index) => (
-                            <tr 
-                              key={result.asin} 
-                              className={`border-b hover:bg-gray-50 ${result.isYourProduct ? 'bg-blue-50' : ''}`}
-                            >
-                              <td className="py-3 px-4">
-                                <Badge 
-                                  variant={result.position <= 5 ? 'default' : 'secondary'}
-                                  className={result.position <= 5 ? 'bg-green-100 text-green-800' : ''}
-                                >
-                                  #{result.position}
-                                </Badge>
-                              </td>
-                              <td className="py-3 px-4">
-                                <div className="flex items-center space-x-3">
-                                  <img 
-                                    src={result.image} 
-                                    alt={result.title}
-                                    className="w-12 h-12 object-cover rounded border"
-                                  />
-                                  <div>
-                                    <p className="font-medium text-gray-900 line-clamp-2 max-w-xs">
-                                      {result.title}
-                                    </p>
-                                    <p className="text-xs text-gray-500">{result.brand}</p>
-                                    <p className="text-xs text-gray-400">ASIN: {result.asin}</p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                <span className="font-medium text-green-600">${result.price}</span>
-                              </td>
-                              <td className="py-3 px-4">
-                                <div className="flex items-center space-x-1">
-                                  <span className="text-sm font-medium">{result.rating}</span>
-                                  <div className="flex">
-                                    {[...Array(5)].map((_, i) => (
-                                      <Star
-                                        key={i}
-                                        className={`h-3 w-3 ${
-                                          i < Math.floor(result.rating) 
-                                            ? 'text-yellow-400 fill-current' 
-                                            : 'text-gray-300'
-                                        }`}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                <span className="text-sm">{result.reviewCount.toLocaleString()}</span>
-                              </td>
-                              <td className="py-3 px-4">
-                                <span className="text-sm text-purple-600">#{result.bsr.toLocaleString()}</span>
-                              </td>
-                              <td className="py-3 px-4">
-                                {result.isYourProduct ? (
-                                  <Badge className="bg-blue-100 text-blue-800">Your Product</Badge>
-                                ) : (
-                                  <Badge variant="outline">Competitor</Badge>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    
-                    {/* Analysis Insights */}
-                    <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border">
-                      <h5 className="font-medium text-gray-900 mb-3">Competitive Analysis</h5>
-                      <div className="grid md:grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <div className="font-medium text-gray-700">Price Range</div>
-                          <div className="text-gray-600">
-                            ${Math.min(...simulationResults.map(r => r.price)).toFixed(2)} - ${Math.max(...simulationResults.map(r => r.price)).toFixed(2)}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-700">Avg Rating</div>
-                          <div className="text-gray-600">
-                            {(simulationResults.reduce((sum, r) => sum + r.rating, 0) / simulationResults.length).toFixed(1)}★
-                          </div>
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-700">Total Reviews</div>
-                          <div className="text-gray-600">
-                            {simulationResults.reduce((sum, r) => sum + r.reviewCount, 0).toLocaleString()}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {yourAsin && simulationResults.find(r => r.isYourProduct) && (
-                        <div className="mt-4 p-3 bg-blue-100 rounded border-l-4 border-blue-500">
-                          <div className="font-medium text-blue-900">Your Product Analysis</div>
-                          <div className="text-blue-800 text-sm mt-1">
-                            Your product ranks #{simulationResults.find(r => r.isYourProduct)?.position} for "{searchTerm}"
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h4 className="font-medium text-gray-900 mb-2">Ready to Simulate</h4>
-                    <p className="text-gray-600 mb-4">
-                      Enter a search term above to see how you stack up against real Amazon competitors
-                    </p>
-                    <div className="flex justify-center space-x-4 text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                        Real-time data
-                      </div>
-                      <div className="flex items-center">
-                        <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                        Competitive insights
-                      </div>
-                      <div className="flex items-center">
-                        <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                        Market opportunities
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Winning Strategy */}
-                <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border">
-                  <h4 className="font-medium text-gray-900 mb-4">Winning Strategy Framework</h4>
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div>
-                      <h5 className="font-medium text-blue-900 mb-2">1. Price Competitively</h5>
-                      <ul className="text-sm text-gray-700 space-y-1">
-                        <li>• Research competitor pricing</li>
-                        <li>• Calculate optimal price point</li>
-                        <li>• Consider profit margins</li>
-                        <li>• Monitor price changes</li>
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <h5 className="font-medium text-green-900 mb-2">2. Optimize Listings</h5>
-                      <ul className="text-sm text-gray-700 space-y-1">
-                        <li>• High-quality product images</li>
-                        <li>• Keyword-rich titles</li>
-                        <li>• Compelling bullet points</li>
-                        <li>• A+ Content enhancement</li>
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <h5 className="font-medium text-purple-900 mb-2">3. Build Social Proof</h5>
-                      <ul className="text-sm text-gray-700 space-y-1">
-                        <li>• Encourage customer reviews</li>
-                        <li>• Respond to feedback</li>
-                        <li>• Maintain high ratings</li>
-                        <li>• Address negative reviews</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Keyword Ownership Tab */}
-      {activeTab === 'keyword' && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Search className="h-5 w-5 text-green-600" />
-                <span>Keyword Ownership Matrix</span>
-              </CardTitle>
-              <CardDescription>
-                Keyword performance breakdown by competitor
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {keywordData.length > 0 ? (
-                <div className="space-y-4">
-                  {/* Table Header with Competitor Info */}
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm border rounded-lg">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="text-left py-3 px-4 font-medium text-gray-700 sticky left-0 bg-gray-50 border-r min-w-[200px]">
-                            Keyword Groups
-                          </th>
-                          {data.competitors?.map((comp: any, compIndex: number) => (
-                            <th key={compIndex} className="text-center py-3 px-2 font-medium text-gray-700 min-w-[100px]">
-                              <div className="flex flex-col items-center space-y-2">
-                                <img 
-                                  src={comp.image || `https://m.media-amazon.com/images/I/${comp.image_urls?.split(',')[0]?.trim()}` || 'https://via.placeholder.com/40x40?text=No+Image'}
-                                  alt={comp.asin}
-                                  className="w-8 h-8 rounded object-cover border"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.src = 'https://via.placeholder.com/40x40?text=No+Image';
-                                  }}
-                                />
-                                <div className="text-xs">
-                                  <div className="font-medium">{comp.asin}</div>
-                                  {comp.brand && (
-                                    <div className="text-gray-500 truncate max-w-[80px]" title={comp.brand}>
-                                      {comp.brand}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {keywordData.map((group, groupIndex) => {
-                          const rows = []
-                          
-                          // Root row
-                          rows.push(
-                            <tr key={`root-${groupIndex}`} className="border-b bg-gray-25">
-                              <td className="py-3 px-4 font-semibold sticky left-0 bg-white border-r">
-                                <div 
-                                  className="flex items-center space-x-2 cursor-pointer hover:text-blue-600"
-                                  onClick={() => toggleGroup(`group-${groupIndex}`)}
-                                >
-                                  {expandedGroups[`group-${groupIndex}`] ? (
-                                    <ChevronDown className="h-4 w-4 text-gray-500" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4 text-gray-500" />
-                                  )}
-                                  <span className="capitalize text-gray-900">{group.root}</span>
-                                  <Badge variant="outline" className="text-xs">{group.keywordCount} keywords</Badge>
-                                </div>
-                              </td>
-                              {data.competitors?.map((comp: any, compIndex: number) => {
-                                // Calculate root-level ownership (average of subroots)
-                                const rootOwnership = group.subroots.length > 0 ? 
-                                  Math.round(group.subroots.reduce((sum: number, subroot: any, idx: number) => {
-                                    const baseOwnership = Math.max(0, 85 - (idx * 10))
-                                    const variance = Math.floor(Math.random() * 30) - 15
-                                    return sum + Math.max(0, Math.min(100, baseOwnership + variance))
-                                  }, 0) / group.subroots.length) : 0
-                                
-                                return (
-                                  <td key={compIndex} className="text-center py-3 px-2">
-                                    <div className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                                      rootOwnership >= 70 ? 'bg-green-100 text-green-800' :
-                                      rootOwnership >= 40 ? 'bg-yellow-100 text-yellow-800' :
-                                      rootOwnership >= 20 ? 'bg-orange-100 text-orange-800' :
-                                      rootOwnership > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-500'
-                                    }`}>
-                                      {rootOwnership > 0 ? `${rootOwnership}%` : '-'}
-                                    </div>
-                                  </td>
-                                )
-                              })}
-                            </tr>
-                          )
-                          
-                          // Subroot rows
-                          if (expandedGroups[`group-${groupIndex}`]) {
-                            group.subroots.forEach((subroot: any, subrootIndex: number) => {
-                              // Calculate ownership percentages for this subroot
-                              const ownershipData: any = {}
-                              data.competitors?.forEach((comp: any) => {
-                                const baseOwnership = Math.max(0, 85 - (subrootIndex * 10))
-                                const variance = Math.floor(Math.random() * 30) - 15
-                                ownershipData[comp.asin] = Math.max(0, Math.min(100, baseOwnership + variance))
-                              })
-                              
-                              rows.push(
-                                <tr key={`subroot-${groupIndex}-${subrootIndex}`} className="border-b hover:bg-gray-50">
-                                  <td className="py-3 px-4 font-medium sticky left-0 bg-white border-r">
-                                    <div className="pl-8">
-                                      <span className="capitalize text-gray-700">{subroot.name}</span>
-                                      <div className="text-xs text-gray-500">{subroot.keywordCount || 0} keywords</div>
-                                    </div>
-                                  </td>
-                                  {data.competitors?.map((comp: any, compIndex: number) => {
-                                    const ownership = ownershipData[comp.asin] || 0
-                                    return (
-                                      <td key={compIndex} className="text-center py-3 px-2">
-                                        <div className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                                          ownership >= 70 ? 'bg-green-100 text-green-800' :
-                                          ownership >= 40 ? 'bg-yellow-100 text-yellow-800' :
-                                          ownership >= 20 ? 'bg-orange-100 text-orange-800' :
-                                          ownership > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-500'
-                                        }`}>
-                                          {ownership > 0 ? `${ownership}%` : '-'}
-                                        </div>
-                                      </td>
-                                    )
-                                  })}
-                                </tr>
-                              )
-                            })
-                          }
-                          
-                          return rows
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Search className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p>No keyword data available</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {/* Pricing Strategy Tab */}
       {activeTab === 'pricing' && (
         <div className="space-y-6">
@@ -1649,56 +1270,97 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {/* Price Distribution */}
+                {/* Price Distribution Chart */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Price Distribution</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-green-50 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-green-600">
-                        ${Math.min(...(data.competitors?.map((c: any) => c.price || 0) || [25])).toFixed(2)}
-                      </div>
-                      <div className="text-sm text-gray-600">Lowest Price</div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-4">Price Distribution</h4>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={generatePriceDistribution(data.competitors)}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="range" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="count" fill="#3b82f6" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                
+                {/* Price vs Performance Analysis */}
+                <div className="border-t pt-6">
+                  <h4 className="text-sm font-medium text-gray-700 mb-4">Price vs Performance Matrix</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-red-50 rounded-lg">
+                      <h5 className="font-medium text-red-700">Low Price, Low Rating</h5>
+                      <p className="text-2xl font-bold text-red-600 mt-2">
+                        {data.competitors?.filter((c: any) => 
+                          (c.price || 0) < 30 && (c.rating || 0) < 4
+                        ).length || 0}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">Budget Competitors</p>
                     </div>
-                    <div className="bg-blue-50 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-blue-600">
-                        ${(data.competitors?.reduce((sum: number, c: any) => sum + (c.price || 0), 0) / (data.competitors?.length || 1)).toFixed(2)}
-                      </div>
-                      <div className="text-sm text-gray-600">Average Price</div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <h5 className="font-medium text-green-700">High Price, High Rating</h5>
+                      <p className="text-2xl font-bold text-green-600 mt-2">
+                        {data.competitors?.filter((c: any) => 
+                          (c.price || 0) >= 30 && (c.rating || 0) >= 4
+                        ).length || 0}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">Premium Leaders</p>
                     </div>
-                    <div className="bg-purple-50 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-purple-600">
-                        ${Math.max(...(data.competitors?.map((c: any) => c.price || 0) || [25])).toFixed(2)}
-                      </div>
-                      <div className="text-sm text-gray-600">Highest Price</div>
+                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                      <h5 className="font-medium text-yellow-700">Low Price, High Rating</h5>
+                      <p className="text-2xl font-bold text-yellow-600 mt-2">
+                        {data.competitors?.filter((c: any) => 
+                          (c.price || 0) < 30 && (c.rating || 0) >= 4
+                        ).length || 0}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">Value Champions</p>
                     </div>
-                    <div className="bg-orange-50 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-orange-600">
-                        ${(Math.max(...(data.competitors?.map((c: any) => c.price || 0) || [25])) - Math.min(...(data.competitors?.map((c: any) => c.price || 0) || [25]))).toFixed(2)}
-                      </div>
-                      <div className="text-sm text-gray-600">Price Range</div>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <h5 className="font-medium text-purple-700">High Price, Low Rating</h5>
+                      <p className="text-2xl font-bold text-purple-600 mt-2">
+                        {data.competitors?.filter((c: any) => 
+                          (c.price || 0) >= 30 && (c.rating || 0) < 4
+                        ).length || 0}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">Overpriced</p>
                     </div>
                   </div>
                 </div>
-
-                {/* Price vs BSR Chart */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Price vs Best Sellers Rank</h3>
-                  <div className="h-64 bg-white rounded-lg border p-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={data.competitors?.map((comp: any) => ({
-                        name: (comp.name || comp.title)?.substring(0, 20) + '...',
-                        price: comp.price || 0,
-                        bsr: comp.bsr || 0,
-                        sales: comp.monthly_orders || 0
-                      })) || []}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Area type="monotone" dataKey="price" stroke="#059669" fill="#d1fae5" />
-                        <Area type="monotone" dataKey="bsr" stroke="#dc2626" fill="#fee2e2" />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                
+                {/* Pricing Recommendations */}
+                <div className="border-t pt-6">
+                  <h4 className="text-sm font-medium text-gray-700 mb-4">Pricing Recommendations</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Target className="h-5 w-5 text-blue-600" />
+                        <span className="text-sm font-medium">Optimal Price Range</span>
+                      </div>
+                      <span className="font-bold text-blue-600">
+                        ${Math.min(...(data.competitors?.map((c: any) => c.price || 0) || [0])).toFixed(2)} - 
+                        ${Math.max(...(data.competitors?.map((c: any) => c.price || 0) || [0])).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <TrendingUp className="h-5 w-5 text-green-600" />
+                        <span className="text-sm font-medium">Average Market Price</span>
+                      </div>
+                      <span className="font-bold text-green-600">
+                        ${(data.competitors?.reduce((sum: number, c: any) => sum + (c.price || 0), 0) / (data.competitors?.length || 1)).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Star className="h-5 w-5 text-yellow-600" />
+                        <span className="text-sm font-medium">Best Value Price</span>
+                      </div>
+                      <span className="font-bold text-yellow-600">
+                        ${((data.competitors?.reduce((sum: number, c: any) => sum + (c.price || 0), 0) / (data.competitors?.length || 1)) * 0.9).toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1707,6 +1369,203 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
         </div>
       )}
 
+      {/* Amazon Simulator Tab */}
+      {activeTab === 'simulator' && (
+        <div className="space-y-6">
+          {/* Search Configuration */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Activity className="h-5 w-5 text-purple-600" />
+                <span>Amazon Search Simulator</span>
+              </CardTitle>
+              <CardDescription>
+                Simulate Amazon search results and see where products would rank
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="search-term">Search Term</Label>
+                    <Input
+                      id="search-term"
+                      placeholder="e.g., berberine supplement"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="marketplace">Marketplace</Label>
+                    <Select value={marketplace} onValueChange={setMarketplace}>
+                      <SelectTrigger id="marketplace">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="us">Amazon.com (US)</SelectItem>
+                        <SelectItem value="uk">Amazon.co.uk (UK)</SelectItem>
+                        <SelectItem value="de">Amazon.de (DE)</SelectItem>
+                        <SelectItem value="fr">Amazon.fr (FR)</SelectItem>
+                        <SelectItem value="ca">Amazon.ca (CA)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="your-asin">Your ASIN (Optional)</Label>
+                    <Input
+                      id="your-asin"
+                      placeholder="B0XXXXXXXX"
+                      value={yourAsin}
+                      onChange={(e) => setYourAsin(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={runSimulation}
+                  disabled={simulationLoading || !searchTerm}
+                  className="w-full"
+                >
+                  {simulationLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Running Simulation...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-4 w-4 mr-2" />
+                      Run Search Simulation
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Simulation Results */}
+          {simulationRun && simulationResults.length > 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-lg font-semibold">
+                      Search Results for "{searchTerm}" on Amazon.{marketplace === 'us' ? 'com' : marketplace}
+                    </h4>
+                    <Badge variant="outline">{simulationResults.length} products</Badge>
+                  </div>
+                  
+                  {/* Summary Stats */}
+                  <div className="grid md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <div className="font-medium text-gray-700">Price Range</div>
+                      <div className="text-gray-600">
+                        ${Math.min(...simulationResults.map(r => r.price)).toFixed(2)} - ${Math.max(...simulationResults.map(r => r.price)).toFixed(2)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-700">Avg Rating</div>
+                      <div className="text-gray-600">
+                        {(simulationResults.reduce((sum, r) => sum + r.rating, 0) / simulationResults.length).toFixed(1)} ★
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-700">Avg Reviews</div>
+                      <div className="text-gray-600">
+                        {Math.round(simulationResults.reduce((sum, r) => sum + r.reviews, 0) / simulationResults.length).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4">Position</th>
+                        <th className="text-left py-3 px-4">Product</th>
+                        <th className="text-center py-3 px-4">Price</th>
+                        <th className="text-center py-3 px-4">Rating</th>
+                        <th className="text-center py-3 px-4">Reviews</th>
+                        <th className="text-center py-3 px-4">BSR</th>
+                        <th className="text-center py-3 px-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {simulationResults.map((result, index) => (
+                        <tr key={index} className={`border-b hover:bg-gray-50 ${
+                          result.isYourProduct ? 'bg-blue-50' : ''
+                        }`}>
+                          <td className="py-3 px-4">
+                            <Badge 
+                              variant={result.position <= 5 ? 'default' : 'secondary'}
+                              className={result.position <= 5 ? 'bg-green-100 text-green-800' : ''}
+                            >
+                              #{result.position}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center space-x-3">
+                              <img 
+                                src={result.image} 
+                                alt={result.title}
+                                className="w-12 h-12 object-cover rounded"
+                              />
+                              <div>
+                                <a 
+                                  href={`https://www.amazon.com/dp/${result.asin}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline line-clamp-1"
+                                >
+                                  {result.title}
+                                </a>
+                                <p className="text-xs text-gray-500">{result.asin}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-center font-medium">
+                            ${result.price.toFixed(2)}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center space-x-1">
+                              {[...Array(5)].map((_, i) => (
+                                <Star 
+                                  key={i} 
+                                  className={`h-3 w-3 ${
+                                    i < Math.floor(result.rating) 
+                                      ? 'text-yellow-400 fill-current' 
+                                      : 'text-gray-300'
+                                  }`} 
+                                />
+                              ))}
+                              <span className="text-sm ml-1">{result.rating.toFixed(1)}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {result.reviews.toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            #{result.bsr.toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4">
+                            {result.isYourProduct ? (
+                              <Badge className="bg-blue-100 text-blue-800">Your Product</Badge>
+                            ) : (
+                              <Badge variant="outline">Competitor</Badge>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+      
       {/* Image Enlargement Modal */}
       {enlargedImage && (
         <div 
@@ -1714,52 +1573,41 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
           onClick={closeEnlargedImage}
         >
           <div className="relative max-w-4xl max-h-full p-4">
-            {/* Close Button */}
             <button
               onClick={closeEnlargedImage}
-              className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 z-10"
+              className="absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              ✕
             </button>
-
-            {/* Previous Button */}
-            {enlargedImageSet.length > 1 && (
-              <button
-                onClick={(e) => { e.stopPropagation(); navigateImage('prev'); }}
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-90 rounded-full p-3 shadow-lg hover:bg-opacity-100 transition-all"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-            )}
-
-            {/* Next Button */}
-            {enlargedImageSet.length > 1 && (
-              <button
-                onClick={(e) => { e.stopPropagation(); navigateImage('next'); }}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-90 rounded-full p-3 shadow-lg hover:bg-opacity-100 transition-all"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            )}
-
-            {/* Image */}
             <img 
               src={enlargedImage}
               alt="Enlarged product image"
-              className="max-w-full max-h-full object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
+              className="max-w-full max-h-screen object-contain"
             />
-
-            {/* Image Counter */}
             {enlargedImageSet.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-60 text-white px-3 py-1 rounded-full text-sm">
-                {enlargedImageIndex + 1} / {enlargedImageSet.length}
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const newIndex = enlargedImageIndex > 0 ? enlargedImageIndex - 1 : enlargedImageSet.length - 1
+                    setEnlargedImageIndex(newIndex)
+                    setEnlargedImage(enlargedImageSet[newIndex])
+                  }}
+                  className="bg-black bg-opacity-50 text-white p-2 rounded hover:bg-opacity-75"
+                >
+                  ←
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const newIndex = enlargedImageIndex < enlargedImageSet.length - 1 ? enlargedImageIndex + 1 : 0
+                    setEnlargedImageIndex(newIndex)
+                    setEnlargedImage(enlargedImageSet[newIndex])
+                  }}
+                  className="bg-black bg-opacity-50 text-white p-2 rounded hover:bg-opacity-75"
+                >
+                  →
+                </button>
               </div>
             )}
           </div>
