@@ -68,11 +68,6 @@ export interface AnalysisResults {
   niche: {
     id: string;
     name: string;
-    opportunityScore: number;
-    competitionLevel: string;
-    marketSize: number;
-    avgPrice: number;
-    totalMonthlyRevenue: number;
   };
   products: AnalyzedProduct[];
   marketInsights: MarketInsights;
@@ -101,10 +96,7 @@ export interface AnalyzedProduct {
 }
 
 export interface MarketInsights {
-  totalMarketSize: number;
   growthRate: number;
-  avgSellingPrice: number;
-  avgBSR: number;
   topBrands: Array<{ name: string; marketShare: number }>;
   seasonalityIndex: number;
   entryDifficulty: 'easy' | 'medium' | 'hard';

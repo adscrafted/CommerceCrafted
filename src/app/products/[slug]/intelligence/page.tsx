@@ -134,37 +134,37 @@ export default function IntelligencePage({ params }: IntelligencePageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header - Responsive */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <MessageSquare className="h-5 w-5 text-yellow-600" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-3">
+                <div className="p-2 bg-yellow-100 rounded-lg flex-shrink-0">
+                  <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-semibold text-gray-900">Market Intelligence</h1>
-                  <p className="text-base text-gray-600">Deep analysis of customer sentiment & niche dynamics</p>
+                  <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Market Intelligence</h1>
+                  <p className="text-sm sm:text-base text-gray-600 hidden sm:block">Deep analysis of customer sentiment & niche dynamics</p>
                 </div>
               </div>
               <Link href={`/products/${slug}${nicheId ? `?nicheId=${nicheId}` : ''}`}>
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
+                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Back to Overview
                 </Button>
               </Link>
             </div>
             
-            {/* Score Display - Horizontal Rectangle */}
-            <Card className="border-2 border-yellow-200">
-              <CardContent className="p-4">
-                <div className="text-center w-32 h-20 flex flex-col items-center justify-center">
-                  <div className={`text-3xl font-bold ${getScoreColor(mockProductData.scores.intelligence)}`}>
+            {/* Score Display - Responsive */}
+            <Card className="border-2 border-yellow-200 self-center sm:self-auto">
+              <CardContent className="p-3 sm:p-4">
+                <div className="text-center w-24 sm:w-32 h-16 sm:h-20 flex flex-col items-center justify-center">
+                  <div className={`text-2xl sm:text-3xl font-bold ${getScoreColor(mockProductData.scores.intelligence)}`}>
                     {mockProductData.scores.intelligence}
                   </div>
                   <div className="text-xs text-gray-600 mt-1">{getScoreLabel(mockProductData.scores.intelligence)}</div>
-                  <Progress value={mockProductData.scores.intelligence} className="h-2 mt-2 w-full" />
+                  <Progress value={mockProductData.scores.intelligence} className="h-1.5 sm:h-2 mt-1 sm:mt-2 w-full" />
                 </div>
               </CardContent>
             </Card>
@@ -195,7 +195,7 @@ export default function IntelligencePage({ params }: IntelligencePageProps) {
 
         {/* Market Intelligence Component */}
         {marketData ? (
-          marketData.hasData ? (
+          (marketData.hasData || (marketData.rawReviews && marketData.rawReviews.length > 0)) ? (
             <MarketIntelligenceReal data={marketData} />
           ) : (
             <Card>
@@ -205,7 +205,7 @@ export default function IntelligencePage({ params }: IntelligencePageProps) {
                   No Market Intelligence Data Available
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  {marketData.message}
+                  {marketData.message || 'No customer reviews or analysis data found for this product.'}
                 </p>
                 {marketData.reviewCount > 0 && (
                   <p className="text-sm text-gray-500">

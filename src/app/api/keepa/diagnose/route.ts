@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseKey)
     
     const { data: dbProduct } = await supabase
-      .from('products')
+      .from('product')
       .select('*')
       .eq('asin', asin)
       .single()

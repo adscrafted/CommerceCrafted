@@ -21,13 +21,6 @@ export interface Niche {
   status: 'active' | 'archived' | 'draft'
   user_id: string
   
-  // Analysis data
-  opportunity_score?: number
-  competition_level?: 'Low' | 'Medium' | 'High' | 'Very High'
-  market_size?: number
-  avg_price?: number
-  total_monthly_revenue?: number
-  
   // Metadata
   product_count: number
   last_analyzed_at?: Date
@@ -48,9 +41,6 @@ export interface NicheAnalysisResult {
   niche_id: string
   analysis_date: Date
   metrics: {
-    avg_bsr: number
-    avg_price: number
-    avg_rating: number
     total_reviews: number
     market_growth_rate: number
     competitive_index: number
@@ -503,12 +493,8 @@ export class NicheService {
       dbQuery = dbQuery.eq('category', options.category)
     }
     
-    if (options?.minOpportunityScore) {
-      dbQuery = dbQuery.gte('opportunity_score', options.minOpportunityScore)
-    }
-    
     dbQuery = dbQuery
-      .order('opportunity_score', { ascending: false })
+      .order('created_at', { ascending: false })
       .range(offset, offset + pageSize - 1)
     
     const { data, error, count } = await dbQuery
@@ -659,7 +645,7 @@ export class NicheService {
       throw new SubscriptionLimitError(
         limits.products_per_niche,
         count,
-        'products'
+        'product'
       )
     }
   }
@@ -769,20 +755,16 @@ export const nicheService = {
     displayName: niche.name,
     url: `/niches/${niche.slug}`,
     isActive: niche.status === 'active',
-    hasAnalysis: !!niche.opportunity_score,
+    hasAnalysis: !!niche.last_analyzed_at,
   }),
   
   /**
    * Calculate niche health score
    */
   calculateHealthScore: (niche: Niche): number => {
-    if (!niche.opportunity_score) return 0
-    
     const factors = [
-      niche.opportunity_score / 100,
-      niche.competition_level === 'Low' ? 1 : niche.competition_level === 'Medium' ? 0.7 : 0.4,
       Math.min(niche.product_count / 10, 1),
-      niche.market_size ? Math.min(niche.market_size / 1000000, 1) : 0,
+      niche.last_analyzed_at ? 1 : 0,
     ]
     
     return Math.round(factors.reduce((a, b) => a + b, 0) / factors.length * 100)

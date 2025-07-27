@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     
     console.log('Saving to database...')
     const { data, error } = await supabase
-      .from('products')
+      .from('product')
       .upsert(productData, {
         onConflict: 'asin'
       })

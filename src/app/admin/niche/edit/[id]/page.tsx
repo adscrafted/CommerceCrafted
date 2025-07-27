@@ -107,9 +107,6 @@ export default function NicheEditPage() {
   
   // Product filters
   const [brandFilter, setBrandFilter] = useState('')
-  const [priceFilter, setPriceFilter] = useState<{min?: number, max?: number}>({})
-  const [bsrFilter, setBsrFilter] = useState<{min?: number, max?: number}>({})
-  const [ratingFilter, setRatingFilter] = useState<number | null>(null)
   
   // Keyword filters
   const [matchTypeFilter, setMatchTypeFilter] = useState('')
@@ -151,7 +148,7 @@ export default function NicheEditPage() {
     
     const asinList = niche.asins.split(',').map(a => a.trim())
     const { data: reviewData, error: reviewError } = await supabase
-      .from('customer_reviews')
+      .from('product_customer_reviews')
       .select('*')
       .in('product_id', asinList)
       .order('review_date', { ascending: false })
@@ -181,7 +178,7 @@ export default function NicheEditPage() {
       const asinList = nicheData.asins.split(',').map((a: string) => a.trim())
       
       const { data: productData, error: productError } = await supabase
-        .from('products')
+        .from('product')
         .select('*')
         .in('asin', asinList)
         .order('asin')
@@ -199,7 +196,7 @@ export default function NicheEditPage() {
         
         // Get total review count
         const { count: reviewCount } = await supabase
-          .from('customer_reviews')
+          .from('product_customer_reviews')
           .select('*', { count: 'exact', head: true })
           .in('product_id', asinList)
         
@@ -627,156 +624,6 @@ export default function NicheEditPage() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableHead>
-                        <TableHead className="text-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-auto p-0 font-medium">
-                                Price
-                                {(priceFilter.min || priceFilter.max) && <span className="ml-1 text-xs">(filtered)</span>}
-                                {productSort?.field === 'price' && (
-                                  productSort.order === 'asc' ? ' ↑' : ' ↓'
-                                )}
-                                <ChevronDown className="ml-1 h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-48">
-                              <DropdownMenuLabel>Sort</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => setProductSort({field: 'price', order: 'asc'})}>
-                                Low to High
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setProductSort({field: 'price', order: 'desc'})}>
-                                High to Low
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuLabel>Filter by Price</DropdownMenuLabel>
-                              <div className="px-2 py-2 space-y-2">
-                                <Input
-                                  type="number"
-                                  placeholder="Min price"
-                                  value={priceFilter.min || ''}
-                                  onChange={(e) => setPriceFilter({...priceFilter, min: e.target.value ? Number(e.target.value) : undefined})}
-                                  className="h-8"
-                                />
-                                <Input
-                                  type="number"
-                                  placeholder="Max price"
-                                  value={priceFilter.max || ''}
-                                  onChange={(e) => setPriceFilter({...priceFilter, max: e.target.value ? Number(e.target.value) : undefined})}
-                                  className="h-8"
-                                />
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="w-full"
-                                  onClick={() => setPriceFilter({})}
-                                >
-                                  Clear
-                                </Button>
-                              </div>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableHead>
-                        <TableHead className="text-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-auto p-0 font-medium">
-                                BSR
-                                {(bsrFilter.min || bsrFilter.max) && <span className="ml-1 text-xs">(filtered)</span>}
-                                {productSort?.field === 'bsr' && (
-                                  productSort.order === 'asc' ? ' ↑' : ' ↓'
-                                )}
-                                <ChevronDown className="ml-1 h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-48">
-                              <DropdownMenuLabel>Sort</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => setProductSort({field: 'bsr', order: 'asc'})}>
-                                Best to Worst
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setProductSort({field: 'bsr', order: 'desc'})}>
-                                Worst to Best
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuLabel>Filter by BSR</DropdownMenuLabel>
-                              <div className="px-2 py-2 space-y-2">
-                                <Input
-                                  type="number"
-                                  placeholder="Min BSR"
-                                  value={bsrFilter.min || ''}
-                                  onChange={(e) => setBsrFilter({...bsrFilter, min: e.target.value ? Number(e.target.value) : undefined})}
-                                  className="h-8"
-                                />
-                                <Input
-                                  type="number"
-                                  placeholder="Max BSR"
-                                  value={bsrFilter.max || ''}
-                                  onChange={(e) => setBsrFilter({...bsrFilter, max: e.target.value ? Number(e.target.value) : undefined})}
-                                  className="h-8"
-                                />
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="w-full"
-                                  onClick={() => setBsrFilter({})}
-                                >
-                                  Clear
-                                </Button>
-                              </div>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableHead>
-                        <TableHead className="text-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-auto p-0 font-medium">
-                                Rating
-                                {ratingFilter && <span className="ml-1 text-xs">(≥{ratingFilter})</span>}
-                                {productSort?.field === 'rating' && (
-                                  productSort.order === 'asc' ? ' ↑' : ' ↓'
-                                )}
-                                <ChevronDown className="ml-1 h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                              <DropdownMenuLabel>Sort</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => setProductSort({field: 'rating', order: 'asc'})}>
-                                Low to High
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setProductSort({field: 'rating', order: 'desc'})}>
-                                High to Low
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuLabel>Filter by Rating</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => setRatingFilter(null)}>
-                                All Ratings
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setRatingFilter(4)}>
-                                ≥ 4 Stars
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setRatingFilter(3)}>
-                                ≥ 3 Stars
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setRatingFilter(2)}>
-                                ≥ 2 Stars
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableHead>
-                        <TableHead className="text-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto p-0 font-medium"
-                            onClick={() => setProductSort(productSort?.field === 'review_count' && productSort.order === 'asc' 
-                              ? {field: 'review_count', order: 'desc'} 
-                              : {field: 'review_count', order: 'asc'})}
-                          >
-                            Reviews
-                            {productSort?.field === 'review_count' && (
-                              productSort.order === 'asc' ? ' ↑' : ' ↓'
-                            )}
-                          </Button>
-                        </TableHead>
                         <TableHead className="text-center">Keywords</TableHead>
                         <TableHead className="text-center">Actions</TableHead>
                       </TableRow>
@@ -796,17 +643,6 @@ export default function NicheEditPage() {
                           
                           // Brand filter
                           if (brandFilter && p.brand !== brandFilter) return false
-                          
-                          // Price filter
-                          if (priceFilter.min !== undefined && (!p.price || p.price < priceFilter.min)) return false
-                          if (priceFilter.max !== undefined && (!p.price || p.price > priceFilter.max)) return false
-                          
-                          // BSR filter
-                          if (bsrFilter.min !== undefined && (!p.bsr || p.bsr < bsrFilter.min)) return false
-                          if (bsrFilter.max !== undefined && (!p.bsr || p.bsr > bsrFilter.max)) return false
-                          
-                          // Rating filter
-                          if (ratingFilter !== null && (!p.rating || p.rating < ratingFilter)) return false
                           
                           return true
                         })
@@ -865,17 +701,6 @@ export default function NicheEditPage() {
                               <code className="text-xs bg-gray-100 px-2 py-1 rounded">{product.asin}</code>
                             </TableCell>
                             <TableCell className="text-center">{product.brand || '-'}</TableCell>
-                            <TableCell className="text-center">{product.price && product.price > 0 ? formatCurrency(product.price) : '-'}</TableCell>
-                            <TableCell className="text-center">{product.bsr && product.bsr > 0 ? formatNumber(product.bsr) : '-'}</TableCell>
-                            <TableCell className="text-center">
-                              {product.rating && product.rating > 0 ? (
-                                <div className="flex items-center justify-center gap-1">
-                                  <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                                  <span>{product.rating.toFixed(1)}</span>
-                                </div>
-                              ) : '-'}
-                            </TableCell>
-                            <TableCell className="text-center">{product.review_count && product.review_count > 0 ? formatNumber(product.review_count) : '-'}</TableCell>
                             <TableCell className="text-center">
                               <Badge variant="outline">{productKeywords.length}</Badge>
                             </TableCell>

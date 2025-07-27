@@ -7,6 +7,14 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export async function GET() {
   try {
+    console.log('Daily feature endpoint called')
+    
+    // Quick test to see if the route is working
+    const isTest = false
+    if (isTest) {
+      return NextResponse.json({ message: 'Daily feature endpoint is working' })
+    }
+    
     console.log('Fetching daily feature...')
     const supabase = await createServerSupabaseClient()
     
@@ -14,91 +22,22 @@ export async function GET() {
     const today = new Date()
     const todayString = today.toISOString().split('T')[0]
     
-    // Fetch today's featured product
-    let { data: dailyFeature, error: featureError } = await (supabase as any)
-      .from('daily_features')
-      .select(`
-        id,
-        featured_date,
-        headline,
-        summary,
-        created_by,
-        created_at,
-        product:products!product_id (
-          id,
-          asin,
-          title,
-          category,
-          subcategory,
-          brand,
-          price,
-          bsr,
-          rating,
-          review_count,
-          image_urls,
-          length,
-          width,
-          height,
-          weight,
-          frequently_purchased_asins,
-          variation_family,
-          parent_asin,
-          monthly_orders,
-          video_urls,
-          a_plus_content,
-          fba_fees,
-          referral_fee,
-          bullet_points,
-          created_at,
-          updated_at
-        )
-      `)
+    // Fetch today's featured niche
+    let { data: featuredNiche, error: featureError } = await supabase
+      .from('niches')
+      .select('*')
       .eq('featured_date', todayString)
       .single()
       
-    if (featureError || !dailyFeature) {
+    if (featureError || !featuredNiche) {
       console.error('Error fetching daily feature:', featureError)
       console.log('No daily feature for today, fetching most recent...')
       
       // If no daily feature is set for today, fetch the most recent one
-      const { data: latestFeature, error: latestError } = await (supabase as any)
-        .from('daily_features')
-        .select(`
-          id,
-          featured_date,
-          headline,
-          summary,
-          created_by,
-          created_at,
-          product:products!product_id (
-            id,
-            asin,
-            title,
-            category,
-            subcategory,
-            brand,
-            price,
-            bsr,
-            rating,
-            review_count,
-            image_urls,
-            length,
-            width,
-            height,
-            weight,
-            frequently_purchased_asins,
-            variation_family,
-            parent_asin,
-            monthly_orders,
-            video_urls,
-            a_plus_content,
-            fba_fees,
-            referral_fee,
-            bullet_points,
-            created_at,
-            updated_at
-          )
-        `)
+      const { data: latestFeature, error: latestError } = await supabase
+        .from('niches')
+        .select('*')
+        .not('featured_date', 'is', null)
         .order('featured_date', { ascending: false })
         .limit(1)
         .single()
@@ -106,102 +45,153 @@ export async function GET() {
       if (latestError || !latestFeature) {
         console.error('Error fetching latest feature:', latestError)
         console.log('No daily features found in database')
-        return NextResponse.json(
-          { error: 'No daily feature available' },
-          { status: 404 }
-        )
+        
+        // Return a default/mock response instead of 404
+        return NextResponse.json({
+          id: 'default-feature',
+          date: todayString,
+          nicheName: 'Sample Product Niche',
+          nicheSlug: 'sample-product-niche',
+          nicheId: null,
+          nicheProducts: [],
+          product: {
+            id: 'default-product',
+            asin: 'B000000000',
+            title: 'No featured product available',
+            brand: 'Sample Brand',
+            category: 'Sample Category',
+            subcategory: null,
+            price: 0,
+            currency: 'USD',
+            rating: 0,
+            reviewCount: 0,
+            imageUrls: [],
+            description: 'Please check back later for featured products',
+            features: [],
+            availability: 'out_of_stock' as const,
+            bsr: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          reason: 'No featured niche available',
+          highlights: ['Check back tomorrow for new featured products'],
+          marketContext: 'Product analysis coming soon',
+          aiInsights: ['No data available'],
+          createdAt: new Date().toISOString()
+        })
       }
       
       // Use the latest feature
-      dailyFeature = latestFeature as any
+      featuredNiche = latestFeature
     }
     
-    const product = dailyFeature.product
-    if (!product) {
-      return NextResponse.json(
-        { error: 'Product not found for daily feature' },
-        { status: 404 }
-      )
-    }
+    // Parse ASINs from the niche
+    const asinList = featuredNiche.asins.split(',').map((asin: string) => asin.trim())
+    const firstAsin = asinList[0]
     
-    // Fetch product analysis
-    const { data: analysis, error: analysisError } = await supabase
-      .from('product_analyses')
+    // Fetch the first product from the niche as the featured product
+    const { data: product, error: productError } = await supabase
+      .from('product')
       .select('*')
-      .eq('product_id', product.id)
+      .eq('asin', firstAsin)
       .single()
     
-    // Fetch niche information for this product
-    // Since niche_products table doesn't exist, we need to find the niche by ASIN
-    const { data: niches, error: nicheError } = await supabase
-      .from('niches')
-      .select('id, niche_name, asins')
-      .ilike('asins', `%${product.asin}%`)
-    
-    // Find the niche that contains this ASIN
-    let niche = null
-    if (niches && niches.length > 0) {
-      for (const n of niches) {
-        // Check if this niche's ASINs list contains our product ASIN
-        if (n.asins && n.asins.includes(product.asin)) {
-          niche = n
-          break
-        }
-      }
+    if (productError || !product) {
+      console.error('Error fetching product:', productError)
+      console.log('No product found for ASIN:', firstAsin)
+      
+      // Return a response with the niche info but no product
+      return NextResponse.json({
+        id: featuredNiche.id,
+        date: featuredNiche.featured_date,
+        nicheName: featuredNiche.niche_name,
+        nicheSlug: featuredNiche.niche_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+        nicheId: featuredNiche.id,
+        nicheProducts: [],
+        product: {
+          id: 'no-product',
+          asin: firstAsin || 'unknown',
+          title: 'Product data not available',
+          brand: '',
+          category: featuredNiche.category || '',
+          subcategory: null,
+          price: 0,
+          currency: 'USD',
+          rating: 0,
+          reviewCount: 0,
+          imageUrls: [],
+          description: 'Product information is being updated',
+          features: [],
+          availability: 'out_of_stock' as const,
+          bsr: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        reason: 'Featured niche of the day',
+        highlights: ['Product data is being processed'],
+        marketContext: 'Analysis in progress',
+        aiInsights: ['Check back later for detailed insights'],
+        createdAt: featuredNiche.created_at
+      })
     }
     
-    let nicheName = niche?.niche_name || null
-    // Generate slug from niche name since niches table doesn't have a slug field
-    const nicheSlug = nicheName ? nicheName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : null
-    const nicheId = niche?.id || null
+    // Fetch niche analysis
+    const { data: analysis, error: analysisError } = await supabase
+      .from('niches_overall_analysis')
+      .select('*')
+      .eq('niche_id', featuredNiche.id)
+      .single()
     
-    // If we have a niche, fetch all products in that niche for carousel
+    // Use the featured niche data
+    const nicheName = featuredNiche.niche_name
+    const nicheSlug = nicheName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    const nicheId = featuredNiche.id
+    
+    // Fetch all products in the featured niche for carousel
     let nicheProducts = []
     let totalRevenue = 0
-    if (nicheId && niche?.asins) {
-      // Parse the ASINs from the comma-separated list
-      const asinList = niche.asins.split(',').map((asin: string) => asin.trim()).slice(0, 10)
-      
-      // Fetch all products with these ASINs
-      const { data: allNicheProducts } = await supabase
-        .from('products')
-        .select('id, asin, title, image_urls, price, review_count, rating, bsr')
-        .in('asin', asinList)
-      
-      if (allNicheProducts) {
-        nicheProducts = allNicheProducts
-          .map((p: any) => {
-            // Get the first image URL
-            let firstImage = null
-            if (p.image_urls) {
-              try {
-                // First try JSON parsing
-                const urls = typeof p.image_urls === 'string' ? JSON.parse(p.image_urls) : p.image_urls
-                firstImage = Array.isArray(urls) ? urls[0] : urls
-              } catch {
-                // If not JSON, assume comma-separated
-                const urls = p.image_urls.split(',').map((f: string) => f.trim())
-                firstImage = urls[0]
-              }
-              
-              // Convert to full URL if needed
-              if (firstImage && !firstImage.startsWith('http')) {
-                firstImage = `https://m.media-amazon.com/images/I/${firstImage}`
-              }
+    
+    // Fetch all products with these ASINs (limit to 10 for carousel)
+    const { data: allNicheProducts } = await supabase
+      .from('product')
+      .select('id, asin, title, image_urls, price, review_count, rating, bsr')
+      .in('asin', asinList.slice(0, 10))
+    
+    if (allNicheProducts) {
+      nicheProducts = allNicheProducts
+        .map((p: any) => {
+          // Get the first image URL
+          let firstImage = null
+          if (p.image_urls) {
+            try {
+              // First try JSON parsing
+              const urls = typeof p.image_urls === 'string' ? JSON.parse(p.image_urls) : p.image_urls
+              firstImage = Array.isArray(urls) ? urls[0] : urls
+            } catch {
+              // If not JSON, assume comma-separated
+              const urls = p.image_urls.split(',').map((f: string) => f.trim())
+              firstImage = urls[0]
             }
             
-            return {
-              ...p,
-              mainImage: firstImage
+            // Convert to full URL if needed
+            if (firstImage && !firstImage.startsWith('http')) {
+              firstImage = `https://m.media-amazon.com/images/I/${firstImage}`
             }
-          })
-        
-        // Calculate total revenue (rough estimate based on price * estimated units)
-        totalRevenue = nicheProducts.reduce((sum: number, p: any) => {
-          const estimatedUnits = 1000 // Default estimate
-          return sum + (p.price || 0) * estimatedUnits
-        }, 0)
-      }
+          }
+          
+          return {
+            ...p,
+            mainImage: firstImage
+          }
+        })
+      
+      // Calculate total revenue based on BSR (rough estimate for supplements)
+      totalRevenue = nicheProducts.reduce((sum: number, p: any) => {
+        // Estimate monthly sales based on BSR for supplements category
+        const estimatedMonthlySales = p.bsr ? Math.max(50, Math.floor(50000 / p.bsr)) : 100
+        const monthlyRevenue = estimatedMonthlySales * (p.price || 0)
+        return sum + monthlyRevenue
+      }, 0)
     }
     
     // If no niche products, create fallback data for berberine products
@@ -227,36 +217,7 @@ export async function GET() {
       }, 0)
     }
     
-    // If no niche is linked, extract a niche-like name from the product title
-    if (!nicheName && product.title) {
-      // Extract the main product type from the title
-      // For "Nature's Bounty Berberine Supplements,1000mg, Berberine Capsules..."
-      // We want "Berberine Supplements"
-      const titleParts = product.title.split(',')
-      if (titleParts.length > 0) {
-        // Get the first part and remove brand name if present
-        let mainPart = titleParts[0]
-        
-        // Remove common brand prefixes
-        const brands = ["Nature's Bounty", "NOW Foods", "Amazon Basics", "Kirkland", "Nature Made"]
-        for (const brand of brands) {
-          if (mainPart.startsWith(brand)) {
-            mainPart = mainPart.substring(brand.length).trim()
-            break
-          }
-        }
-        
-        // Clean up the name
-        nicheName = mainPart
-          .replace(/^\s+|\s+$/g, '') // trim
-          .replace(/\s+/g, ' ') // normalize spaces
-        
-        // Ensure it looks like a category name
-        if (nicheName && !nicheName.includes('Supplement') && nicheName.toLowerCase().includes('berberine')) {
-          nicheName = 'Berberine Supplements'
-        }
-      }
-    }
+    // nicheName is already set from the featured niche
     
     
     // Parse image URLs - they're stored as comma-separated filenames
@@ -306,8 +267,8 @@ export async function GET() {
     
     // Build the response
     const response: DailyFeature = {
-      id: dailyFeature.id,
-      date: dailyFeature.featured_date,
+      id: featuredNiche.id,
+      date: featuredNiche.featured_date,
       nicheName: nicheName,
       nicheSlug: nicheSlug,
       nicheId: nicheId,
@@ -324,70 +285,97 @@ export async function GET() {
         rating: product.rating || 0,
         reviewCount: product.review_count || 0,
         imageUrls: imageUrls,
-        description: dailyFeature.summary || product.title,
+        description: product.title,
         features: features,
         availability: 'in_stock' as const,
         bsr: product.bsr,
         createdAt: product.created_at,
         updatedAt: product.updated_at,
-        analysis: analysis || totalRevenue > 0 ? {
-          id: analysis?.id || 'mock-analysis',
-          productId: analysis?.product_id || product.id,
-          opportunityScore: analysis?.opportunity_score || 87,
-          demandScore: analysis?.demand_score || 85,
-          competitionScore: analysis?.competition_score || 72,
-          feasibilityScore: analysis?.feasibility_score || 88,
+        analysis: {
+          id: analysis?.id || `analysis-${product.id}`,
+          productId: product.id,
+          opportunityScore: analysis?.overall_score || 0,
+          demandScore: analysis?.demand_score || 0,
+          competitionScore: analysis?.competition_score || 0,
+          feasibilityScore: analysis?.financial_score || 0,
           financialAnalysis: {
-            ...(analysis?.financial_analysis as any || {}),
-            estimatedRevenue: totalRevenue > 0 ? totalRevenue : (analysis?.financial_analysis as any)?.estimatedRevenue || 295575,
-            estimatedMonthlySales: 1500,
+            estimatedRevenue: totalRevenue > 0 ? Math.round(totalRevenue) : 0,
+            estimatedMonthlySales: product.bsr ? Math.max(50, Math.floor(50000 / product.bsr)) : 0,
             profitMargin: 35,
             roi: 142
           },
-          marketAnalysis: analysis?.market_analysis as any || {
+          marketAnalysis: {
             totalAddressableMarket: 450000000,
             growthRate: 127,
             seasonality: 'low',
             marketMaturity: 'growing'
           },
-          competitionAnalysis: analysis?.competition_analysis as any || {
-            competitorCount: 10
+          competitionAnalysis: {
+            competitorCount: nicheProducts.length
           },
-          keywordAnalysis: analysis?.keyword_analysis as any,
-          reviewAnalysis: analysis?.review_analysis as any,
-          supplyChainAnalysis: analysis?.supply_chain_analysis as any,
+          keywordAnalysis: null,
+          reviewAnalysis: null,
+          supplyChainAnalysis: null,
           riskFactors: [],
           createdAt: analysis?.created_at || new Date().toISOString(),
           updatedAt: analysis?.updated_at || new Date().toISOString(),
           analysisVersion: '1.0'
-        } : undefined
+        }
       },
-      reason: dailyFeature.headline || 'Featured product of the day',
-      highlights: analysis && analysis.ai_generated_content ? 
-        (typeof analysis.ai_generated_content === 'string' ? 
-          analysis.ai_generated_content.split('\n').filter((line: string) => line.trim()).slice(0, 4) :
-          ['High opportunity score', 'Growing market demand', 'Clear differentiation opportunities', 'Low competition']
-        ) : 
-        ['High opportunity score', 'Growing market demand', 'Clear differentiation opportunities', 'Low competition'],
+      reason: 'Featured niche of the day',
+      highlights: [
+        analysis?.overall_score > 80 ? 'High overall opportunity score' : 'Good opportunity score',
+        analysis?.demand_score > 80 ? 'Strong market demand' : 'Growing market demand',
+        analysis?.competition_score < 60 ? 'Low competition' : 'Moderate competition',
+        analysis?.financial_score > 80 ? 'Excellent financial potential' : 'Good financial potential'
+      ],
       marketContext: 'Strong market opportunity with favorable conditions for new entrants',
       aiInsights: [
         'Comprehensive analysis available',
         'Market research completed',
         'Competition assessment done'
       ],
-      createdAt: dailyFeature.created_at
+      createdAt: featuredNiche.created_at
     }
     
     return NextResponse.json(response)
   } catch (error) {
     console.error('Daily feature API error:', error)
-    return NextResponse.json(
-      { 
-        error: 'Failed to fetch daily feature',
-        message: error instanceof Error ? error.message : 'Unknown error'
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    
+    // Return a default response instead of error to prevent frontend crash
+    return NextResponse.json({
+      id: 'error-feature',
+      date: new Date().toISOString().split('T')[0],
+      nicheName: 'Featured Products',
+      nicheSlug: 'featured-products',
+      nicheId: null,
+      nicheProducts: [],
+      product: {
+        id: 'error-product',
+        asin: 'ERROR000',
+        title: 'Unable to load featured product',
+        brand: '',
+        category: '',
+        subcategory: null,
+        price: 0,
+        currency: 'USD',
+        rating: 0,
+        reviewCount: 0,
+        imageUrls: [],
+        description: 'An error occurred while loading the featured product',
+        features: [],
+        availability: 'out_of_stock' as const,
+        bsr: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       },
-      { status: 500 }
-    )
+      reason: 'Technical difficulties',
+      highlights: ['Please try again later'],
+      marketContext: 'Unable to load data',
+      aiInsights: ['Service temporarily unavailable'],
+      createdAt: new Date().toISOString()
+    })
   }
 }
 

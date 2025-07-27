@@ -35,10 +35,10 @@ export async function GET(
     const asins = niche.asins.split(',').map((asin: string) => asin.trim())
     
     const { data: products, error: productsError } = await supabase
-      .from('products')
+      .from('product')
       .select(`
         *,
-        product_analyses (
+        niches_overall_analysis (
           opportunity_score,
           competition_score,
           demand_score,
@@ -68,23 +68,13 @@ export async function GET(
       scheduledDate: niche.scheduled_date,
       category: niche.category,
       totalProducts: niche.total_products,
-      avgBsr: niche.avg_bsr,
-      avgPrice: niche.avg_price,
-      avgRating: niche.avg_rating,
       totalReviews: niche.total_reviews,
-      totalMonthlyRevenue: niche.total_monthly_revenue,
-      opportunityScore: niche.opportunity_score,
-      competitionLevel: niche.competition_level,
       processTime: niche.process_time,
-      analystAssigned: niche.analyst_assigned,
-      nicheKeywords: niche.niche_keywords ? niche.niche_keywords.split(',').map((k: string) => k.trim()) : [],
-      marketSize: niche.market_size,
-      aiAnalysis: niche.ai_analysis,
       creator: niche.creator,
       
       // Transform products data
       products: products?.map(product => {
-        const analysis = product.product_analyses?.[0]
+        const analysis = product.niches_overall_analysis?.[0]
         return {
           id: product.id,
           asin: product.asin,

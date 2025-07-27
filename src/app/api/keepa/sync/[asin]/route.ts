@@ -33,7 +33,7 @@ export async function POST(
 
     // Update product table with current data
     const { error: productError } = await supabase
-      .from('products')
+      .from('product')
       .update({
         price: transformedData.currentPrice,
         bsr: transformedData.currentBsr,
@@ -47,9 +47,9 @@ export async function POST(
       console.error('Error updating product:', productError)
     }
 
-    // Store historical data in keepa_price_history
+    // Store historical data in product_price_history
     const { error: historyError } = await supabase
-      .from('keepa_price_history')
+      .from('product_price_history')
       .upsert({
         asin: asin,
         price_data: transformedData.priceHistory,
@@ -70,7 +70,7 @@ export async function POST(
     cacheExpiresAt.setHours(cacheExpiresAt.getHours() + 6) // Cache for 6 hours
 
     const { error: cacheError } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .upsert({
         asin: asin,
         data_type: 'keepa_product',
@@ -119,7 +119,7 @@ export async function GET(
 
     // Get cached Keepa data
     const { data: cachedData, error } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .select('*')
       .eq('asin', asin)
       .eq('data_type', 'keepa_product')
@@ -135,7 +135,7 @@ export async function GET(
 
     // Get price history
     const { data: priceHistory, error: historyError } = await supabase
-      .from('keepa_price_history')
+      .from('product_price_history')
       .select('*')
       .eq('asin', asin)
       .single()

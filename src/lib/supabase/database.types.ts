@@ -331,7 +331,7 @@ export interface Database {
           }
         ]
       }
-      keepa_review_history: {
+      product_review_history: {
         Row: {
           id: string
           product_id: string
@@ -373,7 +373,7 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: "keepa_review_history_product_id_fkey"
+            foreignKeyName: "product_review_history_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"

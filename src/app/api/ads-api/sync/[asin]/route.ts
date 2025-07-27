@@ -61,7 +61,7 @@ export async function POST(
     cacheExpiresAt.setHours(cacheExpiresAt.getHours() + 24) // Cache for 24 hours
 
     const { error: cacheError } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .upsert({
         asin: asin,
         data_type: 'ads_api_keywords',
@@ -114,7 +114,7 @@ export async function GET(
 
     // Get cached Ads API keyword data
     const { data: cachedData, error } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .select('*')
       .eq('asin', asin)
       .eq('data_type', 'ads_api_keywords')

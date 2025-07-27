@@ -316,7 +316,7 @@ export class ReviewScraperService {
       }));
 
       const { error } = await supabase
-        .from('customer_reviews')
+        .from('product_customer_reviews')
         .insert(reviewsToInsert);
 
       if (error) {
@@ -337,7 +337,7 @@ export class ReviewScraperService {
   private async getCachedReviews(asin: string) {
     const supabase = await this.getSupabase();
     const { data, error } = await supabase
-      .from('amazon_review_cache')
+      .from('product_customer_reviews_cache')
       .select('*')
       .eq('asin', asin)
       .single();
@@ -355,7 +355,7 @@ export class ReviewScraperService {
   private async cacheReviews(result: ScraperResult) {
     const supabase = await this.getSupabase();
     const { error } = await supabase
-      .from('amazon_review_cache')
+      .from('product_customer_reviews_cache')
       .upsert({
         asin: result.asin,
         total_reviews: result.totalReviews,

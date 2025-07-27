@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     console.log('4. Checking if product exists...')
     // Check if product exists
     const { data: existingProduct, error: selectError } = await supabase
-      .from('products')
+      .from('product')
       .select('id')
       .eq('asin', asin)
       .maybeSingle()
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       console.log('5. Updating existing product...')
       // Update existing product
       const { data: updatedProduct, error: updateError } = await supabase
-        .from('products')
+        .from('product')
         .update({
           ...productData,
           updated_at: new Date().toISOString()
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       console.log('5. Creating new product...')
       // Create new product
       const { data: newProduct, error: createError } = await supabase
-        .from('products')
+        .from('product')
         .insert(productData)
         .select('id')
         .single()
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     // Store minimal keepa data separately to avoid size issues
     console.log('7. Updating keepa_data separately...')
     const { error: keepaUpdateError } = await supabase
-      .from('products')
+      .from('product')
       .update({
         keepa_data: {
           lastUpdate: transformedData.keepaData.lastUpdate,
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
       }))
       
       const { error: priceError } = await supabase
-        .from('keepa_price_history')
+        .from('product_price_history')
         .upsert(priceHistoryData, {
           onConflict: 'product_id,timestamp,price_type',
           ignoreDuplicates: true
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       }))
       
       const { error: bsrError } = await supabase
-        .from('keepa_sales_rank_history')
+        .from('product_sales_rank_history')
         .upsert(bsrHistoryData, {
           onConflict: 'product_id,timestamp,category',
           ignoreDuplicates: true

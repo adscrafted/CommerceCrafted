@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     // Test 3: Try inserting with explicit UUID
     const testUuid = crypto.randomUUID()
     const { data: insertTest, error: insertError } = await supabase
-      .from('products')
+      .from('product')
       .insert([{
         id: testUuid,
         asin: `TEST-${Date.now()}`,
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     // Clean up test product
     if (insertTest) {
       await supabase
-        .from('products')
+        .from('product')
         .delete()
         .eq('id', testUuid)
     }

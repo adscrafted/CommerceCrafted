@@ -209,9 +209,9 @@ const ImageCarousel = ({ images, title }: { images: string[], title: string }) =
   }
   
   return (
-    <div className="flex gap-4">
-      {/* Main Image */}
-      <div className="w-72 h-72 relative bg-white rounded-lg shadow-xl overflow-hidden">
+    <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
+      {/* Main Image - Responsive */}
+      <div className="w-full sm:w-72 h-64 sm:h-72 relative bg-white rounded-lg shadow-xl overflow-hidden">
         <Image 
           src={validImages[currentIndex]}
           alt={`${title} - Image ${currentIndex + 1}`}
@@ -225,16 +225,16 @@ const ImageCarousel = ({ images, title }: { images: string[], title: string }) =
         />
       </div>
       
-      {/* Thumbnails */}
+      {/* Thumbnails - Responsive Grid */}
       {validImages.length > 1 && (
-        <div className="h-72">
-          <div className={`grid gap-2 h-full ${
-            validImages.length <= 4 ? 'grid-cols-1' :
-            validImages.length <= 8 ? 'grid-cols-2' :
-            validImages.length <= 12 ? 'grid-cols-3' :
-            'grid-cols-4'
-          }`}>
-            {validImages.map((image, index) => (
+        <div className="w-full sm:w-auto">
+          <div className={`grid gap-2 ${
+            validImages.length <= 3 ? 'grid-cols-3 sm:grid-cols-1' :
+            validImages.length <= 6 ? 'grid-cols-3 sm:grid-cols-2' :
+            validImages.length <= 9 ? 'grid-cols-3' :
+            'grid-cols-4 sm:grid-cols-3'
+          } max-w-full sm:max-w-none`}>
+            {validImages.slice(0, 12).map((image, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
@@ -243,7 +243,7 @@ const ImageCarousel = ({ images, title }: { images: string[], title: string }) =
                     ? 'border-blue-500 shadow-md' 
                     : 'border-gray-200 hover:border-gray-400'
                 }`}
-                style={{ height: '66px' }}
+                style={{ width: '66px', height: '66px' }}
               >
                 <Image
                   src={image}
@@ -649,10 +649,10 @@ export default function ProductPage({ params }: ProductPageProps) {
         </Button>
       </div>
 
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-12">
+      {/* Hero Section - Responsive */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-6 sm:py-8 lg:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 items-center">
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
@@ -662,13 +662,13 @@ export default function ProductPage({ params }: ProductPageProps) {
                   {currentProduct.date}
                 </Badge>
               </div>
-              <h1 className="text-4xl font-bold mb-4">{currentProduct.title}</h1>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">{currentProduct.title}</h1>
               
               {/* Monthly Revenue Display */}
               <div className="mb-6">
-                <div className="inline-flex items-center bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/30">
-                  <span className="text-sm text-blue-100 mr-2">Est. Monthly Revenue:</span>
-                  <span className="text-2xl font-bold text-white">
+                <div className="inline-flex items-center bg-white/20 backdrop-blur-sm rounded-lg px-3 sm:px-4 py-2 border border-white/30">
+                  <span className="text-xs sm:text-sm text-blue-100 mr-2">Est. Monthly Revenue:</span>
+                  <span className="text-xl sm:text-2xl font-bold text-white">
                     ${(() => {
                       const revenue = currentProduct.financialData.monthlyProjections.revenue;
                       if (revenue >= 1000000) {
@@ -685,8 +685,8 @@ export default function ProductPage({ params }: ProductPageProps) {
               
             </div>
             
-            {/* Product Image Carousel */}
-            <div className="text-center">
+            {/* Product Image Carousel - Centered on Mobile */}
+            <div className="flex justify-center lg:justify-end">
               <ImageCarousel 
                 images={(() => {
                   // Ensure we have valid images array

@@ -95,6 +95,7 @@ export default function HomePage() {
         ])
         
         setDailyFeature(daily)
+        console.log('Daily feature data:', daily)
         
         // Initialize main image source
         if (daily) {
@@ -221,20 +222,20 @@ export default function HomePage() {
           <section className="mb-16">
             {/* Header with Navigation */}
             <div className="text-center mb-8">
-              <h2 className="text-4xl font-bold text-blue-600 mb-2">Product of the Day</h2>
-              <div className="flex items-center justify-center gap-6 mb-2">
+              <h2 className="text-3xl sm:text-4xl font-bold text-blue-600 mb-4">Product of the Day</h2>
+              <div className="flex items-center justify-center gap-2 sm:gap-6">
                 <Link href="/products">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="hover:bg-gray-100"
+                    className="hover:bg-gray-100 px-2 sm:px-4"
                   >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous Products
+                    <ChevronLeft className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Previous</span>
                   </Button>
                 </Link>
                 
-                <div className="text-gray-600 font-medium">
+                <div className="text-gray-600 font-medium px-4">
                   {new Date(dailyFeature.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                 </div>
                 
@@ -242,10 +243,10 @@ export default function HomePage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="hover:bg-gray-100"
+                    className="hover:bg-gray-100 px-2 sm:px-4"
                   >
-                    Next Product
-                    <ChevronRight className="h-4 w-4 ml-1" />
+                    <span className="hidden sm:inline">Next</span>
+                    <ChevronRight className="h-4 w-4 sm:ml-1" />
                   </Button>
                 </Link>
               </div>
@@ -253,9 +254,9 @@ export default function HomePage() {
 
             <Card className="overflow-hidden">
               {/* Hero Section */}
-              <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-8">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-4 sm:p-6 lg:p-8">
                 <div className="max-w-6xl mx-auto">
-                  <div className="grid md:grid-cols-2 gap-8 items-center">
+                  <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 items-center">
                     <div>
                       <Badge variant="secondary" className="bg-white/20 text-white border-white/30 mb-4">
                         {dailyFeature.product.category || dailyFeature.nicheName || 'Health & Wellness'}
@@ -267,10 +268,10 @@ export default function HomePage() {
                       
                     </div>
                     
-                    {/* Niche Image Gallery - Same format as Product of the Day page */}
-                    <div className="flex gap-4">
+                    {/* Niche Image Gallery - Responsive */}
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-end">
                       {/* Main Image */}
-                      <div className="w-72 h-72 relative bg-white rounded-lg shadow-xl overflow-hidden">
+                      <div className="w-full sm:w-72 h-64 sm:h-72 relative bg-white rounded-lg shadow-xl overflow-hidden mx-auto sm:mx-0">
                         <Image 
                           src={mainImageSrc}
                           alt={dailyFeature.nicheName || dailyFeature.product.title}
@@ -283,15 +284,15 @@ export default function HomePage() {
                         />
                       </div>
                       
-                      {/* Thumbnails - Match Product of the Day layout */}
+                      {/* Thumbnails - Responsive Grid */}
                       {dailyFeature.nicheProducts && dailyFeature.nicheProducts.length > 1 && (
-                        <div className="h-72">
-                          <div className={`grid gap-2 h-full ${
-                            dailyFeature.nicheProducts.slice(0, 12).length <= 4 ? 'grid-cols-1' :
-                            dailyFeature.nicheProducts.slice(0, 12).length <= 8 ? 'grid-cols-2' :
+                        <div className="hidden sm:block w-full sm:w-auto">
+                          <div className={`grid gap-2 ${
+                            dailyFeature.nicheProducts.slice(0, 9).length <= 3 ? 'grid-cols-1' :
+                            dailyFeature.nicheProducts.slice(0, 9).length <= 6 ? 'grid-cols-2' :
                             'grid-cols-3'
                           }`}>
-                            {dailyFeature.nicheProducts.slice(0, 12).map((product, index) => (
+                            {dailyFeature.nicheProducts.slice(0, 9).map((product, index) => (
                               <button
                                 key={index}
                                 onClick={() => setMainImageSrc(product.mainImage || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&h=300&fit=crop')}
@@ -300,7 +301,7 @@ export default function HomePage() {
                                     ? 'border-blue-500 shadow-md' 
                                     : 'border-gray-200 hover:border-gray-400'
                                 }`}
-                                style={{ height: '66px' }}
+                                style={{ height: '66px', width: '66px' }}
                               >
                                 <Image
                                   src={product.mainImage || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=100&h=100&fit=crop'}
@@ -322,54 +323,54 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Quick Stats Bar */}
+              {/* Quick Stats Bar - Responsive */}
               <div className="bg-white border-b">
-                <div className="max-w-6xl mx-auto px-8 py-6">
-                  <div className="grid grid-cols-3 gap-8 text-center">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:gap-8 text-center">
                     {/* Row 1 */}
                     <div>
-                      <div className="text-2xl font-bold text-blue-600">
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">
                         {dailyFeature.product.analysis?.financialAnalysis.estimatedRevenue ? 
                           `$${(dailyFeature.product.analysis.financialAnalysis.estimatedRevenue / 1000).toFixed(0)}K` : 
                           'N/A'
                         }
                       </div>
-                      <div className="text-sm text-gray-600">Est. Monthly Revenue</div>
+                      <div className="text-xs sm:text-sm text-gray-600">Est. Monthly Revenue</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-purple-600">
-                        {dailyFeature.product.monthlySales?.toLocaleString() || dailyFeature.product.analysis?.financialAnalysis?.estimatedMonthlySales?.toLocaleString() || 'N/A'}
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600">
+                        {dailyFeature.product.analysis?.financialAnalysis?.estimatedMonthlySales?.toLocaleString() || 'N/A'}
                       </div>
-                      <div className="text-sm text-gray-600">Monthly Sales</div>
+                      <div className="text-xs sm:text-sm text-gray-600">Monthly Sales</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-orange-600">
-                        {dailyFeature.product.analysis?.competitionAnalysis?.competitorCount || 'N/A'}
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600">
+                        {dailyFeature.nicheProducts?.length || dailyFeature.product.analysis?.competitionAnalysis?.competitorCount || 'N/A'}
                       </div>
-                      <div className="text-sm text-gray-600">Competitors</div>
+                      <div className="text-xs sm:text-sm text-gray-600">Competitors</div>
                     </div>
                     
                     {/* Row 2 */}
                     <div>
-                      <div className="text-2xl font-bold text-green-600 flex items-center justify-center gap-1">
-                        <Star className="h-5 w-5 text-yellow-400 fill-current" />
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 flex items-center justify-center gap-1">
+                        <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 fill-current" />
                         {dailyFeature.product.rating ? dailyFeature.product.rating.toFixed(1) : 'N/A'}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-xs sm:text-sm text-gray-600">
                         ({dailyFeature.product.reviewCount ? dailyFeature.product.reviewCount.toLocaleString() : '0'} reviews)
                       </div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-emerald-600">
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-600">
                         {dailyFeature.product.price ? `$${dailyFeature.product.price.toFixed(2)}` : 'TBD'}
                       </div>
-                      <div className="text-sm text-gray-600">Price</div>
+                      <div className="text-xs sm:text-sm text-gray-600">Price</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-indigo-600">
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-indigo-600">
                         {dailyFeature.product.bsr ? `#${(dailyFeature.product.bsr / 1000).toFixed(0)}K` : 'N/A'}
                       </div>
-                      <div className="text-sm text-gray-600">BSR</div>
+                      <div className="text-xs sm:text-sm text-gray-600">BSR</div>
                     </div>
                   </div>
                 </div>

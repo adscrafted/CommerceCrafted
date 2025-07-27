@@ -24,7 +24,7 @@ export async function GET(
     const asinList = niche.asins.split(',').map((a: string) => a.trim())
     
     const { data: products, error: productsError } = await supabase
-      .from('products')
+      .from('product')
       .select('*')
       .in('asin', asinList)
     
@@ -88,21 +88,21 @@ export async function GET(
       keywords: niche.niche_keywords ? niche.niche_keywords.split(',').map((k: string) => k.trim()) : [],
       totalKeywords: niche.total_keywords || 0,
       
-      // Analysis insights
+      // Analysis insights (default values for now - could be enhanced with demand analysis data later)
       insights: {
-        whyThisNiche: niche.ai_analysis?.whyThisProduct || 'This niche shows strong potential based on market demand and competition analysis.',
-        keyHighlights: niche.ai_analysis?.keyHighlights || [
+        whyThisNiche: 'This niche shows strong potential based on market demand and competition analysis.',
+        keyHighlights: [
           'Growing market demand',
           'Moderate competition',
           'Good profit margins',
           'Multiple product opportunities'
         ],
-        challenges: niche.ai_analysis?.challenges || [
+        challenges: [
           'Requires initial investment',
           'Brand differentiation needed',
           'Quality control important'
         ],
-        opportunities: niche.ai_analysis?.opportunities || [
+        opportunities: [
           'Untapped sub-niches',
           'Bundle opportunities',
           'Cross-selling potential'

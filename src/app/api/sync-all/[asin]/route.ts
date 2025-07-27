@@ -104,7 +104,7 @@ export async function POST(
 
     // Log sync attempt to database for monitoring
     const { error: logError } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .insert({
         asin: asin,
         data_type: 'sync_all_attempt',
@@ -165,7 +165,7 @@ export async function GET(
 
     // Get the latest comprehensive sync attempt
     const { data: syncLog, error } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .select('*')
       .eq('asin', asin)
       .eq('data_type', 'sync_all_attempt')
@@ -182,7 +182,7 @@ export async function GET(
 
     // Get current cached data from all APIs
     const { data: allCachedData, error: cacheError } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .select('*')
       .eq('asin', asin)
       .in('data_type', ['keepa_product', 'ads_api_keywords', 'openai_analysis'])

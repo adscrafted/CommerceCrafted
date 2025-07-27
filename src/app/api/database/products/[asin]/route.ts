@@ -20,10 +20,10 @@ export async function GET(
 
     // Fetch product with full analysis data
     const { data: product, error: productError } = await supabase
-      .from('products')
+      .from('product')
       .select(`
         *,
-        product_analyses (
+        niches_overall_analysis (
           opportunity_score,
           competition_score,
           demand_score,
@@ -71,7 +71,7 @@ export async function GET(
     console.log('Product found:', product.title)
 
     // Transform data to match the frontend format used in the product page
-    const analysis = product.product_analyses?.[0]
+    const analysis = product.niches_overall_analysis?.[0]
     const keywordData = product.keyword_analyses?.[0]
     const financialModel = product.financial_models?.[0]
 
@@ -227,7 +227,7 @@ async function getMarketIntelligence(asin: string, supabase: any) {
     
     // Fetch customer reviews for the product
     const { data: reviews, error: reviewsError } = await supabase
-      .from('customer_reviews')
+      .from('product_customer_reviews')
       .select('*')
       .eq('product_id', asin)
       .order('review_date', { ascending: false })

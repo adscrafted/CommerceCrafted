@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useAuthState, useAuthActions } from '@/lib/supabase/hooks'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -15,7 +15,9 @@ import {
   Home,
   ChevronRight,
   ArrowLeft,
-  Package
+  Package,
+  Menu,
+  X
 } from 'lucide-react'
 
 // Navigation removed - using tabs in the main admin page instead
@@ -29,6 +31,7 @@ export default function AdminLayout({
   const { signOut } = useAuthActions()
   const router = useRouter()
   const pathname = usePathname()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   React.useEffect(() => {
     console.log('Admin layout auth check:', { isLoading, isAuthenticated, userRole: user?.role })
@@ -86,15 +89,27 @@ export default function AdminLayout({
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-8">
+            <div className="flex items-center">
+              {/* Mobile Menu Button */}
+              <button
+                className="lg:hidden mr-4"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                {isMobileMenuOpen ? (
+                  <X className="h-6 w-6 text-gray-600" />
+                ) : (
+                  <Menu className="h-6 w-6 text-gray-600" />
+                )}
+              </button>
+              
               {/* Logo */}
               <Link href="/" className="flex items-center space-x-2">
-                <Package className="h-6 w-6 text-blue-600" />
-                <span className="text-blue-600 text-2xl font-bold">CommerceCrafted</span>
+                <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                <span className="text-blue-600 text-lg sm:text-2xl font-bold">CommerceCrafted</span>
               </Link>
               
-              {/* Navigation Links */}
-              <nav className="flex items-center space-x-6">
+              {/* Desktop Navigation Links */}
+              <nav className="hidden lg:flex items-center space-x-6 ml-8">
                 <Link
                   href="/admin/niche"
                   className={`flex items-center space-x-2 text-sm font-medium ${
@@ -131,20 +146,64 @@ export default function AdminLayout({
               </nav>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <Badge className="bg-red-100 text-red-800">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Badge className="bg-red-100 text-red-800 text-xs sm:text-sm">
                 <Shield className="h-3 w-3 mr-1" />
                 ADMIN
               </Badge>
-              <div className="text-sm text-gray-600">
+              <div className="hidden sm:block text-sm text-gray-600">
                 {user?.name || user?.email || (process.env.NODE_ENV === 'development' ? 'Dev Admin' : 'Unknown')}
               </div>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+              <Button variant="outline" size="sm" onClick={handleSignOut} className="text-xs sm:text-sm">
+                <LogOut className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Sign Out</span>
               </Button>
             </div>
           </div>
+          
+          {/* Mobile Navigation */}
+          {isMobileMenuOpen && (
+            <div className="lg:hidden py-4 border-t border-gray-200">
+              <nav className="flex flex-col space-y-4">
+                <Link
+                  href="/admin/niche"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center space-x-2 text-sm font-medium px-2 py-2 rounded-md ${
+                    pathname === '/admin/niche' || pathname.startsWith('/admin/niche/')
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <Home className="h-4 w-4" />
+                  <span>Niche</span>
+                </Link>
+                <Link
+                  href="/admin/users"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center space-x-2 text-sm font-medium px-2 py-2 rounded-md ${
+                    pathname === '/admin/users' || pathname.startsWith('/admin/users/')
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <Users className="h-4 w-4" />
+                  <span>Users</span>
+                </Link>
+                <Link
+                  href="/admin/analytics"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center space-x-2 text-sm font-medium px-2 py-2 rounded-md ${
+                    pathname === '/admin/analytics'
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>Analytics</span>
+                </Link>
+              </nav>
+            </div>
+          )}
         </div>
       </header>
 

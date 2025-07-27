@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import KeywordNetwork from './KeywordNetwork'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { ScoreCard } from '@/components/ui/score-card'
 import { Network, GitBranch, Share2, Target, TrendingUp, DollarSign, Hash } from 'lucide-react'
 
 interface KeywordNetworkVisualizationProps {
@@ -13,6 +14,7 @@ interface KeywordNetworkVisualizationProps {
   minKeywordsPerSubRoot?: number
   onMinKeywordsPerRootChange?: (value: number) => void
   onMinKeywordsPerSubRootChange?: (value: number) => void
+  productImageUrl?: string
 }
 
 export default function KeywordNetworkVisualization({ 
@@ -21,7 +23,8 @@ export default function KeywordNetworkVisualization({
   minKeywordsPerRoot = 5,
   minKeywordsPerSubRoot = 5,
   onMinKeywordsPerRootChange,
-  onMinKeywordsPerSubRootChange
+  onMinKeywordsPerSubRootChange,
+  productImageUrl
 }: KeywordNetworkVisualizationProps) {
   const [activeLevel, setActiveLevel] = useState<'root' | 'subroot' | 'level2'>('root')
   const [networkData, setNetworkData] = useState<any>({})
@@ -162,9 +165,12 @@ export default function KeywordNetworkVisualization({
         .slice(0, 6)
       
       topRoots.forEach(({ name, data }) => {
-        // Filter and limit subroots
+        // Filter and limit subroots - exclude subroots with same name as root
         const subroots = Object.keys(data.subroots || {})
-          .filter(subrootName => (data.subroots[subrootName].keywordCount || data.subroots[subrootName].keywords?.length || 0) >= minKeywordsPerSubRoot)
+          .filter(subrootName => 
+            subrootName !== name && // Don't include subroots with same name as root
+            (data.subroots[subrootName].keywordCount || data.subroots[subrootName].keywords?.length || 0) >= minKeywordsPerSubRoot
+          )
           .slice(0, 8)
         
         transformedData[name] = {
@@ -265,96 +271,85 @@ export default function KeywordNetworkVisualization({
         )}
       </div>
 
-      {/* Scorecards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        {(() => {
-          const displayData = selectedNodeData || calculateOverallMetrics()
-          return (
-            <>
-              {/* Monthly Revenue */}
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <DollarSign className="h-5 w-5 text-green-600" />
-                    <h3 className="text-sm font-medium text-gray-600">Monthly Revenue</h3>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    ${displayData.totalRevenue >= 1000000 
-                      ? (displayData.totalRevenue / 1000000).toFixed(2) + 'M'
-                      : displayData.totalRevenue >= 1000
-                      ? (displayData.totalRevenue / 1000).toFixed(0) + 'K'
-                      : displayData.totalRevenue?.toFixed(0) || '0'
-                    }
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {selectedNodeData ? `For ${displayData.name}` : 'Across all keyword groups'}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Total Root Keywords */}
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <Hash className="h-5 w-5 text-purple-600" />
-                    <h3 className="text-sm font-medium text-gray-600">Total Root Keywords</h3>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    {selectedNodeData && selectedNodeData.type === 'root' 
-                      ? '1' 
-                      : displayData.totalRootKeywords?.toLocaleString() || Object.keys(keywordHierarchy || {}).length.toLocaleString()
-                    }
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {selectedNodeData ? 'Selected root keyword' : 'Primary keyword categories'}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Total Keywords */}
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <TrendingUp className="h-5 w-5 text-blue-600" />
-                    <h3 className="text-sm font-medium text-gray-600">Total Keywords</h3>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    {displayData.keywordCount?.toLocaleString() || '0'}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {selectedNodeData ? `In ${displayData.name}` : 'Unique keywords tracked'}
-                  </p>
-                </CardContent>
-              </Card>
-            </>
-          )
-        })()}
-      </div>
-
       {/* Network Visualization */}
       <div className="bg-white rounded-lg border overflow-hidden">
+        <div className="p-6">
+          {/* Scorecards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {(() => {
+              const displayData = selectedNodeData || calculateOverallMetrics()
+              const revenueValue = displayData.totalRevenue >= 1000000 
+                ? '$' + (displayData.totalRevenue / 1000000).toFixed(2) + 'M'
+                : displayData.totalRevenue >= 1000
+                ? '$' + (displayData.totalRevenue / 1000).toFixed(0) + 'K'
+                : '$' + (displayData.totalRevenue?.toFixed(0) || '0')
+              
+              const rootKeywordsValue = selectedNodeData && selectedNodeData.type === 'root' 
+                ? '1' 
+                : displayData.totalRootKeywords?.toLocaleString() || Object.keys(keywordHierarchy || {}).length.toLocaleString()
+              
+              return (
+                <>
+                  <ScoreCard
+                    value={revenueValue}
+                    label="Monthly Revenue"
+                    icon={DollarSign}
+                    description={selectedNodeData ? `For ${displayData.name}` : 'Across all keyword groups'}
+                    color="green"
+                  />
+                  
+                  <ScoreCard
+                    value={rootKeywordsValue}
+                    label="Total Root Keywords"
+                    icon={Hash}
+                    description={selectedNodeData ? 'Selected root keyword' : 'Primary keyword categories'}
+                    color="purple"
+                  />
+                  
+                  <ScoreCard
+                    value={displayData.keywordCount?.toLocaleString() || '0'}
+                    label="Total Keywords"
+                    icon={TrendingUp}
+                    description={selectedNodeData ? `In ${displayData.name}` : 'Unique keywords tracked'}
+                    color="blue"
+                  />
+                </>
+              )
+            })()}
+          </div>
+        </div>
+
+        {/* Network Visualization */}
         {Object.keys(networkData).length > 0 ? (
-          <KeywordNetwork
-            keywordClusters={networkData}
-            primaryKeyword={
-              activeLevel === 'root' ? primaryKeyword :
-              activeLevel === 'subroot' ? 'Keyword Subroots' :
-              'Level 2 Keywords'
-            }
-            className="h-[700px]"
-            nodeColorScheme={{
-              center: '#1F2937',    // gray-800
-              root: '#3B82F6',      // blue-500
-              subroot: '#10B981',   // green-500
-              level2: '#8B5CF6'     // purple-500
-            }}
-            revenueData={keywordHierarchy}
-            currentLevel={activeLevel}
-            onNodeClick={handleNodeClick}
-            onLevelChange={setActiveLevel}
-            selectedNodeData={selectedNodeData}
-            overallMetrics={calculateOverallMetrics()}
-          />
+          <>
+            {console.log('KeywordNetworkVisualization - Passing to KeywordNetwork:', {
+              networkData,
+              keywordHierarchy,
+              activeLevel
+            })}
+            <KeywordNetwork
+              keywordClusters={networkData}
+              primaryKeyword={
+                activeLevel === 'root' ? primaryKeyword :
+                activeLevel === 'subroot' ? 'Keyword Subroots' :
+                'Level 2 Keywords'
+              }
+              className="h-[700px]"
+              nodeColorScheme={{
+                center: '#1F2937',    // gray-800
+                root: '#3B82F6',      // blue-500
+                subroot: '#10B981',   // green-500
+                level2: '#8B5CF6'     // purple-500
+              }}
+              revenueData={keywordHierarchy}
+              currentLevel={activeLevel}
+              onNodeClick={handleNodeClick}
+              onLevelChange={setActiveLevel}
+              selectedNodeData={selectedNodeData}
+              overallMetrics={calculateOverallMetrics()}
+              productImageUrl={productImageUrl}
+            />
+          </>
         ) : (
           <div className="h-[700px] flex items-center justify-center text-gray-500">
             <div className="text-center">

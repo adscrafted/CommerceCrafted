@@ -59,7 +59,7 @@ export async function POST(
           
           // Store in database
           const { error: dbError } = await supabase
-            .from('products')
+            .from('product')
             .upsert({
               id: asin,
               asin: asin,

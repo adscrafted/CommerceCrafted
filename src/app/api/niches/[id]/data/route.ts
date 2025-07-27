@@ -50,7 +50,7 @@ export async function GET(
 
     // Now fetch products by ASINs
     const { data: products, error: productsError } = await supabase
-      .from('products')
+      .from('product')
       .select('*')
       .in('asin', asins)
 
@@ -70,7 +70,7 @@ export async function GET(
       try {
         console.log('Fetching review history for ASINs:', asins)
         const { data: reviewHistoryData, error: reviewHistoryError } = await supabase
-          .from('keepa_review_history')
+          .from('product_review_history')
           .select('*')
           .in('asin', asins)
           .order('date_timestamp', { ascending: true })
@@ -205,7 +205,7 @@ export async function GET(
       try {
         const productIds = products.map(p => p.id)
         const { data: salesRankData, error: salesRankError } = await supabase
-          .from('keepa_sales_rank_history')
+          .from('product_sales_rank_history')
           .select('*')
           .in('product_id', productIds)
           .order('timestamp', { ascending: true })

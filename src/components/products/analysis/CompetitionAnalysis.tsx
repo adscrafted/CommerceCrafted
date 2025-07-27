@@ -35,11 +35,80 @@ import {
   ChevronRight,
   ShoppingCart,
   Package,
-  Ruler
+  Ruler,
+  Maximize2,
+  Download
 } from 'lucide-react'
 
 interface CompetitionAnalysisProps {
   data: any
+}
+
+// Fullscreen wrapper component
+const FullscreenWrapper = ({ children }: { children: React.ReactNode }) => {
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  return (
+    <div 
+      data-fullscreen-container
+      className={`${isFullscreen ? 'fixed inset-0 z-50 bg-white p-4 overflow-auto' : ''}`}
+    >
+      {children}
+    </div>
+  )
+}
+
+// Expand Button Component
+const ExpandButton = () => {
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  const toggleFullscreen = () => {
+    const tableContainer = document.querySelector('[data-fullscreen-container]') as HTMLElement
+    if (!document.fullscreenElement) {
+      if (tableContainer) {
+        tableContainer.requestFullscreen().then(() => {
+          setIsFullscreen(true)
+        }).catch((err) => {
+          console.error('Error attempting to enable fullscreen:', err)
+        })
+      }
+    } else {
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false)
+      }).catch((err) => {
+        console.error('Error attempting to exit fullscreen:', err)
+      })
+    }
+  }
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  return (
+    <button 
+      onClick={toggleFullscreen}
+      className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+      title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+    >
+      <Maximize2 className="h-4 w-4" />
+      <span>Expand</span>
+    </button>
+  )
 }
 
 export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) {
@@ -58,6 +127,8 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
     rating: true,
     reviews: true
   })
+  const [dateRange, setDateRange] = useState(365) // Default to 365 days
+  const [granularity, setGranularity] = useState<'day' | 'week' | 'month'>('week') // Default to week
   const [competitorFilter, setCompetitorFilter] = useState<'all' | 'strong' | 'average' | 'weak'>('all')
   
   // Amazon Simulator state
@@ -67,6 +138,11 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
   const [simulationResults, setSimulationResults] = useState<any[]>([])
   const [simulationLoading, setSimulationLoading] = useState(false)
   const [simulationRun, setSimulationRun] = useState(false)
+  
+  // Keyword filtering state
+  const [minRootKeywords, setMinRootKeywords] = useState(5)
+  const [minSubrootKeywords, setMinSubrootKeywords] = useState(5)
+  const [keywordSearchTerm, setKeywordSearchTerm] = useState('')
   
   const toggleMetric = (metric: string) => {
     setVisibleMetrics(prev => ({
@@ -166,20 +242,102 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
   }
   
   const generateHistoricalData = (competitor: any) => {
-    // Generate mock historical data for the chart
-    const days = 30
+    // Generate historical data for the selected date range
+    const days = dateRange
     const basePrice = competitor.price || 25
     const baseBSR = competitor.bsr || 5000
     const baseRating = competitor.rating || 4.5
     const baseReviews = competitor.review_count || 1000
     
-    return Array.from({ length: days }, (_, i) => ({
-      day: `Day ${i + 1}`,
-      price: basePrice + (Math.random() - 0.5) * 5,
-      bsr: baseBSR / 1000 + (Math.random() - 0.5) * 2,
-      rating: Math.max(3.5, Math.min(5, baseRating + (Math.random() - 0.5) * 0.3)),
-      reviews: baseReviews / 100 + (Math.random() - 0.5) * 5
-    }))
+    const today = new Date()
+    const rawData = []
+    
+    // Generate daily data points
+    for (let i = 0; i < days; i++) {
+      const date = new Date(today)
+      date.setDate(date.getDate() - (days - 1 - i))
+      
+      // Add seasonal variations
+      const monthFactor = Math.sin((date.getMonth() / 12) * Math.PI * 2) * 0.2
+      const dayOfYearFactor = Math.sin((i / 365) * Math.PI * 2) * 0.1
+      
+      rawData.push({
+        date: date,
+        price: basePrice + (Math.random() - 0.5) * 5 + monthFactor * 5,
+        bsr: Math.max(100, baseBSR / 1000 + (Math.random() - 0.5) * 2 - dayOfYearFactor * 2),
+        rating: Math.max(3.5, Math.min(5, baseRating + (Math.random() - 0.5) * 0.3)),
+        reviews: Math.max(0, baseReviews / 100 + (Math.random() - 0.5) * 5 + i * (baseReviews / 1000))
+      })
+    }
+    
+    // Aggregate data based on granularity
+    if (granularity === 'day') {
+      return rawData.map(item => ({
+        day: item.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        fullDate: item.date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' }),
+        price: item.price,
+        bsr: item.bsr,
+        rating: item.rating,
+        reviews: item.reviews
+      }))
+    } else if (granularity === 'week') {
+      // Group by week
+      const weeks = new Map()
+      rawData.forEach(item => {
+        const weekStart = new Date(item.date)
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay()) // Start of week (Sunday)
+        const weekKey = weekStart.toISOString().split('T')[0]
+        
+        if (!weeks.has(weekKey)) {
+          weeks.set(weekKey, { items: [], weekStart })
+        }
+        weeks.get(weekKey).items.push(item)
+      })
+      
+      return Array.from(weeks.values()).map(week => {
+        const avgPrice = week.items.reduce((sum: number, item: any) => sum + item.price, 0) / week.items.length
+        const avgBsr = week.items.reduce((sum: number, item: any) => sum + item.bsr, 0) / week.items.length
+        const avgRating = week.items.reduce((sum: number, item: any) => sum + item.rating, 0) / week.items.length
+        const avgReviews = week.items.reduce((sum: number, item: any) => sum + item.reviews, 0) / week.items.length
+        
+        return {
+          day: week.weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          fullDate: `Week of ${week.weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
+          price: avgPrice,
+          bsr: avgBsr,
+          rating: avgRating,
+          reviews: avgReviews
+        }
+      })
+    } else {
+      // Group by month
+      const months = new Map()
+      rawData.forEach(item => {
+        const monthKey = `${item.date.getFullYear()}-${item.date.getMonth()}`
+        
+        if (!months.has(monthKey)) {
+          months.set(monthKey, { items: [], year: item.date.getFullYear(), month: item.date.getMonth() })
+        }
+        months.get(monthKey).items.push(item)
+      })
+      
+      return Array.from(months.values()).map(month => {
+        const avgPrice = month.items.reduce((sum: number, item: any) => sum + item.price, 0) / month.items.length
+        const avgBsr = month.items.reduce((sum: number, item: any) => sum + item.bsr, 0) / month.items.length
+        const avgRating = month.items.reduce((sum: number, item: any) => sum + item.rating, 0) / month.items.length
+        const avgReviews = month.items.reduce((sum: number, item: any) => sum + item.reviews, 0) / month.items.length
+        const monthDate = new Date(month.year, month.month, 1)
+        
+        return {
+          day: monthDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+          fullDate: monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          price: avgPrice,
+          bsr: avgBsr,
+          rating: avgRating,
+          reviews: avgReviews
+        }
+      })
+    }
   }
   
   const processKeywordData = useCallback(() => {
@@ -189,7 +347,7 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
       // Process real keyword hierarchy data from the data prop
       Object.entries(data.keywordHierarchy || {}).forEach(([rootName, rootData]: [string, any]) => {
         const group: any = {
-          root: rootName,
+          root: rootName.toLowerCase(), // Make root lowercase
           keywordCount: rootData.keywordCount || 0,
           totalRevenue: rootData.totalRevenue || 0,
           avgCPC: rootData.avgCPC || '0',
@@ -226,12 +384,15 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
           }
         })
         
+        // Sort subroots by keyword count descending
+        group.subroots.sort((a, b) => b.keywordCount - a.keywordCount)
+        
         if (group.subroots.length > 0 || group.keywordCount > 0) {
           keywordGroups.push(group)
         }
       })
       
-      // Sort by keyword count descending
+      // Sort root groups by keyword count descending
       keywordGroups.sort((a, b) => b.keywordCount - a.keywordCount)
       
       setKeywordData(keywordGroups)
@@ -290,7 +451,7 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
         title: comp.title || comp.name,
         price: comp.price || 29.99,
         rating: comp.rating || 4.2,
-        reviews: comp.review_count || 1000,
+        reviewCount: comp.review_count || 1000,
         bsr: comp.bsr || Math.floor(Math.random() * 10000) + 1000,
         image: comp.image || 'https://via.placeholder.com/150x150?text=Product',
         isYourProduct: yourAsin && comp.asin === yourAsin
@@ -304,7 +465,7 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
           title: `Your Product ${yourAsin}`,
           price: 35.99,
           rating: 4.5,
-          reviews: 250,
+          reviewCount: 250,
           bsr: 8500,
           image: 'https://via.placeholder.com/150x150?text=Your+Product',
           isYourProduct: true
@@ -313,8 +474,8 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
       
       // Sort by a relevance score (combine rating and reviews)
       results.sort((a: any, b: any) => {
-        const scoreA = (a.rating * 20) + (Math.log10(a.reviews + 1) * 10)
-        const scoreB = (b.rating * 20) + (Math.log10(b.reviews + 1) * 10)
+        const scoreA = (a.rating * 20) + (Math.log10(a.reviewCount + 1) * 10)
+        const scoreB = (b.rating * 20) + (Math.log10(b.reviewCount + 1) * 10)
         return scoreB - scoreA
       })
       
@@ -377,10 +538,10 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                 <div className="grid grid-cols-4 gap-4">
                   <button
                     onClick={() => setCompetitorFilter('all')}
-                    className={`text-center p-4 rounded-lg transition-all hover:shadow-md ${
+                    className={`text-center p-4 rounded-lg transition-all hover:shadow-md border ${
                       competitorFilter === 'all' 
-                        ? 'bg-blue-100 ring-2 ring-blue-500 shadow-md' 
-                        : 'bg-blue-50 hover:bg-blue-100'
+                        ? 'bg-blue-100 ring-2 ring-blue-500 shadow-md border-blue-300' 
+                        : 'bg-blue-50 hover:bg-blue-100 border-blue-200'
                     }`}
                   >
                     <div className="text-2xl font-bold text-blue-600">{(data.competitors || []).length}</div>
@@ -388,10 +549,10 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                   </button>
                   <button
                     onClick={() => setCompetitorFilter('strong')}
-                    className={`text-center p-4 rounded-lg transition-all hover:shadow-md ${
+                    className={`text-center p-4 rounded-lg transition-all hover:shadow-md border ${
                       competitorFilter === 'strong' 
-                        ? 'bg-green-100 ring-2 ring-green-500 shadow-md' 
-                        : 'bg-green-50 hover:bg-green-100'
+                        ? 'bg-green-100 ring-2 ring-green-500 shadow-md border-green-300' 
+                        : 'bg-green-50 hover:bg-green-100 border-green-200'
                     }`}
                   >
                     <div className="text-2xl font-bold text-green-600">
@@ -401,10 +562,10 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                   </button>
                   <button
                     onClick={() => setCompetitorFilter('average')}
-                    className={`text-center p-4 rounded-lg transition-all hover:shadow-md ${
+                    className={`text-center p-4 rounded-lg transition-all hover:shadow-md border ${
                       competitorFilter === 'average' 
-                        ? 'bg-yellow-100 ring-2 ring-yellow-500 shadow-md' 
-                        : 'bg-yellow-50 hover:bg-yellow-100'
+                        ? 'bg-yellow-100 ring-2 ring-yellow-500 shadow-md border-yellow-300' 
+                        : 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200'
                     }`}
                   >
                     <div className="text-2xl font-bold text-yellow-600">
@@ -414,10 +575,10 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                   </button>
                   <button
                     onClick={() => setCompetitorFilter('weak')}
-                    className={`text-center p-4 rounded-lg transition-all hover:shadow-md ${
+                    className={`text-center p-4 rounded-lg transition-all hover:shadow-md border ${
                       competitorFilter === 'weak' 
-                        ? 'bg-red-100 ring-2 ring-red-500 shadow-md' 
-                        : 'bg-red-50 hover:bg-red-100'
+                        ? 'bg-red-100 ring-2 ring-red-500 shadow-md border-red-300' 
+                        : 'bg-red-50 hover:bg-red-100 border-red-200'
                     }`}
                   >
                     <div className="text-2xl font-bold text-red-600">
@@ -781,21 +942,79 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                                 <span>Historical Performance Analysis</span>
                               </h4>
                               
-                              {/* Metric Toggle Buttons */}
-                              <div className="flex space-x-2 mb-4">
-                                {['price', 'bsr', 'rating', 'reviews'].map((metric) => (
-                                  <button
-                                    key={metric}
-                                    onClick={() => toggleMetric(metric)}
-                                    className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                                      visibleMetrics[metric]
-                                        ? 'bg-blue-100 text-blue-700'
-                                        : 'bg-gray-100 text-gray-500'
-                                    }`}
-                                  >
-                                    {metric.charAt(0).toUpperCase() + metric.slice(1)}
-                                  </button>
-                                ))}
+                              {/* Date Controls and Metric Toggle Buttons */}
+                              <div className="space-y-3 mb-4">
+                                {/* First Row: Date Range and Granularity */}
+                                <div className="flex flex-wrap items-center gap-4">
+                                  {/* Date Range Buttons */}
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-xs text-gray-500 font-medium">Range:</span>
+                                    <div className="flex space-x-1">
+                                      {[
+                                        { label: '30D', value: 30 },
+                                        { label: '90D', value: 90 },
+                                        { label: '180D', value: 180 },
+                                        { label: '1Y', value: 365 }
+                                      ].map((range) => (
+                                        <button
+                                          key={range.value}
+                                          onClick={() => setDateRange(range.value)}
+                                          className={`px-3 py-1 text-xs rounded transition-colors ${
+                                            dateRange === range.value
+                                              ? 'bg-blue-600 text-white'
+                                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                          }`}
+                                        >
+                                          {range.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Granularity Buttons */}
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-xs text-gray-500 font-medium">View by:</span>
+                                    <div className="flex space-x-1">
+                                      {[
+                                        { label: 'Day', value: 'day' as const },
+                                        { label: 'Week', value: 'week' as const },
+                                        { label: 'Month', value: 'month' as const }
+                                      ].map((gran) => (
+                                        <button
+                                          key={gran.value}
+                                          onClick={() => setGranularity(gran.value)}
+                                          className={`px-3 py-1 text-xs rounded transition-colors ${
+                                            granularity === gran.value
+                                              ? 'bg-green-600 text-white'
+                                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                          }`}
+                                        >
+                                          {gran.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Second Row: Metric Toggle Buttons */}
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs text-gray-500 font-medium">Metrics:</span>
+                                  <div className="flex space-x-2">
+                                  {['price', 'bsr', 'rating', 'reviews'].map((metric) => (
+                                    <button
+                                      key={metric}
+                                      onClick={() => toggleMetric(metric)}
+                                      className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                        visibleMetrics[metric]
+                                          ? 'bg-blue-100 text-blue-700'
+                                          : 'bg-gray-100 text-gray-500'
+                                      }`}
+                                    >
+                                      {metric.charAt(0).toUpperCase() + metric.slice(1)}
+                                    </button>
+                                  ))}
+                                  </div>
+                                </div>
                               </div>
                               
                               {/* Chart */}
@@ -803,8 +1022,21 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                                 <ResponsiveContainer width="100%" height="100%">
                                   <AreaChart data={generateHistoricalData(competitor)}>
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="day" />
+                                    <XAxis 
+                                      dataKey="day" 
+                                      tick={{ fontSize: 10 }}
+                                      interval={granularity === 'month' ? 0 : "preserveStartEnd"}
+                                      angle={dateRange > 90 && granularity !== 'month' ? -45 : 0}
+                                      textAnchor={dateRange > 90 && granularity !== 'month' ? "end" : "middle"}
+                                      height={dateRange > 90 && granularity !== 'month' ? 60 : 30}
+                                    />
                                     <Tooltip 
+                                      labelFormatter={(label: any, payload: any) => {
+                                        if (payload && payload.length > 0) {
+                                          return payload[0].payload.fullDate
+                                        }
+                                        return label
+                                      }}
                                       formatter={(value: any, name: string) => {
                                         if (name === 'bsr') return [`#${(value * 1000).toFixed(0)}`, 'BSR']
                                         if (name === 'reviews') return [`${(value * 100).toFixed(0)}`, 'Reviews']
@@ -848,27 +1080,101 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
             </CardHeader>
             <CardContent>
               {keywordData.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                <div className="space-y-4">
+                  {/* Filter and Action Bar */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search keywords..."
+                          value={keywordSearchTerm}
+                          onChange={(e) => setKeywordSearchTerm(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md">
+                        <span>Min Keywords Per Root:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={minRootKeywords}
+                          onChange={(e) => setMinRootKeywords(parseInt(e.target.value) || 1)}
+                          className="w-12 text-sm font-medium text-gray-700 bg-transparent outline-none"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md">
+                        <span>Min Keywords Per Sub Root:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={minSubrootKeywords}
+                          onChange={(e) => setMinSubrootKeywords(parseInt(e.target.value) || 1)}
+                          className="w-12 text-sm font-medium text-gray-700 bg-transparent outline-none"
+                        />
+                      </div>
+                      <button className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        <Download className="h-4 w-4" />
+                        <span>Download</span>
+                      </button>
+                      <ExpandButton />
+                    </div>
+                  </div>
+                  
+                  <FullscreenWrapper>
+                    <div className="overflow-x-auto">
+                      <table className="w-full bg-white">
                     <thead>
                       <tr className="border-b">
                         <th className="text-left py-3 px-2 text-sm font-medium text-gray-700">Keyword Group</th>
                         {data.competitors?.map((comp: any, index: number) => (
                           <th key={comp.asin} className="text-center py-3 px-2 text-sm font-medium text-gray-700">
-                            <div className="flex flex-col items-center">
-                              <span className="line-clamp-1">{comp.brand || `Comp ${index + 1}`}</span>
-                              <span className="text-xs text-gray-500 font-normal">{comp.asin}</span>
+                            <div className="flex flex-col items-center space-y-2">
+                              <img 
+                                src={comp.image || `https://m.media-amazon.com/images/I/${comp.image_urls?.split(',')[0]?.trim()}` || 'https://via.placeholder.com/40x40?text=No+Image'}
+                                alt={comp.asin}
+                                className="w-10 h-10 rounded object-cover border"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = 'https://via.placeholder.com/40x40?text=No+Image';
+                                }}
+                              />
+                              <div className="flex flex-col items-center">
+                                <span className="line-clamp-1">{comp.brand || `Comp ${index + 1}`}</span>
+                                <span className="text-xs text-gray-500 font-normal">{comp.asin}</span>
+                              </div>
                             </div>
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {keywordData.map((group, groupIndex) => {
-                        const rows = []
-                        
-                        // Root keyword row
-                        rows.push(
+                      {keywordData
+                        .filter(group => {
+                          // Filter by minimum keywords
+                          if (group.keywordCount < minRootKeywords) return false
+                          
+                          // Filter by search term
+                          if (keywordSearchTerm) {
+                            const searchLower = keywordSearchTerm.toLowerCase()
+                            // Check if root matches
+                            if (group.root.toLowerCase().includes(searchLower)) return true
+                            // Check if any subroot matches
+                            return group.subroots.some((subroot: any) => 
+                              subroot.name.toLowerCase().includes(searchLower)
+                            )
+                          }
+                          
+                          return true
+                        })
+                        .map((group, groupIndex) => {
+                          const rows = []
+                          
+                          // Root keyword row
+                          rows.push(
                           <tr key={`group-${groupIndex}`} className="border-b hover:bg-gray-50">
                             <td className="py-3 px-2">
                               <div className="flex items-center space-x-2">
@@ -882,8 +1188,8 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                                     <ChevronRight className="h-4 w-4" />
                                   )}
                                 </button>
-                                <span className="capitalize text-gray-900 font-medium">{group.root}</span>
-                                <Badge variant="outline" className="text-xs">{group.keywordCount} keywords</Badge>
+                                <span className="text-gray-900 font-medium">{group.root}</span>
+                                <Badge variant="outline" className="text-xs">{group.keywordCount.toLocaleString()} keywords</Badge>
                               </div>
                             </td>
                             {data.competitors?.map((comp: any, compIndex: number) => {
@@ -915,12 +1221,27 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                         
                         // Subroot rows (expanded)
                         if (expandedGroups[`group-${groupIndex}`]) {
-                          group.subroots.forEach((subroot: any, subrootIndex: number) => {
-                            rows.push(
+                          group.subroots
+                            .filter((subroot: any) => {
+                              // Filter by minimum keywords
+                              if (subroot.keywordCount < minSubrootKeywords) return false
+                              
+                              // Filter by search term
+                              if (keywordSearchTerm) {
+                                const searchLower = keywordSearchTerm.toLowerCase()
+                                return subroot.name.toLowerCase().includes(searchLower)
+                              }
+                              
+                              return true
+                            })
+                            .forEach((subroot: any, subrootIndex: number) => {
+                              rows.push(
                               <tr key={`subroot-${groupIndex}-${subrootIndex}`} className="border-b bg-gray-50 hover:bg-gray-100">
                                 <td className="py-3 px-2 pl-10">
-                                  <span className="text-sm text-gray-700">{subroot.name}</span>
-                                  <span className="text-xs text-gray-500 ml-2">({subroot.keywordCount} keywords)</span>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-sm text-gray-700">{subroot.name}</span>
+                                    <Badge variant="outline" className="text-xs">{subroot.keywordCount.toLocaleString()} keywords</Badge>
+                                  </div>
                                 </td>
                                 {data.competitors?.map((comp: any, compIndex: number) => {
                                   const ownership = subroot.keywords.length > 0
@@ -950,6 +1271,8 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
                       })}
                     </tbody>
                   </table>
+                    </div>
+                  </FullscreenWrapper>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
@@ -964,49 +1287,39 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
       {/* Review Strategy Tab */}
       {activeTab === 'reviews' && (
         <div className="space-y-6">
-          {/* Overview Metrics */}
-          <div className="grid grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Avg Rating</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {(getFilteredCompetitors().reduce((sum, c) => sum + (c.rating || 0), 0) / getFilteredCompetitors().length).toFixed(1)}★
-                    </p>
-                  </div>
-                  <Star className="h-8 w-8 text-yellow-500" />
-                </div>
-              </CardContent>
-            </Card>
+          {/* Overview Metrics - Standardized like Competitors tab */}
+          <div className="grid grid-cols-4 gap-4 mb-8">
+            <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <div className="text-2xl font-bold text-yellow-600">
+                {(getFilteredCompetitors().reduce((sum, c) => sum + (c.rating || 0), 0) / getFilteredCompetitors().length).toFixed(1)}★
+              </div>
+              <div className="text-sm text-gray-600">Avg Rating</div>
+            </div>
             
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Reviews</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {getFilteredCompetitors().reduce((sum, c) => sum + (c.review_count || 0), 0).toLocaleString()}
-                    </p>
-                  </div>
-                  <MessageSquare className="h-8 w-8 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
+            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-2xl font-bold text-blue-600">
+                {getFilteredCompetitors().reduce((sum, c) => sum + (c.review_count || 0), 0).toLocaleString()}
+              </div>
+              <div className="text-sm text-gray-600">Total Reviews</div>
+            </div>
             
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Avg Reviews</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {Math.round(getFilteredCompetitors().reduce((sum, c) => sum + (c.review_count || 0), 0) / getFilteredCompetitors().length).toLocaleString()}
-                    </p>
-                  </div>
-                  <BarChart3 className="h-8 w-8 text-purple-500" />
-                </div>
-              </CardContent>
-            </Card>
+            <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="text-2xl font-bold text-purple-600">
+                {Math.round(getFilteredCompetitors().reduce((sum, c) => sum + (c.review_count || 0), 0) / getFilteredCompetitors().length).toLocaleString()}
+              </div>
+              <div className="text-sm text-gray-600">Avg Reviews</div>
+            </div>
+            
+            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="text-2xl font-bold text-green-600">
+                {(() => {
+                  const competitors = getFilteredCompetitors()
+                  const with5Star = competitors.filter(c => c.rating >= 4.5).length
+                  return Math.round((with5Star / competitors.length) * 100)
+                })()}%
+              </div>
+              <div className="text-sm text-gray-600">≥4.5★ Rating</div>
+            </div>
           </div>
 
           {/* Rating Distribution Chart */}
@@ -1442,126 +1755,181 @@ export default function CompetitionAnalysis({ data }: CompetitionAnalysisProps) 
             </CardContent>
           </Card>
           
-          {/* Simulation Results */}
+          {/* Simulation Results - Amazon Style */}
           {simulationRun && simulationResults.length > 0 && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-lg font-semibold">
-                      Search Results for "{searchTerm}" on Amazon.{marketplace === 'us' ? 'com' : marketplace}
-                    </h4>
-                    <Badge variant="outline">{simulationResults.length} products</Badge>
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              {/* Amazon Header */}
+              <div className="bg-[#131921] p-3">
+                <div className="flex items-center gap-4">
+                  <div className="text-white font-bold text-xl">amazon</div>
+                  <div className="flex-1">
+                    <div className="flex">
+                      <select className="px-3 py-2 text-sm bg-gray-100 border-0 rounded-l">
+                        <option>All</option>
+                      </select>
+                      <input 
+                        type="text" 
+                        value={searchTerm} 
+                        readOnly
+                        className="flex-1 px-3 py-2 text-sm border-0 bg-white"
+                      />
+                      <button className="bg-[#febd69] px-6 py-2 rounded-r">
+                        <Search className="h-5 w-5 text-gray-800" />
+                      </button>
+                    </div>
                   </div>
-                  
-                  {/* Summary Stats */}
-                  <div className="grid md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <div className="font-medium text-gray-700">Price Range</div>
-                      <div className="text-gray-600">
-                        ${Math.min(...simulationResults.map(r => r.price)).toFixed(2)} - ${Math.max(...simulationResults.map(r => r.price)).toFixed(2)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-700">Avg Rating</div>
-                      <div className="text-gray-600">
-                        {(simulationResults.reduce((sum, r) => sum + r.rating, 0) / simulationResults.length).toFixed(1)} ★
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-700">Avg Reviews</div>
-                      <div className="text-gray-600">
-                        {Math.round(simulationResults.reduce((sum, r) => sum + r.reviews, 0) / simulationResults.length).toLocaleString()}
-                      </div>
-                    </div>
+                  <div className="text-white text-sm">Returns & Orders</div>
+                  <div className="text-white flex items-center">
+                    <span className="text-xs">0</span>
+                    <ShoppingCart className="ml-1 h-5 w-5" />
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4">Position</th>
-                        <th className="text-left py-3 px-4">Product</th>
-                        <th className="text-center py-3 px-4">Price</th>
-                        <th className="text-center py-3 px-4">Rating</th>
-                        <th className="text-center py-3 px-4">Reviews</th>
-                        <th className="text-center py-3 px-4">BSR</th>
-                        <th className="text-center py-3 px-4">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {simulationResults.map((result, index) => (
-                        <tr key={index} className={`border-b hover:bg-gray-50 ${
-                          result.isYourProduct ? 'bg-blue-50' : ''
-                        }`}>
-                          <td className="py-3 px-4">
-                            <Badge 
-                              variant={result.position <= 5 ? 'default' : 'secondary'}
-                              className={result.position <= 5 ? 'bg-green-100 text-green-800' : ''}
-                            >
-                              #{result.position}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center space-x-3">
-                              <img 
-                                src={result.image} 
-                                alt={result.title}
-                                className="w-12 h-12 object-cover rounded"
+              </div>
+
+              {/* Results count bar */}
+              <div className="px-4 py-2 text-sm text-[#0F1111] border-b bg-gray-50">
+                1-{simulationResults.length} of over 1,000 results for <span className="text-[#C7511F] font-medium">"{searchTerm}"</span>
+              </div>
+
+              {/* Products Grid */}
+              <div className="p-4 bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {simulationResults.map((result, index) => {
+                    const isYourProduct = yourAsin && result.asin === yourAsin.toUpperCase()
+                    return (
+                      <div 
+                        key={result.asin}
+                        className={`bg-white p-4 rounded-lg ${
+                          isYourProduct 
+                            ? 'ring-2 ring-green-500 relative shadow-lg' 
+                            : 'hover:shadow-md transition-shadow'
+                        }`}
+                      >
+                        {isYourProduct && (
+                          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs px-3 py-1 rounded-full z-10">
+                            Your Product
+                          </div>
+                        )}
+                        
+                        {/* Sponsored Badge */}
+                        {result.isSponsored && (
+                          <div className="text-xs text-gray-500 mb-2">Sponsored</div>
+                        )}
+                        
+                        {/* Product Image */}
+                        <div className="w-full h-48 bg-gray-100 mb-3 flex items-center justify-center rounded">
+                          {result.imageUrl ? (
+                            <img
+                              src={result.imageUrl}
+                              alt={result.title}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.src = `https://placehold.co/300x300/E5E7EB/6B7280?text=${encodeURIComponent(result.brand || 'Product')}`
+                              }}
+                            />
+                          ) : (
+                            <div className="text-center">
+                              <Package className="h-16 w-16 text-gray-400 mx-auto mb-2" />
+                              <span className="text-xs text-gray-500">No Image</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Title */}
+                        <h3 className="text-sm text-[#0F1111] hover:text-[#C7511F] cursor-pointer font-normal mb-2 leading-tight line-clamp-3">
+                          {result.title}
+                        </h3>
+                        
+                        {/* Brand */}
+                        {result.brand && (
+                          <div className="text-xs text-gray-600 mb-1">{result.brand}</div>
+                        )}
+                        
+                        {/* Rating */}
+                        <div className="flex items-center mb-2">
+                          <div className="flex text-[#FFA41C] text-sm mr-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-4 h-4 ${
+                                  i < Math.floor(result.rating)
+                                    ? 'fill-current'
+                                    : 'fill-gray-300'
+                                }`}
                               />
-                              <div>
-                                <a 
-                                  href={`https://www.amazon.com/dp/${result.asin}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline line-clamp-1"
-                                >
-                                  {result.title}
-                                </a>
-                                <p className="text-xs text-gray-500">{result.asin}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-center font-medium">
+                            ))}
+                          </div>
+                          <span className="text-[#007185] text-xs mr-1">{result.rating ? result.rating.toFixed(1) : '0.0'}</span>
+                          <span className="text-xs text-gray-500">({(result.reviewCount || result.reviews || 0).toLocaleString()})</span>
+                        </div>
+                        
+                        {/* Price */}
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <span className="text-xl font-medium text-[#0F1111]">
                             ${result.price.toFixed(2)}
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <div className="flex items-center justify-center space-x-1">
-                              {[...Array(5)].map((_, i) => (
-                                <Star 
-                                  key={i} 
-                                  className={`h-3 w-3 ${
-                                    i < Math.floor(result.rating) 
-                                      ? 'text-yellow-400 fill-current' 
-                                      : 'text-gray-300'
-                                  }`} 
-                                />
-                              ))}
-                              <span className="text-sm ml-1">{result.rating.toFixed(1)}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            {result.reviews.toLocaleString()}
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            #{result.bsr.toLocaleString()}
-                          </td>
-                          <td className="py-3 px-4">
-                            {result.isYourProduct ? (
-                              <Badge className="bg-blue-100 text-blue-800">Your Product</Badge>
-                            ) : (
-                              <Badge variant="outline">Competitor</Badge>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </span>
+                          {result.originalPrice && result.originalPrice > result.price && (
+                            <>
+                              <span className="text-xs text-gray-500 line-through">
+                                ${result.originalPrice.toFixed(2)}
+                              </span>
+                              <span className="text-xs text-[#CC0C39] font-medium">
+                                -{Math.round((1 - result.price / result.originalPrice) * 100)}%
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        
+                        {/* Prime Badge */}
+                        {result.isPrime && (
+                          <div className="flex items-center gap-1 mb-2">
+                            <Badge variant="secondary" className="text-xs bg-[#FF9900] text-white">Prime</Badge>
+                            <span className="text-xs text-gray-600">FREE delivery</span>
+                          </div>
+                        )}
+                        
+                        {/* Best Seller Badge */}
+                        {result.isBestSeller && (
+                          <Badge variant="secondary" className="text-xs bg-[#FF6000] text-white">
+                            #1 Best Seller
+                          </Badge>
+                        )}
+                        
+                        {/* Add to Cart Button */}
+                        <button className="w-full mt-3 bg-[#FFD814] hover:bg-[#F7CA00] text-[#0F1111] py-1.5 px-4 rounded-lg text-sm font-medium transition-colors">
+                          Add to Cart
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              
+              {/* Bottom Summary */}
+              <div className="px-4 py-3 bg-gray-100 border-t">
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="font-medium text-gray-700">Price Range</div>
+                    <div className="text-gray-600">
+                      ${Math.min(...simulationResults.map(r => r.price)).toFixed(2)} - ${Math.max(...simulationResults.map(r => r.price)).toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-medium text-gray-700">Avg Rating</div>
+                    <div className="text-gray-600">
+                      {(simulationResults.reduce((sum, r) => sum + r.rating, 0) / simulationResults.length).toFixed(1)} ★
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-medium text-gray-700">Avg Reviews</div>
+                    <div className="text-gray-600">
+                      {Math.round(simulationResults.reduce((sum, r) => sum + r.reviewCount, 0) / simulationResults.length).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}

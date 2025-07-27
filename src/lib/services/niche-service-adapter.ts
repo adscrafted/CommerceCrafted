@@ -31,9 +31,124 @@ class SupabaseAdapter {
   
   private async deleteNicheCascade(nicheId: string, userId: string) {
     try {
-      // TODO: Convert to Supabase - implement cascade delete
+      const { createServerSupabaseClient } = await import('@/lib/supabase/server')
+      const supabase = await createServerSupabaseClient()
+      
+      // First, verify the niche belongs to the user
+      const { data: niche, error: nicheError } = await supabase
+        .from('niches')
+        .select('id, user_id')
+        .eq('id', nicheId)
+        .eq('user_id', userId)
+        .single()
+      
+      if (nicheError || !niche) {
+        return { error: new Error('Niche not found or access denied') }
+      }
+      
+      // Delete related data in the correct order to avoid foreign key constraints
+      
+      // 1. First get all product IDs in this niche
+      const { data: nicheProducts, error: fetchError } = await supabase
+        .from('niche_products')
+        .select('product_id')
+        .eq('niche_id', nicheId)
+      
+      if (fetchError) {
+        console.error('Error fetching niche products:', fetchError)
+      }
+      
+      // 2. Delete product analyses for products in this niche
+      if (nicheProducts && nicheProducts.length > 0) {
+        const productIds = nicheProducts.map(np => np.product_id)
+        const { error: analysesError } = await supabase
+          .from('niches_overall_analysis')
+          .delete()
+          .in('product_id', productIds)
+        
+        if (analysesError) {
+          console.error('Error deleting product analyses:', analysesError)
+        }
+      }
+      
+      // 3. Delete niche_products (junction table)
+      const { error: nicheProductsError } = await supabase
+        .from('niche_products')
+        .delete()
+        .eq('niche_id', nicheId)
+      
+      if (nicheProductsError) {
+        console.error('Error deleting niche products:', nicheProductsError)
+      }
+      
+      // 4. Delete analysis_runs for this niche
+      const { error: runsError } = await supabase
+        .from('analysis_runs')
+        .delete()
+        .eq('niche_id', nicheId)
+      
+      if (runsError) {
+        console.error('Error deleting analysis runs:', runsError)
+      }
+      
+      // 5. Delete product_keywords for products in this niche
+      const { error: keywordsError } = await supabase
+        .from('product_keywords')
+        .delete()
+        .eq('niche_id', nicheId)
+      
+      if (keywordsError) {
+        console.error('Error deleting product keywords:', keywordsError)
+      }
+      
+      // 6. Delete the niche itself
+      const { error: deleteError } = await supabase
+        .from('niches')
+        .delete()
+        .eq('id', nicheId)
+        .eq('user_id', userId)
+      
+      if (deleteError) {
+        return { error: deleteError }
+      }
+      
+      // 7. Clean up orphaned products (products that don't belong to any niche)
+      if (nicheProducts && nicheProducts.length > 0) {
+        const productIds = nicheProducts.map(np => np.product_id)
+        
+        // For each product that was in this niche, check if it belongs to any other niche
+        for (const productId of productIds) {
+          const { data: otherNiches, error: checkError } = await supabase
+            .from('niche_products')
+            .select('niche_id')
+            .eq('product_id', productId)
+            .limit(1)
+          
+          if (checkError) {
+            console.error(`Error checking for other niches for product ${productId}:`, checkError)
+            continue
+          }
+          
+          // If this product doesn't belong to any other niche, it's orphaned
+          if (!otherNiches || otherNiches.length === 0) {
+            console.log(`Deleting orphaned product ${productId}`)
+            
+            // Delete the orphaned product
+            const { error: productDeleteError } = await supabase
+              .from('product')
+              .delete()
+              .eq('id', productId)
+            
+            if (productDeleteError) {
+              console.error(`Error deleting orphaned product ${productId}:`, productDeleteError)
+            }
+          }
+        }
+      }
+      
       return { error: null }
     } catch (error) {
+      console.error('Error in deleteNicheCascade:', error)
       return { error }
     }
   }
@@ -250,8 +365,6 @@ export class NicheServiceAdapter {
     const rows = [
       ['Niche Name', data.niche.name],
       ['Category', data.niche.category],
-      ['Opportunity Score', data.niche.opportunity_score || 'N/A'],
-      ['Competition Level', data.niche.competition_level || 'N/A'],
       ['Product Count', data.products.length],
       ['Last Analyzed', data.analysis?.analysis_date || 'Never'],
     ]

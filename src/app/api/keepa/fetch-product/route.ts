@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     console.log('4. Checking if product exists...')
     // Check if product exists
     const { data: existingProduct } = await supabase
-      .from('products')
+      .from('product')
       .select('id')
       .eq('asin', asin)
       .maybeSingle()
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       console.log('5. Updating existing product...')
       // Update existing product
       const { data, error } = await supabase
-        .from('products')
+        .from('product')
         .update({
           ...productData,
           updated_at: new Date().toISOString()
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       // Insert - generate UUID in JavaScript since extension is missing
       const newId = crypto.randomUUID()
       const { data, error } = await supabase
-        .from('products')
+        .from('product')
         .insert([
           {
             id: newId,
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     // Store extended keepa_data with all new fields
     console.log('7. Updating keepa_data...')
     const { error: keepaUpdateError } = await supabase
-      .from('products')
+      .from('product')
       .update({
         keepa_data: {
           lastUpdate: transformedData.keepaData.lastUpdate,
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       for (const [index, chunk] of priceChunks.entries()) {
         console.log(`   Inserting price chunk ${index + 1}/${priceChunks.length}...`)
         const { error: priceError } = await supabase
-          .from('keepa_price_history')
+          .from('product_price_history')
           .upsert(chunk, {
             onConflict: 'product_id,timestamp,price_type',
             ignoreDuplicates: true
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
       for (const [index, chunk] of bsrChunks.entries()) {
         console.log(`   Inserting BSR chunk ${index + 1}/${bsrChunks.length}...`)
         const { error: bsrError } = await supabase
-          .from('keepa_sales_rank_history')
+          .from('product_sales_rank_history')
           .upsert(chunk, {
             onConflict: 'product_id,timestamp,category',
             ignoreDuplicates: true
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
       }))
       
       const { error: reviewError } = await supabase
-        .from('keepa_review_history')
+        .from('product_review_history')
         .upsert(reviewData, {
           onConflict: 'product_id,timestamp',
           ignoreDuplicates: true
@@ -257,7 +257,7 @@ export async function GET(request: NextRequest) {
 
     // Check if product exists in database
     const { data: product } = await supabase
-      .from('products')
+      .from('product')
       .select('*')
       .eq('asin', asin)
       .single()

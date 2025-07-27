@@ -20,10 +20,10 @@ export async function POST(
 
     // First, get existing product data from database
     const { data: product, error: productError } = await supabase
-      .from('products')
+      .from('product')
       .select(`
         *,
-        product_analyses (
+        niches_overall_analysis (
           opportunity_score,
           competition_score,
           demand_score,
@@ -57,9 +57,9 @@ export async function POST(
       bsr: product.bsr,
       rating: product.rating,
       reviewCount: product.review_count,
-      competitorData: product.product_analyses?.[0]?.competition_analysis || null,
+      competitorData: product.niches_overall_analysis?.[0]?.competition_analysis || null,
       keywordData: product.keyword_analyses?.[0] || null,
-      marketData: product.product_analyses?.[0]?.market_analysis || null,
+      marketData: product.niches_overall_analysis?.[0]?.market_analysis || null,
       productAgeMonths: product.product_age_months,
       productAgeCategory: product.product_age_category,
       firstSeenDate: product.first_seen_date
@@ -79,7 +79,7 @@ export async function POST(
 
     // Update product analysis with AI-generated data
     const { error: updateError } = await supabase
-      .from('product_analyses')
+      .from('niches_overall_analysis')
       .upsert({
         asin: asin,
         opportunity_score: aiAnalysis.opportunityScore,
@@ -89,7 +89,7 @@ export async function POST(
         timing_score: aiAnalysis.timingScore,
         ai_generated_content: aiAnalysis.reasoning,
         market_analysis: {
-          ...product.product_analyses?.[0]?.market_analysis || {},
+          ...product.niches_overall_analysis?.[0]?.market_analysis || {},
           aiInsights: aiAnalysis.insights,
           marketSize: aiAnalysis.marketAnalysis.size,
           marketTrend: aiAnalysis.marketAnalysis.trend,
@@ -97,7 +97,7 @@ export async function POST(
           barriers: aiAnalysis.marketAnalysis.barriers
         },
         financial_analysis: {
-          ...product.product_analyses?.[0]?.financial_analysis || {},
+          ...product.niches_overall_analysis?.[0]?.financial_analysis || {},
           aiRecommendations: aiAnalysis.recommendations,
           pricingStrategy: aiAnalysis.recommendations.pricing,
           marketingStrategy: aiAnalysis.recommendations.marketing
@@ -118,7 +118,7 @@ export async function POST(
     // Generate additional insights
     const [marketInsights, launchStrategy, keywordOpportunities] = await Promise.allSettled([
       openaiAnalysis.generateMarketInsights(product),
-      openaiAnalysis.generateLaunchStrategy(product, product.product_analyses?.[0]?.competition_analysis),
+      openaiAnalysis.generateLaunchStrategy(product, product.niches_overall_analysis?.[0]?.competition_analysis),
       product.keyword_analyses?.[0] 
         ? openaiAnalysis.analyzeKeywordOpportunities(product.keyword_analyses[0], product.title)
         : Promise.resolve(null)
@@ -129,7 +129,7 @@ export async function POST(
     cacheExpiresAt.setDate(cacheExpiresAt.getDate() + 7) // Cache for 7 days
 
     const { error: cacheError } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .upsert({
         asin: asin,
         data_type: 'openai_analysis',
@@ -196,7 +196,7 @@ export async function GET(
 
     // Get cached AI analysis
     const { data: cachedData, error } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .select('*')
       .eq('asin', asin)
       .eq('data_type', 'openai_analysis')
@@ -212,7 +212,7 @@ export async function GET(
 
     // Also get the current product analysis
     const { data: productAnalysis, error: analysisError } = await supabase
-      .from('product_analyses')
+      .from('niches_overall_analysis')
       .select('*')
       .eq('asin', asin)
       .single()

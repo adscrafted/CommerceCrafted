@@ -24,7 +24,7 @@ export async function GET(
     const asinList = niche.asins.split(',').map((a: string) => a.trim())
     
     const { data: products, error: productsError } = await supabase
-      .from('products')
+      .from('product')
       .select('*')
       .in('asin', asinList)
     
@@ -41,14 +41,14 @@ export async function GET(
     
     // Fetch sales rank history
     const { data: salesRankHistory, error: salesRankError } = await supabase
-      .from('keepa_sales_rank_history')
+      .from('product_sales_rank_history')
       .select('*')
       .in('product_id', productIds)
       .order('timestamp', { ascending: true })
     
     // Fetch price history
     const { data: priceHistory, error: priceError } = await supabase
-      .from('keepa_price_history')
+      .from('product_price_history')
       .select('*')
       .in('product_id', productIds)
       .order('timestamp', { ascending: true })

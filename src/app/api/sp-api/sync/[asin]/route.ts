@@ -32,7 +32,7 @@ export async function POST(
 
     // Update product table with SP-API data
     const { error: productError } = await supabase
-      .from('products')
+      .from('product')
       .update({
         title: spApiData.title,
         brand: spApiData.brand,
@@ -64,7 +64,7 @@ export async function POST(
     cacheExpiresAt.setHours(cacheExpiresAt.getHours() + 12) // Cache for 12 hours
 
     const { error: cacheError } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .upsert({
         asin: asin,
         data_type: 'sp_api_catalog',
@@ -118,7 +118,7 @@ export async function GET(
 
     // Get cached SP-API data
     const { data: cachedData, error } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .select('*')
       .eq('asin', asin)
       .eq('data_type', 'sp_api_catalog')

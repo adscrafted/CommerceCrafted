@@ -38,10 +38,10 @@ export async function GET(request: NextRequest) {
 
     // Fetch products that are in niches with their analyses
     const { data: products, error } = await supabase
-      .from('products')
+      .from('product')
       .select(`
         *,
-        product_analyses (
+        niches_overall_analysis (
           opportunity_score,
           competition_score,
           demand_score,
@@ -94,8 +94,8 @@ export async function GET(request: NextRequest) {
       }
       
       // Get the first analysis if it exists
-      const analysis = product.product_analyses && product.product_analyses.length > 0 
-        ? product.product_analyses[0] 
+      const analysis = product.niches_overall_analysis && product.niches_overall_analysis.length > 0 
+        ? product.niches_overall_analysis[0] 
         : null
         
       return {

@@ -79,19 +79,9 @@ async function handleGet(req: NextRequest) {
       scheduledDate: niche.scheduled_date.split('T')[0],
       category: niche.category || 'Pending',
       totalProducts: niche.total_products,
-      totalKeywords: niche.total_keywords || 0,
-      avgBsr: niche.avg_bsr || 0,
-      avgPrice: niche.avg_price || 0,
-      avgRating: niche.avg_rating || 0,
       totalReviews: niche.total_reviews || 0,
-      totalMonthlyRevenue: niche.total_monthly_revenue || 0,
-      opportunityScore: niche.opportunity_score || 0,
-      competitionLevel: niche.competition_level || 'MEDIUM',
       processTime: niche.process_time || '0',
-      analystAssigned: niche.analyst_assigned || 'AI Agent',
-      nicheKeywords: niche.niche_keywords ? niche.niche_keywords.split(',').map(k => k.trim()) : [],
-      marketSize: niche.market_size || 0,
-      aiAnalysis: niche.ai_analysis || null
+      creator: niche.creator
     })) || []
     
     return NextResponse.json(transformedNiches)
@@ -220,15 +210,9 @@ async function handlePost(req: NextRequest) {
         total_products: asinList.length,
         status: 'pending',
         category: 'Pending',
-        competition_level: 'MEDIUM',
-        analyst_assigned: 'AI Agent',
         created_by: userId,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        marketplace: 'US',
-        total_keywords: 0,
-        ai_analysis: {},
-        tags: []
+        updated_at: new Date().toISOString()
       })
       .select()
       .single()
@@ -258,19 +242,8 @@ async function handlePost(req: NextRequest) {
       scheduledDate: niche.scheduled_date.split('T')[0],
       category: niche.category || 'Pending',
       totalProducts: niche.total_products,
-      totalKeywords: niche.total_keywords || 0,
-      avgBsr: niche.avg_bsr || 0,
-      avgPrice: niche.avg_price || 0,
-      avgRating: niche.avg_rating || 0,
       totalReviews: niche.total_reviews || 0,
-      totalMonthlyRevenue: niche.total_monthly_revenue || 0,
-      opportunityScore: niche.opportunity_score || 0,
-      competitionLevel: niche.competition_level || 'MEDIUM',
-      processTime: niche.process_time || '0',
-      analystAssigned: niche.analyst_assigned || 'AI Agent',
-      nicheKeywords: niche.niche_keywords ? niche.niche_keywords.split(',').map(k => k.trim()) : [],
-      marketSize: niche.market_size || 0,
-      aiAnalysis: niche.ai_analysis || null
+      processTime: niche.process_time || '0'
     }
     
     // Automatically trigger analysis for the new niche
@@ -482,7 +455,7 @@ async function performCascadeDeletion(supabase: any, nicheId: string, asins: str
   // Step 4: Delete products that are niche-specific only
   if (asins.length > 0) {
     const { count: productCount, error: productError } = await supabase
-      .from('products')
+      .from('product')
       .delete({ count: 'exact' })
       .in('id', asins)
       .not('niche_id', 'is', null) // Only delete niche-specific products

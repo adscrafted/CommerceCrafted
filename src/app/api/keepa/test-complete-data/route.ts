@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     
     // First check if product exists
     const { data: existingProduct } = await supabase
-      .from('products')
+      .from('product')
       .select('id')
       .eq('asin', transformed.asin)
       .single()
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     if (existingProduct) {
       // Update existing product
       const { data, error } = await supabase
-        .from('products')
+        .from('product')
         .update({
           ...productData,
           updated_at: new Date().toISOString()
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Insert new product
       const { data, error } = await supabase
-        .from('products')
+        .from('product')
         .insert([{
           id: crypto.randomUUID(),
           ...productData,

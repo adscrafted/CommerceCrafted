@@ -3,8 +3,8 @@ import { Database } from '@/types/database'
 import { Niche } from '@/types/product'
 
 type NicheRow = Database['public']['Tables']['niches']['Row']
-type ProductRow = Database['public']['Tables']['products']['Row']
-type ProductAnalysisRow = Database['public']['Tables']['product_analyses']['Row']
+type ProductRow = Database['public']['Tables']['product']['Row']
+type ProductAnalysisRow = Database['public']['Tables']['niches_overall_analysis']['Row']
 
 export interface NicheWithAnalysis extends Niche {
   products?: Array<{
@@ -51,10 +51,10 @@ export async function getNicheBySlug(slug: string): Promise<NicheWithAnalysis | 
     // Parse ASINs and fetch product data
     const asins = niche.asins.split(',').map(asin => asin.trim())
     const { data: products, error: productsError } = await supabase
-      .from('products')
+      .from('product')
       .select(`
         *,
-        analysis:product_analyses(*)
+        analysis:niches_overall_analysis(*)
       `)
       .in('asin', asins)
 
@@ -134,10 +134,10 @@ export async function getNicheAnalysisData(nicheId: string) {
     // Parse ASINs and fetch product data with analysis
     const asins = niche.asins.split(',').map(asin => asin.trim())
     const { data: products, error: productsError } = await supabase
-      .from('products')
+      .from('product')
       .select(`
         *,
-        analysis:product_analyses(*),
+        analysis:niches_overall_analysis(*),
         keywords:product_keywords(
           *,
           keyword:keywords(*)
@@ -179,11 +179,8 @@ export async function getNicheAnalysisData(nicheId: string) {
     // Generate analysis insights
     const insights = {
       marketOverview: {
-        totalMarketSize: niche.market_size || 0,
         totalProducts: products?.length || 0,
-        averagePrice: niche.avg_price || 0,
-        totalRevenue: totalRevenue,
-        competitionLevel: niche.competition_level || 'MEDIUM'
+        totalRevenue: totalRevenue
       },
       opportunityScores: {
         overall: Math.round(avgOpportunityScore / 10),

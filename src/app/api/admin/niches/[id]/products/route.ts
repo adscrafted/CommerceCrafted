@@ -46,7 +46,7 @@ export async function GET(
       const asinList = niche.asins.split(',').map((a: string) => a.trim())
     
       const { data: asinProducts, error: productsError } = await supabase
-        .from('products')
+        .from('product')
         .select('*')
         .in('asin', asinList)
       

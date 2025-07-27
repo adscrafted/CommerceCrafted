@@ -5,10 +5,10 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient()
 
-    // Create customer_reviews table
+    // Create product_customer_reviews table
     const { error: reviewsTableError } = await supabase.rpc('exec_sql', {
       sql: `
-        CREATE TABLE IF NOT EXISTS customer_reviews (
+        CREATE TABLE IF NOT EXISTS product_customer_reviews (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           asin VARCHAR(20) NOT NULL,
           review_id VARCHAR(50) NOT NULL,
@@ -57,10 +57,10 @@ export async function POST(request: NextRequest) {
     // Create indexes
     await supabase.rpc('exec_sql', {
       sql: `
-        CREATE INDEX IF NOT EXISTS idx_customer_reviews_asin ON customer_reviews(asin);
-        CREATE INDEX IF NOT EXISTS idx_customer_reviews_rating ON customer_reviews(rating);
-        CREATE INDEX IF NOT EXISTS idx_customer_reviews_date ON customer_reviews(review_date DESC);
-        CREATE INDEX IF NOT EXISTS idx_customer_reviews_verified ON customer_reviews(verified_purchase);
+        CREATE INDEX IF NOT EXISTS idx_product_customer_reviews_asin ON product_customer_reviews(asin);
+        CREATE INDEX IF NOT EXISTS idx_product_customer_reviews_rating ON product_customer_reviews(rating);
+        CREATE INDEX IF NOT EXISTS idx_product_customer_reviews_date ON product_customer_reviews(review_date DESC);
+        CREATE INDEX IF NOT EXISTS idx_product_customer_reviews_verified ON product_customer_reviews(verified_purchase);
         
         CREATE INDEX IF NOT EXISTS idx_social_insights_asin ON social_insights(asin);
         CREATE INDEX IF NOT EXISTS idx_social_insights_platform ON social_insights(platform);
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     }).catch(() => null)
 
     // Alternative approach - direct SQL execution
-    const { error: createError } = await supabase.from('customer_reviews').select('id').limit(1)
+    const { error: createError } = await supabase.from('product_customer_reviews').select('id').limit(1)
     
     if (createError && createError.code === '42P01') {
       // Table doesn't exist, let's return instructions
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Review tables setup completed',
-      tables: ['customer_reviews', 'social_insights']
+      tables: ['product_customer_reviews', 'social_insights']
     })
 
   } catch (error) {

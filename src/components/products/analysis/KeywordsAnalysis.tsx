@@ -785,6 +785,48 @@ const KeywordProfitAnalysis = ({
 
   return (
     <div className="space-y-6">
+      {/* Profitability Scorecards */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+          <div className="text-2xl font-bold text-green-600">
+            {profitable.length}
+          </div>
+          <div className="text-sm text-gray-600">Profitable Groups</div>
+        </div>
+        
+        <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+          <div className="text-2xl font-bold text-red-600">
+            {unprofitable.length}
+          </div>
+          <div className="text-sm text-gray-600">Unprofitable Groups</div>
+        </div>
+        
+        <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="text-2xl font-bold text-blue-600">
+            ${(() => {
+              const totalNetProfit = [...profitable, ...unprofitable].reduce((sum, item) => sum + item.netProfit, 0)
+              return totalNetProfit >= 1000000 
+                ? (totalNetProfit / 1000000).toFixed(1) + 'M'
+                : (totalNetProfit / 1000).toFixed(0) + 'K'
+            })()}
+          </div>
+          <div className="text-sm text-gray-600">Total Net Profit</div>
+        </div>
+        
+        <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+          <div className="text-2xl font-bold text-purple-600">
+            {(() => {
+              const allItems = [...profitable, ...unprofitable]
+              const avgAcos = allItems.length > 0 
+                ? allItems.reduce((sum, item) => sum + item.acos, 0) / allItems.length 
+                : 0
+              return avgAcos.toFixed(1) + '%'
+            })()}
+          </div>
+          <div className="text-sm text-gray-600">Average ACOS</div>
+        </div>
+      </div>
+      
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
@@ -956,12 +998,7 @@ export default function KeywordsAnalysis({ data, searchTermsData }: KeywordsAnal
           {data.keywordsData?.keywordHierarchy && Object.keys(data.keywordsData.keywordHierarchy).length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Total Monthly Revenue */}
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <DollarSign className="h-5 w-5 text-green-600" />
-                    <h3 className="text-sm font-medium text-gray-600">Total Monthly Revenue</h3>
-                  </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
                   <div className="text-2xl font-bold text-gray-900">
                     ${(() => {
                       const totalRevenue = Object.values(data.keywordsData.keywordHierarchy).reduce((sum: number, root: any) => 
@@ -972,33 +1009,21 @@ export default function KeywordsAnalysis({ data, searchTermsData }: KeywordsAnal
                         : (totalRevenue / 1000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + 'K'
                     })()}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Across all keyword groups</p>
-                </CardContent>
-              </Card>
+                  <div className="text-sm text-gray-600">Total Monthly Revenue</div>
+              </div>
               
               {/* Total Keyword Depth */}
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <Search className="h-5 w-5 text-blue-600" />
-                    <h3 className="text-sm font-medium text-gray-600">Total Keyword Depth</h3>
-                  </div>
+              <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="text-2xl font-bold text-gray-900">
                     {Object.values(data.keywordsData.keywordHierarchy).reduce((sum: number, root: any) => 
                       sum + (root.keywordCount || 0), 0
                     ).toLocaleString('en-US')}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Unique keywords tracked</p>
-                </CardContent>
-              </Card>
+                  <div className="text-sm text-gray-600">Total Keyword Depth</div>
+              </div>
               
               {/* Average CPC */}
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <Zap className="h-5 w-5 text-yellow-600" />
-                    <h3 className="text-sm font-medium text-gray-600">Average CPC</h3>
-                  </div>
+              <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                   <div className="text-2xl font-bold text-gray-900">
                     ${(() => {
                       let totalCPC = 0
@@ -1020,17 +1045,11 @@ export default function KeywordsAnalysis({ data, searchTermsData }: KeywordsAnal
                       return count > 0 ? (totalCPC / count).toFixed(2) : '0.00'
                     })()}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Average cost per click</p>
-                </CardContent>
-              </Card>
+                  <div className="text-sm text-gray-600">Average CPC</div>
+              </div>
               
               {/* Average Conversion Rate */}
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <Target className="h-5 w-5 text-purple-600" />
-                    <h3 className="text-sm font-medium text-gray-600">Avg Conversion Rate</h3>
-                  </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
                   <div className="text-2xl font-bold text-gray-900">
                     {(() => {
                       let totalCVR = 0
@@ -1045,9 +1064,8 @@ export default function KeywordsAnalysis({ data, searchTermsData }: KeywordsAnal
                       return count > 0 ? (totalCVR / count).toFixed(0) + '%' : '0%'
                     })()}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Click to order conversion</p>
-                </CardContent>
-              </Card>
+                  <div className="text-sm text-gray-600">Avg Conversion Rate</div>
+              </div>
             </div>
           )}
           

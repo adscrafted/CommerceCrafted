@@ -37,33 +37,33 @@ export async function GET(
       })
     }
     
-    // Fetch market intelligence data for any product in the niche
-    const { data: marketIntelligence, error: miError } = await supabase
-      .from('market_intelligence')
+    // Fetch market intelligence data from niches_market_intelligence table
+    // Since the table stores data by product_id, we need to fetch for all products in the niche
+    const { data: marketIntelligenceList, error: miError } = await supabase
+      .from('niches_market_intelligence')
       .select('*')
       .eq('niche_id', nicheId)
-      .single()
     
     if (miError && miError.code !== 'PGRST116') {
-      console.error('Error fetching market intelligence:', miError)
+      console.error('Error fetching niches market intelligence:', miError)
     }
     
-    // If no niche-level intelligence, try to get from individual products
-    let intelligenceData = marketIntelligence
-    if (!intelligenceData) {
-      const { data: productIntelligence } = await supabase
-        .from('market_intelligence')
-        .select('*')
-        .in('product_id', asinList)
-        .limit(1)
-        .single()
+    // If we have multiple product intelligence entries, aggregate them
+    let intelligenceData = null
+    if (marketIntelligenceList && marketIntelligenceList.length > 0) {
+      // For now, use the first entry or the most recent one
+      intelligenceData = marketIntelligenceList.reduce((latest, current) => {
+        if (!latest) return current
+        return new Date(current.analysis_date) > new Date(latest.analysis_date) ? current : latest
+      }, null)
       
-      intelligenceData = productIntelligence
+      // Alternative: You could aggregate all personas, triggers, etc. from all products
+      // This would give a more comprehensive view of the niche
     }
     
     // Fetch customer reviews for all products in niche
     const { data: reviews, error: reviewsError } = await supabase
-      .from('customer_reviews')
+      .from('product_customer_reviews')
       .select('*')
       .in('product_id', asinList)
       .order('review_date', { ascending: false })
@@ -78,6 +78,7 @@ export async function GET(
       return NextResponse.json({
         customerPersonas: [],
         voiceOfCustomer: {},
+        voiceOfCustomerEnhanced: null,
         emotionalTriggers: [],
         competitorAnalysis: {},
         rawReviews: reviews || [],
@@ -94,6 +95,7 @@ export async function GET(
     return NextResponse.json({
       customerPersonas: intelligenceData.customer_personas || [],
       voiceOfCustomer: intelligenceData.voice_of_customer || {},
+      voiceOfCustomerEnhanced: intelligenceData.voice_of_customer_enhanced || null,
       emotionalTriggers: intelligenceData.emotional_triggers || [],
       competitorAnalysis: intelligenceData.competitor_analysis || {},
       rawReviews: reviews || [],

@@ -52,7 +52,7 @@ export default function NicheDetailPage({ params }: NicheDetailPageProps) {
       
       if (asins.length > 0) {
         const { data: productsData, error: productsError } = await supabase
-          .from('products')
+          .from('product')
           .select('*')
           .in('asin', asins)
         

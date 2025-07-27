@@ -16,11 +16,6 @@ export interface Niche {
   tags: string[]
   status: 'active' | 'archived' | 'draft'
   user_id: string
-  opportunity_score?: number
-  competition_level?: 'Low' | 'Medium' | 'High' | 'Very High'
-  market_size?: number
-  avg_price?: number
-  total_monthly_revenue?: number
   product_count: number
   last_analyzed_at?: Date
   created_at: Date

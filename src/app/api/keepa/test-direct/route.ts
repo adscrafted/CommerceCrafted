@@ -30,14 +30,14 @@ export async function POST(request: NextRequest) {
     // First, delete any existing product to avoid conflicts
     console.log('4. Deleting existing product if any...')
     await supabase
-      .from('products')
+      .from('product')
       .delete()
       .eq('asin', asin)
     
     // Now insert fresh
     console.log('5. Inserting new product...')
     const { data, error } = await supabase
-      .from('products')
+      .from('product')
       .insert({
         asin: asin,
         title: transformedData.title,

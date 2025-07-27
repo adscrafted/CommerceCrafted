@@ -25,7 +25,7 @@ export async function GET(
     
     // Check which products exist in database
     const { data: products, error: productsError } = await supabase
-      .from('products')
+      .from('product')
       .select('id, asin, title, last_keepa_sync')
       .in('id', asins)
     

@@ -40,9 +40,6 @@ interface Niche {
   last_analyzed_at?: string
   analysis_status?: 'pending' | 'processing' | 'completed' | 'failed'
   product_count: number
-  opportunity_score?: number
-  competition_level?: string
-  market_size?: number
 }
 
 export function NichesList() {
@@ -174,42 +171,7 @@ export function NichesList() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Opportunity</p>
-                  <p className="font-semibold">
-                    {niche.opportunity_score ? `${niche.opportunity_score}%` : 'N/A'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Users className="h-4 w-4 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Competition</p>
-                  <p className="font-semibold">
-                    {niche.competition_level || 'N/A'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <DollarSign className="h-4 w-4 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Market Size</p>
-                  <p className="font-semibold">
-                    {niche.market_size ? `$${niche.market_size.toLocaleString()}` : 'N/A'}
-                  </p>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 gap-4 mb-6">
 
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-purple-100 rounded-lg">

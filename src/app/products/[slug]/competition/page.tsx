@@ -60,14 +60,20 @@ export default function CompetitionPage({ params }: CompetitionPageProps) {
             }
             
             if (product) {
+              // Debug log to see product structure
+              console.log('Sample product data:', data.products?.[0])
+              console.log('Product fields:', data.products?.[0] ? Object.keys(data.products[0]) : 'No products')
+              
               // Get real competitors from niche products
-              const realCompetitors = data.products?.filter((p: any) => p.asin !== product.asin).map((competitor: any) => ({
+              const realCompetitors = data.products?.filter((p: any) => p.asin !== product.asin).map((competitor: any) => {
+                console.log(`Competitor ${competitor.asin} price:`, competitor.price, 'type:', typeof competitor.price)
+                return {
                 name: competitor.title,
                 title: competitor.title, // Add title field
                 asin: competitor.asin,
                 image: competitor.image_urls ? `https://m.media-amazon.com/images/I/${competitor.image_urls.split(',')[0].trim()}` : '',
                 image_urls: competitor.image_urls, // Keep full image URLs
-                price: competitor.price || 0,
+                price: parseFloat(competitor.price) || parseFloat(competitor.current_price) || parseFloat(competitor.selling_price) || 0,
                 rating: competitor.rating || 0,
                 review_count: competitor.review_count || 0,
                 brand: competitor.brand || 'Unknown',
@@ -100,7 +106,8 @@ export default function CompetitionPage({ params }: CompetitionPageProps) {
                 a_plus_content: competitor.a_plus_content || '{}',
                 video_urls: competitor.video_urls || '[]',
                 fba_fees: competitor.fba_fees
-              })) || []
+              }
+            }) || []
 
               // Supplement with mock competitors if we don't have enough (target: 10 competitors)
               // Use niche-appropriate mock data based on the niche name

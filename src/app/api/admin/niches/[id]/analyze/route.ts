@@ -129,7 +129,7 @@ async function processNicheAnalysis(
           
           // Store product data
           const { error: productError } = await supabase
-            .from('products')
+            .from('product')
             .upsert({
               id: asin,
               asin: asin,
@@ -183,7 +183,7 @@ async function processNicheAnalysis(
               }))
               
               await supabase
-                .from('keepa_price_history')
+                .from('product_price_history')
                 .upsert(priceRecords)
             }
             
@@ -197,7 +197,7 @@ async function processNicheAnalysis(
               }))
               
               await supabase
-                .from('keepa_sales_rank_history')
+                .from('product_sales_rank_history')
                 .upsert(rankRecords)
             }
           }
@@ -325,7 +325,7 @@ async function processNicheAnalysis(
     // Get all products for calculations from the products table
     const nicheAsins = niche.asins.split(',').map(a => a.trim())
     const { data: nicheProducts } = await supabase
-      .from('products')
+      .from('product')
       .select('*')
       .in('id', nicheAsins)
     
@@ -336,9 +336,9 @@ async function processNicheAnalysis(
         const demandScore = calculateDemandScore(product)
         const opportunityScore = calculateOpportunityScore(competitionScore, demandScore, product)
         
-        // Store scores in product_analyses table if it exists
+        // Store scores in niches_overall_analysis table if it exists
         await supabase
-          .from('product_analyses')
+          .from('niches_overall_analysis')
           .upsert({
             product_id: product.id,
             niche_id: nicheId,

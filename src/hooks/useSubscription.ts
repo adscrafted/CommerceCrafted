@@ -112,19 +112,19 @@ export function useSubscription() {
   const getUsageLimit = useCallback((feature: string, currentUsage: number): UsageLimit => {
     const limits: Record<string, Record<string, number>> = {
       free: {
-        product_analyses: 5,
+        niches_overall_analysis: 5,
         ai_queries: 0,
         niches: 3,
         exports: 0,
       },
       pro: {
-        product_analyses: 500,
+        niches_overall_analysis: 500,
         ai_queries: 1000,
         niches: 50,
         exports: 100,
       },
       enterprise: {
-        product_analyses: -1,
+        niches_overall_analysis: -1,
         ai_queries: -1,
         niches: -1,
         exports: -1,

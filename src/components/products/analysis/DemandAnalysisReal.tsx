@@ -3,6 +3,7 @@
 import React from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ScoreCard } from '@/components/ui/score-card'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import { Calendar, CheckCircle, TrendingUp, AlertCircle } from 'lucide-react'
 
@@ -222,18 +223,24 @@ export default function DemandAnalysisReal({ products }: DemandAnalysisRealProps
 
           {/* Key Metrics - Real Data */}
           <div className="grid md:grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-indigo-50 rounded-lg">
-              <div className="text-2xl font-bold text-indigo-600">{metrics.avgYears}</div>
-              <div className="text-sm text-gray-600">Avg. Years in Market</div>
-            </div>
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{metrics.launchedLastYear}%</div>
-              <div className="text-sm text-gray-600">Launched Last Year</div>
-            </div>
-            <div className="text-center p-3 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">{metrics.successRate}%</div>
-              <div className="text-sm text-gray-600">Success Rate (1yr+)</div>
-            </div>
+            <ScoreCard
+              value={metrics.avgYears}
+              label="Avg. Years in Market"
+              color="indigo"
+              variant="compact"
+            />
+            <ScoreCard
+              value={`${metrics.launchedLastYear}%`}
+              label="Launched Last Year"
+              color="blue"
+              variant="compact"
+            />
+            <ScoreCard
+              value={`${metrics.successRate}%`}
+              label="Success Rate (1yr+)"
+              color="purple"
+              variant="compact"
+            />
           </div>
 
           {/* Market Lifecycle Insights - Based on Real Data */}

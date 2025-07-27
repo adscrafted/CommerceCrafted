@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     // Test 1: Simple select query
     console.log('Test 1: Checking if product exists...')
     const { data: existingProduct, error: selectError } = await supabase
-      .from('products')
+      .from('product')
       .select('id, asin')
       .eq('asin', asin)
       .maybeSingle()
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     if (!existingProduct) {
       console.log('Test 2: Inserting minimal product...')
       const { data: newProduct, error: insertError } = await supabase
-        .from('products')
+        .from('product')
         .insert({
           asin: asin,
           title: 'Test Product',
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     // Test 3: Try a minimal update
     console.log('Test 3: Updating product...')
     const { data: updatedProduct, error: updateError } = await supabase
-      .from('products')
+      .from('product')
       .update({
         title: 'Updated Test Product',
         updated_at: new Date().toISOString()

@@ -7,12 +7,12 @@ export async function GET(
 ) {
   try {
     const { id: nicheId } = await params
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     
-    // Fetch niche data with market insights from database
+    // Fetch niche data
     const { data: niche, error: nicheError } = await supabase
       .from('niches')
-      .select('id, niche_name, ai_analysis, total_products, total_keywords')
+      .select('id, niche_name, total_products, total_keywords')
       .eq('id', nicheId)
       .single()
     
@@ -20,17 +20,26 @@ export async function GET(
       return NextResponse.json({ error: 'Niche not found' }, { status: 404 })
     }
     
-    // Check if market insights exist in the ai_analysis field
-    if (niche.ai_analysis && typeof niche.ai_analysis === 'object' && niche.ai_analysis.marketInsights) {
-      const analysis = niche.ai_analysis as any
-      
+    // Fetch demand analysis data from niches_demand_analysis table
+    const { data: demandAnalysis, error: daError } = await supabase
+      .from('niches_demand_analysis')
+      .select('*')
+      .eq('niche_id', nicheId)
+      .single()
+    
+    if (daError && daError.code !== 'PGRST116') {
+      console.error('Error fetching demand analysis:', daError)
+    }
+    
+    // Check if market insights exist
+    if (demandAnalysis && demandAnalysis.market_insights) {
       return NextResponse.json({
         hasData: true,
-        analysis: analysis.marketInsights,
+        analysis: demandAnalysis.market_insights,
         metadata: {
-          analyzedAt: analysis.generatedAt || new Date().toISOString(),
-          productCount: analysis.productCount || niche.total_products || 0,
-          keywordCount: analysis.keywordCount || niche.total_keywords || 0,
+          analyzedAt: demandAnalysis.analysis_date || new Date().toISOString(),
+          productCount: niche.total_products || 0,
+          keywordCount: niche.total_keywords || 0,
           nicheName: niche.niche_name,
           source: 'database' // Indicate this came from stored data
         }

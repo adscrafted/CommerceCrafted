@@ -19,9 +19,10 @@ export async function GET(request: NextRequest) {
       
       // List of known tables we can check
       const knownTables = [
-        'users', 'products', 'niches', 'niche_products', 
-        'product_keywords', 'keepa_price_history', 'keepa_sales_rank_history',
-        'analysis_runs', 'product_analyses', 'daily_features'
+        'users', 'product', 'niches', 
+        'product_keywords', 'product_price_history', 'product_sales_rank_history',
+        'product_review_history', 'product_customer_reviews', 'product_availability_history',
+        'analysis_runs', 'niches_overall_analysis', 'market_intelligence'
       ]
       
       const existingTables = []

@@ -241,7 +241,7 @@ export class NicheProcessor {
       })
       
       const { data: storedProduct, error: productError } = await supabase
-        .from('products')
+        .from('product')
         .upsert(productData)
         .select()
         .single()
@@ -424,10 +424,10 @@ export class NicheProcessor {
     
     // Get all products in the niche (products are stored with id = asin)
     const { data: products, error } = await supabase
-      .from('products')
+      .from('product')
       .select(`
         *,
-        product_analyses (
+        niches_overall_analysis (
           opportunity_score,
           competition_score,
           demand_score,
@@ -476,7 +476,7 @@ export class NicheProcessor {
     const allKeywords = new Set<string>()
 
     products.forEach(product => {
-      const analysis = product.product_analyses?.[0]
+      const analysis = product.niches_overall_analysis?.[0]
       if (analysis) {
         avgOpportunityScore += analysis.opportunity_score || 0
         avgCompetitionScore += analysis.competition_score || 0

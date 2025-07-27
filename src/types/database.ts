@@ -39,20 +39,17 @@ export interface Database {
         Insert: EmailVerificationTokenInsert
         Update: EmailVerificationTokenUpdate
       }
-      products: {
+      product: {
         Row: Product
         Insert: ProductInsert
         Update: ProductUpdate
       }
-      product_analyses: {
-        Row: ProductAnalysis
-        Insert: ProductAnalysisInsert
-        Update: ProductAnalysisUpdate
-      }product_daily_features: {
-        Row: DailyFeature
-        Insert: DailyFeatureInsert
-        Update: DailyFeatureUpdate
-      }keyword_analyses: {
+      niches_overall_analysis: {
+        Row: NicheOverallAnalysis
+        Insert: NicheOverallAnalysisInsert
+        Update: NicheOverallAnalysisUpdate
+      }
+      keyword_analyses: {
         Row: KeywordAnalysis
         Insert: KeywordAnalysisInsert
         Update: KeywordAnalysisUpdate
@@ -137,25 +134,25 @@ export interface Database {
         Insert: NicheInsert
         Update: NicheUpdate
       }
-      customer_reviews: {
-        Row: CustomerReview
-        Insert: CustomerReviewInsert
-        Update: CustomerReviewUpdate
+      product_customer_reviews: {
+        Row: ProductCustomerReview
+        Insert: ProductCustomerReviewInsert
+        Update: ProductCustomerReviewUpdate
       }
       market_intelligence: {
         Row: MarketIntelligence
         Insert: MarketIntelligenceInsert
         Update: MarketIntelligenceUpdate
       }
-      keepa_review_history: {
-        Row: KeepaReviewHistory
-        Insert: KeepaReviewHistoryInsert
-        Update: KeepaReviewHistoryUpdate
+      product_review_history: {
+        Row: ProductReviewHistory
+        Insert: ProductReviewHistoryInsert
+        Update: ProductReviewHistoryUpdate
       }
-      keepa_sales_rank_history: {
-        Row: KeepaSalesRankHistory
-        Insert: KeepaSalesRankHistoryInsert
-        Update: KeepaSalesRankHistoryUpdate
+      product_sales_rank_history: {
+        Row: ProductSalesRankHistory
+        Insert: ProductSalesRankHistoryInsert
+        Update: ProductSalesRankHistoryUpdate
       }
     }
     Views: {
@@ -467,67 +464,49 @@ export interface ProductUpdate {
   updated_at?: string
 }
 
-// Product Analysis types
-export interface ProductAnalysis {
+// Niches Overall Analysis types
+export interface NicheOverallAnalysis {
   id: string
-  product_id: string
-  opportunity_score: number
-  competition_score: number
+  niche_id: string
+  // New score system
+  market_intelligence_score: number
   demand_score: number
-  feasibility_score: number
-  timing_score: number
-  financial_analysis: Json
-  market_analysis: Json
-  competition_analysis: Json
-  keyword_analysis: Json
-  review_analysis: Json
-  supply_chain_analysis: Json
-  ai_generated_content: string | null
-  human_edited_content: string | null
-  focus_graph_data: Json | null
-  analyst_id: string | null
+  competition_score: number
+  keywords_score: number
+  overall_score: number
+  financial_score: number
+  listing_optimization_score: number
+  launch_strategy_score: number
   created_at: string
   updated_at: string
 }
 
-export interface ProductAnalysisInsert {
+export interface NicheOverallAnalysisInsert {
   id?: string
-  product_id: string
-  opportunity_score: number
-  competition_score: number
-  demand_score: number
-  feasibility_score: number
-  timing_score: number
-  financial_analysis: Json
-  market_analysis: Json
-  competition_analysis: Json
-  keyword_analysis: Json
-  review_analysis: Json
-  supply_chain_analysis: Json
-  ai_generated_content?: string | null
-  human_edited_content?: string | null
-  focus_graph_data?: Json | null
-  analyst_id?: string | null
+  niche_id: string
+  // New scores
+  market_intelligence_score?: number
+  demand_score?: number
+  competition_score?: number
+  keywords_score?: number
+  overall_score?: number
+  financial_score?: number
+  listing_optimization_score?: number
+  launch_strategy_score?: number
   created_at?: string
   updated_at?: string
 }
 
-export interface ProductAnalysisUpdate {
-  opportunity_score?: number
-  competition_score?: number
+export interface NicheOverallAnalysisUpdate {
+  // New scores
+  market_intelligence_score?: number
   demand_score?: number
-  feasibility_score?: number
-  timing_score?: number
-  financial_analysis?: Json
-  market_analysis?: Json
-  competition_analysis?: Json
-  keyword_analysis?: Json
-  review_analysis?: Json
-  supply_chain_analysis?: Json
-  ai_generated_content?: string | null
-  human_edited_content?: string | null
-  focus_graph_data?: Json | null
-  analyst_id?: string | null
+  competition_score?: number
+  keywords_score?: number
+  overall_score?: number
+  financial_score?: number
+  listing_optimization_score?: number
+  launch_strategy_score?: number
   updated_at?: string
 }
 
@@ -586,35 +565,6 @@ export interface ProductKeywordUpdate {
   suggested_bid?: number
   estimated_clicks?: number
   estimated_orders?: number
-}
-
-// Daily Feature types
-export interface DailyFeature {
-  id: string
-  product_id: string
-  featured_date: string
-  headline: string | null
-  summary: string | null
-  created_by: string
-  created_at: string
-}
-
-export interface DailyFeatureInsert {
-  id?: string
-  product_id: string
-  featured_date: string
-  headline?: string | null
-  summary?: string | null
-  created_by: string
-  created_at?: string
-}
-
-export interface DailyFeatureUpdate {
-  product_id?: string
-  featured_date?: string
-  headline?: string | null
-  summary?: string | null
-  created_by?: string
 }
 
 // Saved Product types
@@ -1378,18 +1328,9 @@ export interface Niche {
   scheduled_date: string
   category: string | null
   total_products: number
-  avg_bsr: number | null
-  avg_price: number | null
-  avg_rating: number | null
   total_reviews: number | null
-  total_monthly_revenue: number | null
-  opportunity_score: number | null
-  competition_level: Database['public']['Enums']['competition_level'] | null
   process_time: string | null
-  analyst_assigned: string | null
-  niche_keywords: string | null
-  market_size: number | null
-  ai_analysis: Json | null
+  featured_date: string | null
   created_by: string
   created_at: string
   updated_at: string
@@ -1404,18 +1345,9 @@ export interface NicheInsert {
   scheduled_date: string
   category?: string | null
   total_products: number
-  avg_bsr?: number | null
-  avg_price?: number | null
-  avg_rating?: number | null
   total_reviews?: number | null
-  total_monthly_revenue?: number | null
-  opportunity_score?: number | null
-  competition_level?: Database['public']['Enums']['competition_level'] | null
   process_time?: string | null
-  analyst_assigned?: string | null
-  niche_keywords?: string | null
-  market_size?: number | null
-  ai_analysis?: Json | null
+  featured_date?: string | null
   created_by: string
   created_at?: string
   updated_at?: string
@@ -1428,18 +1360,9 @@ export interface NicheUpdate {
   scheduled_date?: string
   category?: string | null
   total_products?: number
-  avg_bsr?: number | null
-  avg_price?: number | null
-  avg_rating?: number | null
   total_reviews?: number | null
-  total_monthly_revenue?: number | null
-  opportunity_score?: number | null
-  competition_level?: Database['public']['Enums']['competition_level'] | null
   process_time?: string | null
-  analyst_assigned?: string | null
-  niche_keywords?: string | null
-  market_size?: number | null
-  ai_analysis?: Json | null
+  featured_date?: string | null
   updated_at?: string
 }
 
@@ -1455,16 +1378,14 @@ export interface UserWithRelations extends User {
   analytics_events?: AnalyticsEvent[]
   newsletter_subscriptions?: NewsletterSubscription[]
   newsletter_campaigns?: NewsletterCampaign[]
-  daily_features?: DailyFeature[]
-  product_analyses?: ProductAnalysis[]
+  niches_overall_analysis?: NicheOverallAnalysis[]
   niches?: Niche[]
 }
 
 export interface ProductWithRelations extends Product {
-  analysis?: ProductAnalysis
+  analysis?: NicheOverallAnalysis
   keywords?: ProductKeyword[]
   saved_by_users?: SavedProduct[]
-  daily_features?: DailyFeature[]
   ai_research_sessions?: AIResearchSession[]
   keyword_analysis?: KeywordAnalysis[]
   ppc_strategy?: PPCStrategy
@@ -1490,8 +1411,8 @@ export interface AmazonReportWithRelations extends AmazonReport {
   search_terms?: SearchTerm[]
 }
 
-// Customer Reviews
-export interface CustomerReview {
+// Product Customer Reviews
+export interface ProductCustomerReview {
   id: string
   product_id: string
   reviewer_id: string
@@ -1510,7 +1431,7 @@ export interface CustomerReview {
   updated_at: string
 }
 
-export interface CustomerReviewInsert {
+export interface ProductCustomerReviewInsert {
   product_id: string
   reviewer_id: string
   reviewer_name: string
@@ -1526,7 +1447,7 @@ export interface CustomerReviewInsert {
   variant?: string
 }
 
-export interface CustomerReviewUpdate {
+export interface ProductCustomerReviewUpdate {
   reviewer_name?: string
   reviewer_url?: string
   rating?: number
@@ -1547,6 +1468,7 @@ export interface MarketIntelligence {
   niche_id?: string
   customer_personas?: Json
   voice_of_customer?: Json
+  voice_of_customer_enhanced?: Json
   emotional_triggers?: Json
   raw_reviews?: Json
   total_reviews_analyzed: number
@@ -1560,6 +1482,7 @@ export interface MarketIntelligenceInsert {
   niche_id?: string
   customer_personas?: Json
   voice_of_customer?: Json
+  voice_of_customer_enhanced?: Json
   emotional_triggers?: Json
   raw_reviews?: Json
   total_reviews_analyzed?: number
@@ -1570,14 +1493,15 @@ export interface MarketIntelligenceUpdate {
   niche_id?: string
   customer_personas?: Json
   voice_of_customer?: Json
+  voice_of_customer_enhanced?: Json
   emotional_triggers?: Json
   raw_reviews?: Json
   total_reviews_analyzed?: number
   analysis_date?: string
 }
 
-// Keepa Review History
-export interface KeepaReviewHistory {
+// Product Review History
+export interface ProductReviewHistory {
   id: string
   asin: string
   date_timestamp: number
@@ -1587,20 +1511,20 @@ export interface KeepaReviewHistory {
   updated_at: string
 }
 
-export interface KeepaReviewHistoryInsert {
+export interface ProductReviewHistoryInsert {
   asin: string
   date_timestamp: number
   review_count: number
   average_rating: number
 }
 
-export interface KeepaReviewHistoryUpdate {
+export interface ProductReviewHistoryUpdate {
   review_count?: number
   average_rating?: number
 }
 
-// Keepa Sales Rank History
-export interface KeepaSalesRankHistory {
+// Product Sales Rank History
+export interface ProductSalesRankHistory {
   id: string
   asin: string
   date_timestamp: number
@@ -1612,7 +1536,7 @@ export interface KeepaSalesRankHistory {
   updated_at: string
 }
 
-export interface KeepaSalesRankHistoryInsert {
+export interface ProductSalesRankHistoryInsert {
   asin: string
   date_timestamp: number
   sales_rank: number
@@ -1621,7 +1545,7 @@ export interface KeepaSalesRankHistoryInsert {
   subcategory?: string | null
 }
 
-export interface KeepaSalesRankHistoryUpdate {
+export interface ProductSalesRankHistoryUpdate {
   sales_rank?: number
   category_rank?: number
   category?: string | null

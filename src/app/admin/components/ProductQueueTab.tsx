@@ -60,7 +60,7 @@ interface Niche {
   niche_name: string
   asins: string
   total_products: number
-  marketplace: string
+  marketplace?: string
   status: 'pending' | 'processing' | 'completed' | 'failed'
   processing_progress?: {
     current: number
@@ -70,24 +70,17 @@ interface Niche {
     completedAsins: string[]
     failedAsins: string[]
   }
-  avg_opportunity_score?: number
-  avg_competition_score?: number
-  avg_price?: number
-  avg_bsr?: number
-  total_monthly_revenue?: number
-  total_keywords?: number
-  niche_keywords?: string
-  competition_level?: string
+  total_reviews?: number
+  keyword_count?: number
   created_at: string
   updated_at: string
   process_started_at?: string
   process_completed_at?: string
   error_message?: string
-  market_size?: number
-  total_reviews?: number
+  processing_errors?: string[]
 }
 
-type SortField = 'niche_name' | 'total_products' | 'status' | 'avg_opportunity_score' | 'avg_competition_score' | 'total_monthly_revenue' | 'created_at'
+type SortField = 'niche_name' | 'total_products' | 'status' | 'created_at'
 type SortOrder = 'asc' | 'desc'
 
 export default function ProductQueueTab() {
@@ -125,7 +118,7 @@ export default function ProductQueueTab() {
     try {
       setIsLoading(true)
       
-      // Build query
+      // Build base query
       let query = supabase
         .from('niches')
         .select('*', { count: 'exact' })
@@ -153,7 +146,22 @@ export default function ProductQueueTab() {
       
       if (error) throw error
       
-      setNiches(data || [])
+      // Now fetch keyword counts for each niche
+      const nichesWithKeywordCounts = await Promise.all(
+        (data || []).map(async (niche) => {
+          const { count: keywordCount } = await supabase
+            .from('product_keywords')
+            .select('*', { count: 'exact', head: true })
+            .eq('niche_id', niche.id)
+          
+          return {
+            ...niche,
+            keyword_count: keywordCount || 0
+          }
+        })
+      )
+      
+      setNiches(nichesWithKeywordCounts)
       setTotalCount(count || 0)
       
       // Get processing count separately for header
@@ -280,12 +288,18 @@ export default function ProductQueueTab() {
         console.log(`⚠️ Deleting niche in processing status: ${nicheId}`)
       }
       
-      const { error } = await supabase
-        .from('niches')
-        .delete()
-        .eq('id', nicheId)
+      // Use the API endpoint to properly cascade delete
+      const response = await fetch(`/api/niches/by-id?id=${nicheId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
       
-      if (error) throw error
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete niche')
+      }
       
       console.log(`✅ Successfully deleted niche: ${nicheId}`)
       await loadNiches()
@@ -607,7 +621,7 @@ export default function ProductQueueTab() {
                   </TableCell>
                   <TableCell className="text-center">{niche.total_products || 0}</TableCell>
                   <TableCell className="text-center">
-                    {niche.total_keywords || 0}
+                    {niche.keyword_count || 0}
                   </TableCell>
                   <TableCell className="text-center">
                     {formatNumber(niche.total_reviews)}

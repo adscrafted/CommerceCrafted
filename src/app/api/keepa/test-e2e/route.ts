@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
         try {
           // Check if product exists
           const { data: existing } = await supabase
-            .from('products')
+            .from('product')
             .select('id')
             .eq('asin', asin)
             .maybeSingle()
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
           if (existing) {
             // Update
             const { data, error } = await supabase
-              .from('products')
+              .from('product')
               .update({
                 ...productData,
                 updated_at: new Date().toISOString()
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
             // Insert - generate UUID in JavaScript since extension is missing
             const newId = crypto.randomUUID()
             const { data, error } = await supabase
-              .from('products')
+              .from('product')
               .insert([
                 {
                   id: newId,
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
             }))
             
             await supabase
-              .from('keepa_price_history')
+              .from('product_price_history')
               .upsert(priceData, {
                 onConflict: 'product_id,timestamp,price_type',
                 ignoreDuplicates: true
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
             }))
             
             await supabase
-              .from('keepa_sales_rank_history')
+              .from('product_sales_rank_history')
               .upsert(bsrData, {
                 onConflict: 'product_id,timestamp,category',
                 ignoreDuplicates: true
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
     console.log('\n3. Verifying database write...')
     try {
       const { data: product, error } = await supabase
-        .from('products')
+        .from('product')
         .select('*')
         .eq('asin', asin)
         .single()
@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
         
         // Verify price history
         const { data: priceHistory, error: priceError } = await supabase
-          .from('keepa_price_history')
+          .from('product_price_history')
           .select('timestamp, price')
           .eq('product_id', product.id)
           .order('timestamp', { ascending: false })
@@ -207,7 +207,7 @@ export async function GET(request: NextRequest) {
         
         // Verify BSR history
         const { data: bsrHistory, error: bsrError } = await supabase
-          .from('keepa_sales_rank_history')
+          .from('product_sales_rank_history')
           .select('timestamp, sales_rank')
           .eq('product_id', product.id)
           .order('timestamp', { ascending: false })

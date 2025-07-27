@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     
     // Get product data from database
     // TODO: Convert to Supabase with proper joins
-    // const { data: dbProduct } = await supabase.from('products').select('*, analysis:product_analysis(*)').or(`asin.eq.${asin},id.eq.${asin}`).single()
+    // const { data: dbProduct } = await supabase.from('product').select('*, analysis:product_analysis(*)').or(`asin.eq.${asin},id.eq.${asin}`).single()
     const dbProduct = null
     
     if (!dbProduct) {

@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     // Check cache first
     const cacheKey = `reddit_${asin || keywords.join('_')}`
     const { data: cachedData, error: cacheError } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .select('*')
       .eq('asin', asin || cacheKey)
       .eq('data_type', 'reddit_insights')
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     cacheExpiresAt.setDate(cacheExpiresAt.getDate() + 3) // Cache for 3 days
 
     const { error: cacheInsertError } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .upsert({
         asin: asin || cacheKey,
         data_type: 'reddit_insights',

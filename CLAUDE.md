@@ -47,7 +47,8 @@ The database uses a comprehensive schema for Amazon product analysis:
 - **password_reset_tokens** - Password reset functionality
 
 **External API Integration:**
-- **amazon_api_cache** - Caching Amazon API responses
+- **product_api_cache** - Caching Amazon API responses
+- **product_customer_reviews_cache** - Caching raw review API responses
 - **amazon_reports** - SP-API report tracking
 - **keepa_price_history** - Historical price data from Keepa
 - **keepa_sales_rank_history** - Sales rank history from Keepa

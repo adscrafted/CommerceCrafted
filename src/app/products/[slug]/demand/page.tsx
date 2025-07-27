@@ -182,8 +182,10 @@ export default function DemandPage({ params }: DemandPageProps) {
           }
           
           // Update product data with real data
+          console.log('Setting product data with niche name:', historyData.niche?.name)
           setProductData({
             ...fallbackProductData,
+            title: historyData.niche?.name || fallbackProductData.title, // Use niche name as title
             demandData: {
               ...fallbackProductData.demandData,
               keywordMetrics,
@@ -309,8 +311,10 @@ export default function DemandPage({ params }: DemandPageProps) {
           }
           
           // Update product data with real data
+          console.log('Setting product data with niche name (path 2):', fetchedNicheData.niche?.name)
           setProductData({
             ...fallbackProductData,
+            title: fetchedNicheData.niche?.name || fallbackProductData.title, // Use niche name as title
             demandData: {
               ...fallbackProductData.demandData,
               keywordMetrics,

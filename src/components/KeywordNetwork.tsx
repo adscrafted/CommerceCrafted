@@ -48,6 +48,7 @@ interface KeywordNetworkProps {
   onLevelChange?: (level: 'root' | 'subroot' | 'level2') => void
   selectedNodeData?: any
   overallMetrics?: any
+  productImageUrl?: string
 }
 
 export default function KeywordNetwork({ 
@@ -60,7 +61,8 @@ export default function KeywordNetwork({
   onNodeClick,
   onLevelChange,
   selectedNodeData,
-  overallMetrics
+  overallMetrics,
+  productImageUrl
 }: KeywordNetworkProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const simulationRef = useRef<d3.Simulation<NetworkNode, NetworkLink> | null>(null)
@@ -69,7 +71,7 @@ export default function KeywordNetwork({
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [nodes, setNodes] = useState<NetworkNode[]>([])
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [zoomLevel, setZoomLevel] = useState(0.8) // Start more zoomed out to fit all nodes
+  const [zoomLevel, setZoomLevel] = useState(0.9) // Start at a good zoom level to see all nodes
   const [panX, setPanX] = useState(0)
   const [panY, setPanY] = useState(0)
   const [isPanning, setIsPanning] = useState(false)
@@ -111,11 +113,15 @@ export default function KeywordNetwork({
   useEffect(() => {
     if (!svgRef.current || !keywordClusters || !primaryKeyword) return
 
+    // Debug log to check revenue data structure
+    console.log('KeywordNetwork - Full revenueData structure:', revenueData)
+    console.log('KeywordNetwork - keywordClusters:', keywordClusters)
+
     // Clear previous content
     d3.select(svgRef.current).selectAll('*').remove()
 
-    // Increased padding to prevent node clipping, especially at the bottom
-    const padding = 500
+    // Increased padding to prevent node clipping
+    const padding = 150
 
     // Create nodes and links
     const nodes: NetworkNode[] = []
@@ -160,24 +166,47 @@ export default function KeywordNetwork({
     
     // Function to calculate node size based on revenue
     const calculateNodeSize = (revenue: number, type: string) => {
-      const minSize = type === 'center' ? 50 : type === 'cluster' ? 30 : 20
-      const maxSize = type === 'center' ? 70 : type === 'cluster' ? 50 : 35
+      const minSize = type === 'center' ? 60 : type === 'cluster' ? 30 : 20
+      const maxSize = type === 'center' ? 100 : type === 'cluster' ? 90 : 40
       
       // Scale logarithmically for better visual distribution
       if (revenue <= 0) return minSize
-      const logRevenue = Math.log10(revenue + 1)
-      const maxLogRevenue = 6 // Assuming max revenue is around 1M
-      const scale = Math.min(logRevenue / maxLogRevenue, 1)
       
-      return minSize + (maxSize - minSize) * scale
+      // Find max revenue in the data for better scaling
+      let maxRevenue = 0
+      if (revenueData) {
+        Object.values(revenueData).forEach((data: any) => {
+          if (data.totalRevenue > maxRevenue) {
+            maxRevenue = data.totalRevenue
+          }
+        })
+      }
+      maxRevenue = maxRevenue || 1000000 // Fallback to 1M if no data
+      
+      // Use linear scale for more noticeable differences
+      const scale = Math.min(revenue / maxRevenue, 1)
+      const size = minSize + (maxSize - minSize) * scale
+      
+      console.log(`calculateNodeSize: revenue=${revenue}, maxRevenue=${maxRevenue}, scale=${scale}, size=${size}, type=${type}`)
+      
+      return size
     }
 
-    // Add center node with better sizing - position at true center
+    // Add center node with keyword count-based sizing - position at true center
+    // Calculate total keywords across all clusters
+    const totalKeywords = Object.values(keywordClusters || {}).reduce((sum, cluster: any) => {
+      const clusterKeywords = (cluster.keywords?.length || 0) + (cluster.subroots ? Object.keys(cluster.subroots).length : 0)
+      return sum + clusterKeywords
+    }, 0)
+    
+    // Size based on total keywords (min 80, max 120)
+    const centerSize = Math.min(120, Math.max(80, 80 + (totalKeywords / 10)))
+    
     nodes.push({
       id: 'center',
-      label: primaryKeyword,
+      label: productImageUrl ? '' : primaryKeyword, // No label if we have an image
       type: 'center',
-      size: 60,
+      size: centerSize,
       color: colors.center,
       fx: width / 2,
       fy: height / 2
@@ -203,13 +232,15 @@ export default function KeywordNetwork({
       
       // Get revenue for sizing
       const revenue = getRevenue(clusterName)
+      console.log(`Cluster ${clusterName}: revenue = ${revenue}, revenueData:`, revenueData?.[clusterName])
       const nodeSize = calculateNodeSize(revenue, 'cluster')
+      console.log(`Cluster ${clusterName}: calculated size = ${nodeSize}`)
       
       // Add cluster root node with revenue-based sizing
       const clusterId = `cluster-${clusterName}`
       // Initialize node position near center to prevent out-of-bounds spawning
       const angle = Math.random() * 2 * Math.PI
-      const radius = 150 + Math.random() * 100 // 150-250px from center
+      const radius = 100 + Math.random() * 80 // 100-180px from center (reduced to keep nodes more centered)
       const startX = width / 2 + Math.cos(angle) * radius
       const startY = height / 2 + Math.sin(angle) * radius
       
@@ -248,8 +279,8 @@ export default function KeywordNetwork({
           const subrootSize = calculateNodeSize(subrootRevenue, 'subroot')
           
           // Initialize subroot position around the cluster node
-          const subrootAngle = Math.random() * 2 * Math.PI
-          const subrootRadius = 80 + Math.random() * 50 // 80-130px from cluster
+          const subrootAngle = (index / cluster.subroots.length) * 2 * Math.PI // Evenly distribute subroots
+          const subrootRadius = 60 + Math.random() * 40 // 60-100px from cluster (reduced radius)
           const subrootStartX = (startX || width / 2) + Math.cos(subrootAngle) * subrootRadius
           const subrootStartY = (startY || height / 2) + Math.sin(subrootAngle) * subrootRadius
           
@@ -297,11 +328,12 @@ export default function KeywordNetwork({
       }
     })
 
-    // Create SVG with standard viewbox
+    // Create SVG with expanded viewbox to prevent clipping
+    const viewBoxPadding = 200
     const svg = d3.select(svgRef.current)
       .attr('width', width)
       .attr('height', height)
-      .attr('viewBox', [0, 0, width, height])
+      .attr('viewBox', [-viewBoxPadding, -viewBoxPadding, width + viewBoxPadding * 2, height + viewBoxPadding * 2])
       .attr('preserveAspectRatio', 'xMidYMid meet')
 
     // Adjust force strength based on number of nodes for better fit
@@ -327,19 +359,19 @@ export default function KeywordNetwork({
       }))
       .force('x', d3.forceX(width / 2).strength(0.08))
       .force('y', d3.forceY(height / 2).strength(0.08))
-      // Add boundary forces to keep nodes within viewport
+      // Add stronger boundary forces to keep nodes within viewport
       .force('boundaryX', d3.forceX().x(d => {
         const node = d as NetworkNode
-        const margin = 100
+        const margin = 80
         const x = node.x || width / 2
         return Math.max(margin, Math.min(width - margin, x))
-      }).strength(0.1))
+      }).strength(0.3))
       .force('boundaryY', d3.forceY().y(d => {
         const node = d as NetworkNode
-        const margin = 100
+        const margin = 80
         const y = node.y || height / 2
         return Math.max(margin, Math.min(height - margin, y))
-      }).strength(0.1))
+      }).strength(0.3))
 
     simulationRef.current = simulation
     setNodes(nodes)
@@ -364,21 +396,56 @@ export default function KeywordNetwork({
         .on('drag', dragged)
         .on('end', dragended))
 
-    // Add circles
-    node.append('circle')
-      .attr('r', d => d.size)
-      .attr('fill', d => d.color)
-      .attr('stroke', '#fff')
-      .attr('stroke-width', 2)
-      .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))')
+    // Add circles or images based on node type
+    node.each(function(d) {
+      const nodeElement = d3.select(this)
+      
+      if (d.type === 'center' && productImageUrl) {
+        // Add square image with border for center node
+        const imageSize = d.size * 1.5 // Make it a bit larger
+        
+        // Add white background/border
+        nodeElement.append('rect')
+          .attr('x', -imageSize / 2 - 3)
+          .attr('y', -imageSize / 2 - 3)
+          .attr('width', imageSize + 6)
+          .attr('height', imageSize + 6)
+          .attr('fill', 'white')
+          .attr('stroke', '#e5e7eb')
+          .attr('stroke-width', 2)
+          .attr('rx', 8) // Rounded corners
+        
+        // Add the image
+        nodeElement.append('image')
+          .attr('href', productImageUrl)
+          .attr('x', -imageSize / 2)
+          .attr('y', -imageSize / 2)
+          .attr('width', imageSize)
+          .attr('height', imageSize)
+          .attr('preserveAspectRatio', 'xMidYMid slice')
+          .style('clip-path', 'inset(0 round 8px)') // Match the rounded corners
+      } else {
+        // Regular circle for other nodes
+        nodeElement.append('circle')
+          .attr('r', d.size)
+          .attr('fill', d.color)
+          .attr('stroke', '#fff')
+          .attr('stroke-width', 2)
+          .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))')
+      }
+    })
 
     // Add labels with improved positioning and text handling
     node.each(function(d) {
       const nodeElement = d3.select(this)
       
       // Determine if text should be inside or outside the node
-      const shouldLabelInside = d.type === 'center' || d.type === 'cluster'
-      const maxWidth = shouldLabelInside ? d.size * 1.6 : d.size * 2.5
+      // For center node, put text outside if it's too long or if we have an image
+      const centerTextTooLong = d.type === 'center' && d.label.length > 20
+      const centerHasImage = d.type === 'center' && productImageUrl
+      const shouldLabelInside = (d.type === 'center' && !centerTextTooLong && !centerHasImage) || d.type === 'cluster'
+      // Give center node more space for text
+      const maxWidth = d.type === 'center' ? d.size * 2.5 : (shouldLabelInside ? d.size * 1.6 : d.size * 2.5)
       
       // Smart text wrapping
       const words = d.label.split(' ')
@@ -398,8 +465,8 @@ export default function KeywordNetwork({
       }
       if (currentLine) lines.push(currentLine)
       
-      // Limit lines and add ellipsis if needed
-      const maxLines = shouldLabelInside ? 2 : 3
+      // Limit lines and add ellipsis if needed - allow more lines for center node
+      const maxLines = d.type === 'center' ? 3 : (shouldLabelInside ? 2 : 3)
       if (lines.length > maxLines) {
         lines = lines.slice(0, maxLines - 1)
         const lastLine = lines[lines.length - 1]
@@ -409,7 +476,8 @@ export default function KeywordNetwork({
       
       // Position text inside or outside node
       const textY = shouldLabelInside ? 0 : d.size + 15
-      const fontSize = {
+      // Adjust font size based on whether text is inside or outside
+      const fontSize = d.type === 'center' && !shouldLabelInside ? 11 : {
         'center': 13,
         'cluster': 11,
         'subroot': 9,
@@ -461,11 +529,37 @@ export default function KeywordNetwork({
     // Add hover and click effects
     node
       .on('mouseenter', function(event, d) {
-        d3.select(this).select('circle')
-          .transition()
-          .duration(200)
-          .attr('r', d.size * 1.3)
-          .style('filter', 'drop-shadow(0 6px 12px rgba(0,0,0,0.3))')
+        // Handle both circles and images
+        if (d.type === 'center' && productImageUrl) {
+          const imageSize = d.size * 1.5
+          const scaleFactor = 1.1
+          const scaledSize = imageSize * scaleFactor
+          
+          // Scale the background rect
+          d3.select(this).select('rect')
+            .transition()
+            .duration(200)
+            .attr('x', -scaledSize / 2 - 3)
+            .attr('y', -scaledSize / 2 - 3)
+            .attr('width', scaledSize + 6)
+            .attr('height', scaledSize + 6)
+            .style('filter', 'drop-shadow(0 6px 12px rgba(0,0,0,0.3))')
+          
+          // Scale the image
+          d3.select(this).select('image')
+            .transition()
+            .duration(200)
+            .attr('x', -scaledSize / 2)
+            .attr('y', -scaledSize / 2)
+            .attr('width', scaledSize)
+            .attr('height', scaledSize)
+        } else {
+          d3.select(this).select('circle')
+            .transition()
+            .duration(200)
+            .attr('r', d.size * 1.3)
+            .style('filter', 'drop-shadow(0 6px 12px rgba(0,0,0,0.3))')
+        }
           
         // Enhance text visibility on hover
         d3.select(this).selectAll('text')
@@ -496,11 +590,35 @@ export default function KeywordNetwork({
         setSelectedNode(d.id)
       })
       .on('mouseleave', function(event, d) {
-        d3.select(this).select('circle')
-          .transition()
-          .duration(200)
-          .attr('r', d.size)
-          .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))')
+        // Handle both circles and images
+        if (d.type === 'center' && productImageUrl) {
+          const imageSize = d.size * 1.5
+          
+          // Reset background rect
+          d3.select(this).select('rect')
+            .transition()
+            .duration(200)
+            .attr('x', -imageSize / 2 - 3)
+            .attr('y', -imageSize / 2 - 3)
+            .attr('width', imageSize + 6)
+            .attr('height', imageSize + 6)
+            .style('filter', '')
+          
+          // Reset image size
+          d3.select(this).select('image')
+            .transition()
+            .duration(200)
+            .attr('x', -imageSize / 2)
+            .attr('y', -imageSize / 2)
+            .attr('width', imageSize)
+            .attr('height', imageSize)
+        } else {
+          d3.select(this).select('circle')
+            .transition()
+            .duration(200)
+            .attr('r', d.size)
+            .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))')
+        }
           
         // Reset text styling
         d3.select(this).selectAll('text')
@@ -535,8 +653,15 @@ export default function KeywordNetwork({
         }
       })
 
-    // Update positions on simulation tick
+    // Update positions on simulation tick with boundary constraints
     simulation.on('tick', () => {
+      // Constrain node positions to prevent them from going out of bounds
+      nodes.forEach(d => {
+        const margin = 60
+        d.x = Math.max(margin, Math.min(width - margin, d.x || width / 2))
+        d.y = Math.max(margin, Math.min(height - margin, d.y || height / 2))
+      })
+      
       link
         .attr('x1', d => (d.source as NetworkNode).x!)
         .attr('y1', d => (d.source as NetworkNode).y!)
@@ -568,7 +693,7 @@ export default function KeywordNetwork({
     return () => {
       simulation.stop()
     }
-  }, [keywordClusters, primaryKeyword, isExpanded, showSubroots, height, width])
+  }, [keywordClusters, primaryKeyword, isExpanded, showSubroots, height, width, productImageUrl])
 
   const resetSimulation = () => {
     if (simulationRef.current) {
@@ -577,7 +702,7 @@ export default function KeywordNetwork({
     // Reset pan and zoom to defaults
     setPanX(0)
     setPanY(0)
-    setZoomLevel(0.85)
+    setZoomLevel(0.9)
   }
 
   const handleZoomIn = () => {
@@ -620,8 +745,8 @@ export default function KeywordNetwork({
       const deltaX = event.clientX - lastPanPoint.x
       const deltaY = event.clientY - lastPanPoint.y
       
-      // Apply looser bounds to allow panning to see all nodes
-      const maxPanDistance = 1000 // Allow much wider panning range
+      // Apply bounds to prevent excessive panning while still allowing access to edge nodes
+      const maxPanDistance = 400 // Reasonable panning range that matches viewBox padding
       
       setPanX(prev => Math.max(-maxPanDistance, Math.min(maxPanDistance, prev + deltaX)))
       setPanY(prev => Math.max(-maxPanDistance, Math.min(maxPanDistance, prev + deltaY)))

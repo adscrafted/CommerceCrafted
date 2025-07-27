@@ -155,7 +155,7 @@ export async function POST(
 
     // Log sync attempt to database for monitoring
     const { error: logError } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .insert({
         asin: asin,
         data_type: 'sync_all_enhanced_attempt',

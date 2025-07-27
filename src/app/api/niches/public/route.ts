@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         // Try to get the first product's image
         if (asins.length > 0) {
           const { data: product } = await supabase
-            .from('products')
+            .from('product')
             .select('image_urls')
             .eq('asin', asins[0])
             .single()

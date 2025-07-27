@@ -32,7 +32,7 @@ export async function GET(
     // Get actual products
     const asins = niche?.asins?.split(',').map(a => a.trim()) || []
     const { data: products } = await supabase
-      .from('products')
+      .from('product')
       .select('id, asin, title, price, rating, review_count')
       .in('id', asins)
     

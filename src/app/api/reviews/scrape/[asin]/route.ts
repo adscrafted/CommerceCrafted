@@ -23,7 +23,7 @@ export async function POST(
 
     // Check if we have recent review data cached
     const { data: cachedReviews, error: cacheError } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .select('*')
       .eq('asin', asin)
       .eq('data_type', 'amazon_reviews')
@@ -80,7 +80,7 @@ export async function POST(
 
     // Batch insert reviews (upsert to handle duplicates)
     const { error: insertError } = await supabase
-      .from('customer_reviews')
+      .from('product_customer_reviews')
       .upsert(reviewsToInsert, {
         onConflict: 'asin,review_id',
         ignoreDuplicates: true
@@ -90,9 +90,9 @@ export async function POST(
       console.error('Error storing reviews:', insertError)
     }
 
-    // Update review analysis in product_analyses
+    // Update review analysis in niches_overall_analysis
     const { error: analysisError } = await supabase
-      .from('product_analyses')
+      .from('niches_overall_analysis')
       .update({
         review_analysis: {
           totalReviews: analysis.totalReviews,
@@ -117,7 +117,7 @@ export async function POST(
     cacheExpiresAt.setHours(cacheExpiresAt.getHours() + 24) // Cache for 24 hours
 
     const { error: cacheInsertError } = await supabase
-      .from('amazon_api_cache')
+      .from('product_api_cache')
       .upsert({
         asin: asin,
         data_type: 'amazon_reviews',
@@ -167,9 +167,9 @@ export async function GET(
     const { asin } = await params
     const supabase = await createServerSupabaseClient()
 
-    // Get review analysis from product_analyses
+    // Get review analysis from niches_overall_analysis
     const { data: productAnalysis, error: analysisError } = await supabase
-      .from('product_analyses')
+      .from('niches_overall_analysis')
       .select('review_analysis')
       .eq('asin', asin)
       .single()
@@ -183,7 +183,7 @@ export async function GET(
 
     // Get sample of actual reviews
     const { data: reviews, error: reviewsError } = await supabase
-      .from('customer_reviews')
+      .from('product_customer_reviews')
       .select('*')
       .eq('asin', asin)
       .order('review_date', { ascending: false })

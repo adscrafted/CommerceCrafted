@@ -30,7 +30,7 @@ export async function GET(
     // Count completed products from products table
     const asins = niche.asins ? niche.asins.split(',').map(a => a.trim()) : []
     const { count: completedProducts } = await supabase
-      .from('products')
+      .from('product')
       .select('*', { count: 'exact', head: true })
       .in('id', asins)
       .not('last_keepa_sync', 'is', null)
