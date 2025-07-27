@@ -119,26 +119,31 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
   
   // Initialize with all competitors selected by default
   const [selectedCompetitors, setSelectedCompetitors] = useState<string[]>(() => {
-    return data.demandData._nicheProducts?.map((product: any) => product.asin) || []
+    return data.nicheProducts?.map((product: any) => product.asin) || []
   })
   const [viewMode, setViewMode] = useState<'aggregated' | 'individual'>('aggregated')
   
   // Helper function to toggle competitor selection
   const toggleCompetitor = (asin: string) => {
-    setSelectedCompetitors(prev => 
-      prev.includes(asin) 
+    setSelectedCompetitors(prev => {
+      // If trying to deselect and it's the last one selected, don't allow it
+      if (prev.includes(asin) && prev.length === 1) {
+        return prev
+      }
+      
+      return prev.includes(asin) 
         ? prev.filter(id => id !== asin)
         : [...prev, asin]
-    )
+    })
   }
 
   // Update selected competitors when data changes
   useEffect(() => {
-    if (data.demandData._nicheProducts?.length > 0) {
-      const allCompetitorAsins = data.demandData._nicheProducts.map((product: any) => product.asin)
+    if (data.nicheProducts?.length > 0) {
+      const allCompetitorAsins = data.nicheProducts.map((product: any) => product.asin)
       setSelectedCompetitors(allCompetitorAsins)
     }
-  }, [data.demandData._nicheProducts])
+  }, [data.nicheProducts])
 
   // Fetch AI market insights when component mounts (not just when tab is active)
   useEffect(() => {
@@ -428,22 +433,378 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
             <DemandAnalysisReal products={nicheData.products} />
           )}
 
-          {/* Competitor Age Analysis - Commented out in favor of DemandAnalysisReal component with actual data
+        </div>
+      )}
+
+      {/* Keyword Network Tab */}
+      {activeTab === 'network' && (
+        <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Package className="h-5 w-5 text-indigo-600" />
-                <span>Competitor Market Age</span>
+                <Activity className="h-5 w-5 text-purple-600" />
+                <span>Keyword Market Network</span>
               </CardTitle>
               <CardDescription>
-                Product launch timeline and market maturity analysis
+                Visual representation of keyword relationships and market size
               </CardDescription>
             </CardHeader>
             <CardContent>
-              ... Mock data removed - See DemandAnalysisReal for real product age data ...
+              {data.keywordHierarchy ? (
+                <KeywordNetworkVisualization
+                  keywordHierarchy={data.keywordHierarchy}
+                  primaryKeyword={data.title || 'Product'}
+                  minKeywordsPerRoot={5}
+                  minKeywordsPerSubRoot={3}
+                  productImageUrl={(() => {
+                    // Get the main product image from nicheProducts data
+                    if (data.nicheProducts?.length > 0) {
+                      const mainProduct = data.nicheProducts[0] // Use first product as main
+                      if (mainProduct.image_urls) {
+                        try {
+                          // Try parsing as JSON first
+                          const urls = typeof mainProduct.image_urls === 'string' ? JSON.parse(mainProduct.image_urls) : mainProduct.image_urls
+                          const imageUrl = Array.isArray(urls) ? urls[0] : urls
+                          // Convert to full URL if needed
+                          if (imageUrl && !imageUrl.startsWith('http')) {
+                            return `https://m.media-amazon.com/images/I/${imageUrl}`
+                          }
+                          return imageUrl
+                        } catch {
+                          // If not JSON, try splitting by comma
+                          const urls = mainProduct.image_urls.split(',').map((url: string) => url.trim())
+                          const imageUrl = urls[0]
+                          if (imageUrl && !imageUrl.startsWith('http')) {
+                            return `https://m.media-amazon.com/images/I/${imageUrl}`
+                          }
+                          return imageUrl
+                        }
+                      }
+                    }
+                    return undefined
+                  })()}
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Activity className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>No keyword data available for this level</p>
+                  <p className="text-sm mt-1">Try switching to a different level</p>
+                </div>
+              )}
             </CardContent>
           </Card>
-          */}
+        </div>
+      )}
+
+      {/* Pricing Trends Tab */}
+      {activeTab === 'pricing' && (
+        <div className="space-y-6">
+          {/* Combined Market & Competitor Price Tracking */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                <span>Market Price Trends</span>
+              </CardTitle>
+              <CardDescription>
+                Historical pricing trends showing market average and individual competitors
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Current Market Pricing Stats */}
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="text-2xl font-bold text-blue-600">
+                      ${(() => {
+                        if (data.priceHistory?.length > 0) {
+                          const allPrices = data.priceHistory.map((d: any) => d.price)
+                          return (allPrices.reduce((a: number, b: number) => a + b, 0) / allPrices.length).toFixed(2)
+                        }
+                        return '22.99'
+                      })()}
+                    </div>
+                    <div className="text-sm text-gray-600">Current Average</div>
+                  </div>
+                  <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                    <div className="text-2xl font-bold text-green-600">
+                      ${data.priceHistory?.length > 0 
+                        ? Math.min(...data.priceHistory.map((d: any) => d.price)).toFixed(2)
+                        : '19.99'}
+                    </div>
+                    <div className="text-sm text-gray-600">All-Time Low</div>
+                  </div>
+                  <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="text-2xl font-bold text-purple-600">
+                      ${data.priceHistory?.length > 0 
+                        ? Math.max(...data.priceHistory.map((d: any) => d.price)).toFixed(2)
+                        : '29.99'}
+                    </div>
+                    <div className="text-sm text-gray-600">All-Time High</div>
+                  </div>
+                  <div className="text-center p-3 bg-orange-50 rounded-lg border border-orange-200">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {(() => {
+                        // Calculate percentage change over time
+                        if (data.priceHistory?.length > 1) {
+                          const first = data.priceHistory[0].price
+                          const last = data.priceHistory[data.priceHistory.length - 1].price
+                          const change = ((last - first) / first * 100).toFixed(1)
+                          return change.startsWith('-') ? change + '%' : '+' + change + '%'
+                        }
+                        return '+5.2%'
+                      })()}
+                    </div>
+                    <div className="text-sm text-gray-600">YoY Change</div>
+                  </div>
+                </div>
+
+                {/* Combined Price Trend Chart */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    {selectedCompetitors.length > 0
+                      ? `Price History: ${selectedCompetitors.length} Selected Competitor${selectedCompetitors.length > 1 ? 's' : ''} (${viewMode})`
+                      : 'Historical Price Trends'
+                    }
+                  </h4>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart 
+                        data={(() => {
+                          if (viewMode === 'individual' && selectedCompetitors.length > 0) {
+                            // Generate data for multiple competitors
+                            return Array.from({length: 52}, (_, i) => {
+                              const date = new Date()
+                              date.setDate(date.getDate() - (52 - i) * 7)
+                              const dataPoint: any = {
+                                date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                              }
+                              
+                              selectedCompetitors.forEach(asin => {
+                                const product = data.nicheProducts?.find((p: any) => p.asin === asin)
+                                const basePrice = product?.price || 25
+                                const seasonalFactor = Math.sin((i / 52) * Math.PI * 2) * 0.1
+                                const randomFactor = (Math.random() - 0.5) * 0.05
+                                const trendFactor = (i / 52) * 0.02
+                                const price = basePrice * (1 + seasonalFactor + randomFactor + trendFactor)
+                                dataPoint[asin] = Number(price.toFixed(2))
+                              })
+                              
+                              return dataPoint
+                            })
+                          } else {
+                            // Aggregated average price for selected competitors
+                            return Array.from({length: 52}, (_, i) => {
+                              const date = new Date()
+                              date.setDate(date.getDate() - (52 - i) * 7)
+                              
+                              // Calculate average price from selected competitors
+                              let avgPrice = 22.99 // Default if no selections
+                              if (selectedCompetitors.length > 0) {
+                                const competitorPrices = selectedCompetitors.map(asin => {
+                                  const product = data.nicheProducts?.find((p: any) => p.asin === asin)
+                                  const basePrice = product?.price || 25
+                                  const seasonalFactor = Math.sin((i / 52) * Math.PI * 2) * 0.1
+                                  const randomFactor = (Math.random() - 0.5) * 0.05
+                                  const trendFactor = (i / 52) * 0.02
+                                  return basePrice * (1 + seasonalFactor + randomFactor + trendFactor)
+                                })
+                                avgPrice = competitorPrices.reduce((sum, price) => sum + price, 0) / competitorPrices.length
+                              }
+                              
+                              return {
+                                date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                                price: Number(avgPrice.toFixed(2))
+                              }
+                            })
+                          }
+                        })()} 
+                        margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                        <XAxis dataKey="date" />
+                        <YAxis tickFormatter={(value) => `$${value}`} />
+                        <Tooltip 
+                          wrapperStyle={{ zIndex: 1000 }}
+                          contentStyle={{ 
+                            zIndex: 1000,
+                            position: 'relative',
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                          }}
+                          formatter={(value: any, name: string) => {
+                            if (viewMode === 'individual' && selectedCompetitors.includes(name)) {
+                              const product = data.nicheProducts?.find((p: any) => p.asin === name)
+                              return [`$${value}`, product?.title?.substring(0, 30) || name]
+                            }
+                            return [`$${value}`, 'Market Average']
+                          }} 
+                        />
+                        {viewMode === 'individual' && selectedCompetitors.length > 0 ? (
+                          // Render multiple lines for selected competitors
+                          selectedCompetitors.map((asin, index) => (
+                            <Line 
+                              key={asin}
+                              type="monotone" 
+                              dataKey={asin}
+                              stroke={getCompetitorColor(index)}
+                              strokeWidth={2} 
+                              dot={false}
+                              name={asin}
+                            />
+                          ))
+                        ) : (
+                          // Render single market average line
+                          <Line 
+                            type="monotone" 
+                            dataKey="price" 
+                            stroke="#3B82F6" 
+                            strokeWidth={2} 
+                            dot={false}
+                            name="Market Average"
+                          />
+                        )}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* View Toggle */}
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium text-gray-700">
+                    Individual Competitors
+                    {viewMode === 'individual' && selectedCompetitors.length > 0 && (
+                      <span className="ml-2 text-xs text-purple-600">({selectedCompetitors.length} selected)</span>
+                    )}
+                  </h4>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-600">View:</span>
+                    <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                      <button
+                        onClick={() => setViewMode('aggregated')}
+                        className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                          viewMode === 'aggregated'
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Aggregated
+                      </button>
+                      <button
+                        onClick={() => setViewMode('individual')}
+                        className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                          viewMode === 'individual'
+                            ? 'bg-purple-600 text-white'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Individual
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Competitor Price Cards */}
+                <div className={`${data.nicheProducts?.length > 12 ? 'max-h-96 overflow-y-auto' : ''}`}>
+                  <div className="grid grid-cols-3 gap-4">
+                    {data.nicheProducts?.length > 0 ? (
+                      data.nicheProducts.map((product: any, index: number) => (
+                        <div 
+                          key={product.id} 
+                          onClick={() => {
+                            // Prevent deselecting if it's the last selected competitor
+                            if (selectedCompetitors.includes(product.asin) && selectedCompetitors.length === 1) {
+                              return
+                            }
+                            toggleCompetitor(product.asin)
+                          }}
+                          className={`p-4 rounded-lg border-2 transition-all hover:shadow-md cursor-pointer ${
+                            selectedCompetitors.includes(product.asin)
+                              ? 'border-purple-300 bg-purple-50 shadow-lg' 
+                              : 'border-gray-200 bg-white hover:border-gray-300'
+                          } ${
+                            selectedCompetitors.includes(product.asin) && selectedCompetitors.length === 1
+                              ? 'cursor-not-allowed opacity-75'
+                              : ''
+                          }`}
+                        >
+                        <div className="flex items-start space-x-3">
+                          {/* Image on the left */}
+                          <div className="flex-shrink-0">
+                            {(() => {
+                              let imageUrl = null
+                              if (product.image_urls) {
+                                try {
+                                  // Try parsing as JSON first
+                                  const urls = typeof product.image_urls === 'string' ? JSON.parse(product.image_urls) : product.image_urls
+                                  imageUrl = Array.isArray(urls) ? urls[0] : urls
+                                } catch {
+                                  // If not JSON, try splitting by comma
+                                  const urls = product.image_urls.split(',').map((url: string) => url.trim())
+                                  imageUrl = urls[0]
+                                }
+                                // Convert to full URL if needed
+                                if (imageUrl && !imageUrl.startsWith('http')) {
+                                  imageUrl = `https://m.media-amazon.com/images/I/${imageUrl}`
+                                }
+                              }
+                              return imageUrl ? (
+                                <img 
+                                  src={imageUrl} 
+                                  alt={product.title}
+                                  className="w-20 h-20 object-cover rounded-lg"
+                                />
+                              ) : (
+                                <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                                  <span className="text-gray-400 text-xs">No Image</span>
+                                </div>
+                              )
+                            })()}
+                          </div>
+                          
+                          {/* Metadata on the right */}
+                          <div className="flex-1 min-w-0 relative">
+                            <div className="text-lg font-bold text-green-600">
+                              ${typeof product.price === 'number' ? product.price.toFixed(2) : 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-600 mb-1" title={product.title || 'Unknown Product'}>
+                              {product.title || 'Unknown Product'}
+                            </div>
+                            <div className="text-xs text-gray-500 mb-1">
+                              BSR: #{(product.bsr || product.sales_rank || 0) > 0 ? (product.bsr || product.sales_rank).toLocaleString() : 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-500 mb-2">
+                              {product.asin}
+                            </div>
+                            {selectedCompetitors.includes(product.asin) && (
+                              <span className="text-xs font-medium text-purple-600">
+                                ✓ Selected
+                              </span>
+                            )}
+                            {viewMode === 'individual' && selectedCompetitors.includes(product.asin) && (
+                              <div 
+                                className="absolute top-0 right-0 w-3 h-3 rounded-full"
+                                style={{ backgroundColor: getCompetitorColor(selectedCompetitors.indexOf(product.asin)) }}
+                              ></div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )) 
+                  ) : (
+                      // Show message when no real data
+                      <div className="col-span-3 text-center py-8 text-gray-500">
+                        <p>No competitor data available</p>
+                        <p className="text-xs mt-1">Real competitor pricing will be displayed when data is loaded</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
         </div>
       )}
@@ -466,11 +827,11 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
               <div className="space-y-6">
                 {/* Current Seasonality Stats */}
                 <div className="grid grid-cols-4 gap-4">
-                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="text-2xl font-bold text-blue-600">
                       #{(() => {
-                        if (data.demandData.salesRankHistory?.length > 0) {
-                          const avgRank = data.demandData.salesRankHistory.reduce((sum: number, item: any) => sum + item.rank, 0) / data.demandData.salesRankHistory.length
+                        if (data.salesRankHistory?.length > 0) {
+                          const avgRank = data.salesRankHistory.reduce((sum: number, item: any) => sum + item.sales_rank, 0) / data.salesRankHistory.length
                           return Math.round(avgRank).toLocaleString()
                         }
                         return '35,420'
@@ -478,28 +839,28 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                     </div>
                     <div className="text-sm text-gray-600">Avg Sales Rank</div>
                   </div>
-                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
                     <div className="text-2xl font-bold text-green-600">
-                      #{data.demandData.salesRankHistory?.length > 0 
-                        ? Math.min(...data.demandData.salesRankHistory.map((d: any) => d.rank)).toLocaleString()
+                      #{data.salesRankHistory?.length > 0 
+                        ? Math.min(...data.salesRankHistory.map((d: any) => d.sales_rank)).toLocaleString()
                         : '18,500'}
                     </div>
                     <div className="text-sm text-gray-600">Best Rank (Peak)</div>
                   </div>
-                  <div className="text-center p-3 bg-red-50 rounded-lg">
+                  <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
                     <div className="text-2xl font-bold text-red-600">
-                      #{data.demandData.salesRankHistory?.length > 0 
-                        ? Math.max(...data.demandData.salesRankHistory.map((d: any) => d.rank)).toLocaleString()
+                      #{data.salesRankHistory?.length > 0 
+                        ? Math.max(...data.salesRankHistory.map((d: any) => d.sales_rank)).toLocaleString()
                         : '65,890'}
                     </div>
                     <div className="text-sm text-gray-600">Worst Rank (Low)</div>
                   </div>
-                  <div className="text-center p-3 bg-purple-50 rounded-lg">
+                  <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
                     <div className="text-2xl font-bold text-purple-600">
                       {(() => {
                         // Calculate seasonal variance
-                        if (data.demandData.salesRankHistory?.length > 1) {
-                          const ranks = data.demandData.salesRankHistory.map((d: any) => d.rank)
+                        if (data.salesRankHistory?.length > 1) {
+                          const ranks = data.salesRankHistory.map((d: any) => d.sales_rank)
                           const min = Math.min(...ranks)
                           const max = Math.max(...ranks)
                           const variance = ((max - min) / min * 100).toFixed(0)
@@ -525,8 +886,13 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                       <LineChart 
                         data={(() => {
                           // Use real sales rank history data if available
-                          if (data.demandData.salesRankHistory && data.demandData.salesRankHistory.length > 0) {
-                            return data.demandData.salesRankHistory
+                          if (data.salesRankHistory && data.salesRankHistory.length > 0) {
+                            // Transform real data to chart format
+                            return data.salesRankHistory.map((item: any) => ({
+                              date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                              rank: item.sales_rank || item.rank,
+                              asin: item.asin
+                            }))
                           }
                           
                           // Fallback to synthetic data only if no real data
@@ -541,7 +907,7 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                               }
                               
                               selectedCompetitors.forEach(asin => {
-                                const product = data.demandData._nicheProducts?.find((p: any) => p.asin === asin)
+                                const product = data.nicheProducts?.find((p: any) => p.asin === asin)
                                 const baseBSR = product?.bsr || 35000
                                 
                                 // Seasonal factors (lower rank = better performance)
@@ -570,7 +936,7 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                               let avgRank = 35000 // Default if no selections
                               if (selectedCompetitors.length > 0) {
                                 const competitorRanks = selectedCompetitors.map(asin => {
-                                  const product = data.demandData._nicheProducts?.find((p: any) => p.asin === asin)
+                                  const product = data.nicheProducts?.find((p: any) => p.asin === asin)
                                   const baseBSR = product?.bsr || 35000
                                   
                                   let seasonalFactor = 0
@@ -602,9 +968,18 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                           domain={['dataMin - 5000', 'dataMax + 5000']}
                         />
                         <Tooltip 
+                          wrapperStyle={{ zIndex: 1000 }}
+                          contentStyle={{ 
+                            zIndex: 1000,
+                            position: 'relative',
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                          }}
                           formatter={(value: any, name: string) => {
                             if (viewMode === 'individual' && selectedCompetitors.includes(name)) {
-                              const product = data.demandData._nicheProducts?.find((p: any) => p.asin === name)
+                              const product = data.nicheProducts?.find((p: any) => p.asin === name)
                               return [`#${value.toLocaleString()}`, product?.title?.substring(0, 30) || name]
                             }
                             return [`#${value.toLocaleString()}`, 'Market Average']
@@ -674,450 +1049,100 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                   </div>
                 </div>
 
-                {/* Competitor Cards */}
-                <div className="grid grid-cols-3 gap-4">
-                  {data.demandData._nicheProducts?.length > 0 ? (
-                    data.demandData._nicheProducts.slice(0, 9).map((product: any, index: number) => (
-                      <div 
-                        key={product.id} 
-                        onClick={() => toggleCompetitor(product.asin)}
-                        className={`p-4 rounded-lg border-2 transition-all hover:shadow-md cursor-pointer ${
-                          selectedCompetitors.includes(product.asin)
-                            ? 'border-purple-300 bg-purple-50 shadow-lg' 
-                            : 'border-gray-200 bg-white hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-start space-x-3">
-                          {/* Image on the left */}
-                          <div className="flex-shrink-0">
-                            {(() => {
-                              let imageUrl = null
-                              if (product.image_urls) {
-                                try {
-                                  // Try parsing as JSON first
-                                  const urls = typeof product.image_urls === 'string' ? JSON.parse(product.image_urls) : product.image_urls
-                                  imageUrl = Array.isArray(urls) ? urls[0] : urls
-                                } catch {
-                                  // If not JSON, try splitting by comma
-                                  const urls = product.image_urls.split(',').map((url: string) => url.trim())
-                                  imageUrl = urls[0]
+                {/* Competitor Sales Rank Cards */}
+                <div className={`${data.nicheProducts?.length > 12 ? 'max-h-96 overflow-y-auto' : ''}`}>
+                  <div className="grid grid-cols-3 gap-4">
+                    {data.nicheProducts?.length > 0 ? (
+                      data.nicheProducts.map((product: any, index: number) => (
+                        <div 
+                          key={product.id} 
+                          onClick={() => {
+                            // Prevent deselecting if it's the last selected competitor
+                            if (selectedCompetitors.includes(product.asin) && selectedCompetitors.length === 1) {
+                              return
+                            }
+                            toggleCompetitor(product.asin)
+                          }}
+                          className={`p-4 rounded-lg border-2 transition-all hover:shadow-md cursor-pointer ${
+                            selectedCompetitors.includes(product.asin)
+                              ? 'border-purple-300 bg-purple-50 shadow-lg' 
+                              : 'border-gray-200 bg-white hover:border-gray-300'
+                          } ${
+                            selectedCompetitors.includes(product.asin) && selectedCompetitors.length === 1
+                              ? 'cursor-not-allowed opacity-75'
+                              : ''
+                          }`}
+                        >
+                          <div className="flex items-start space-x-3">
+                            {/* Image on the left */}
+                            <div className="flex-shrink-0">
+                              {(() => {
+                                let imageUrl = null
+                                if (product.image_urls) {
+                                  try {
+                                    // Try parsing as JSON first
+                                    const urls = typeof product.image_urls === 'string' ? JSON.parse(product.image_urls) : product.image_urls
+                                    imageUrl = Array.isArray(urls) ? urls[0] : urls
+                                  } catch {
+                                    // If not JSON, try splitting by comma
+                                    const urls = product.image_urls.split(',').map((url: string) => url.trim())
+                                    imageUrl = urls[0]
+                                  }
+                                  // Convert to full URL if needed
+                                  if (imageUrl && !imageUrl.startsWith('http')) {
+                                    imageUrl = `https://m.media-amazon.com/images/I/${imageUrl}`
+                                  }
                                 }
-                                // Convert to full URL if needed
-                                if (imageUrl && !imageUrl.startsWith('http')) {
-                                  imageUrl = `https://m.media-amazon.com/images/I/${imageUrl}`
-                                }
-                              }
-                              return imageUrl ? (
-                                <img 
-                                  src={imageUrl} 
-                                  alt={product.title}
-                                  className="w-20 h-20 object-cover rounded-lg"
-                                />
-                              ) : (
-                                <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                                  <span className="text-gray-400 text-xs">No Image</span>
-                                </div>
-                              )
-                            })()}
-                          </div>
-                          
-                          {/* Metadata on the right */}
-                          <div className="flex-1 min-w-0 relative">
-                            <div className="text-lg font-bold text-gray-900">
-                              #{product.bsr?.toLocaleString() || 'N/A'}
+                                return imageUrl ? (
+                                  <img 
+                                    src={imageUrl} 
+                                    alt={product.title}
+                                    className="w-20 h-20 object-cover rounded-lg"
+                                  />
+                                ) : (
+                                  <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                                    <span className="text-gray-400 text-xs">No Image</span>
+                                  </div>
+                                )
+                              })()}
                             </div>
-                            <div className="text-xs text-gray-600 mb-1" title={product.title || 'Unknown Product'}>
-                              {product.title || 'Unknown Product'}
-                            </div>
-                            <div className="text-xs text-gray-500 mb-2">
-                              {product.asin}
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-green-600">
-                                ${product.price || 'N/A'}
-                              </span>
+                            
+                            {/* Metadata on the right */}
+                            <div className="flex-1 min-w-0 relative">
+                              <div className="text-lg font-bold text-green-600">
+                                ${typeof product.price === 'number' ? product.price.toFixed(2) : 'N/A'}
+                              </div>
+                              <div className="text-xs text-gray-600 mb-1" title={product.title || 'Unknown Product'}>
+                                {product.title || 'Unknown Product'}
+                              </div>
+                              <div className="text-xs text-gray-500 mb-1">
+                                BSR: #{(product.bsr || product.sales_rank || 0) > 0 ? (product.bsr || product.sales_rank).toLocaleString() : 'N/A'}
+                              </div>
+                              <div className="text-xs text-gray-500 mb-2">
+                                {product.asin}
+                              </div>
                               {selectedCompetitors.includes(product.asin) && (
                                 <span className="text-xs font-medium text-purple-600">
                                   ✓ Selected
                                 </span>
                               )}
+                              {viewMode === 'individual' && selectedCompetitors.includes(product.asin) && (
+                                <div 
+                                  className="absolute top-0 right-0 w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: getCompetitorColor(selectedCompetitors.indexOf(product.asin)) }}
+                                ></div>
+                              )}
                             </div>
-                            {viewMode === 'individual' && selectedCompetitors.includes(product.asin) && (
-                              <div 
-                                className="absolute top-0 right-0 w-3 h-3 rounded-full"
-                                style={{ backgroundColor: getCompetitorColor(selectedCompetitors.indexOf(product.asin)) }}
-                              ></div>
-                            )}
                           </div>
                         </div>
+                      ))
+                    ) : (
+                      // Show message when no real data
+                      <div className="col-span-3 text-center py-8 text-gray-500">
+                        <p>No competitor data available</p>
+                        <p className="text-xs mt-1">Real competitor ranking will be displayed when data is loaded</p>
                       </div>
-                    ))
-                  ) : (
-                    // Show message when no real data
-                    <div className="col-span-5 text-center py-8 text-gray-500">
-                      <p>No competitor data available</p>
-                      <p className="text-xs mt-1">Real competitor sales rank data will be displayed when data is loaded</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Seasonality Insights */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-                <span>Seasonality Insights</span>
-              </CardTitle>
-              <CardDescription>
-                {data.demandData.salesRankHistory?.length > 0 
-                  ? `Analysis based on ${data.demandData.salesRankHistory.length} historical data points` 
-                  : 'Detailed analysis of seasonal patterns and peak demand periods'
-                }
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Peak Seasons Analysis */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Peak Demand Periods
-                    {data.demandData.salesRankHistory?.length > 0 && (
-                      <span className="ml-2 text-xs text-green-600 font-normal">● Based on Real Sales Rank Data</span>
                     )}
-                  </h4>
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <h5 className="font-medium text-gray-900">Holiday Season</h5>
-                        <Badge variant="default" className="bg-green-600">Peak</Badge>
-                      </div>
-                      <div className="text-2xl font-bold text-green-600 mb-1">Oct - Dec</div>
-                      <p className="text-sm text-gray-600 mb-2">40% better sales rank during holiday shopping</p>
-                      <div className="text-xs text-green-700">
-                        • Black Friday surge starts in October<br/>
-                        • Christmas gifts drive Q4 demand<br/>
-                        • Best inventory planning window
-                      </div>
-                    </div>
-                    <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <h5 className="font-medium text-gray-900">Summer Travel</h5>
-                        <Badge variant="outline" className="border-blue-500 text-blue-600">Moderate</Badge>
-                      </div>
-                      <div className="text-2xl font-bold text-blue-600 mb-1">Jun - Aug</div>
-                      <p className="text-sm text-gray-600 mb-2">15% boost from travel and vacation needs</p>
-                      <div className="text-xs text-blue-700">
-                        • Flight and hotel bookings peak<br/>
-                        • Sleep accessories for travel<br/>
-                        • Airport and long-haul comfort
-                      </div>
-                    </div>
-                    <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <h5 className="font-medium text-gray-900">New Year Wellness</h5>
-                        <Badge variant="outline" className="border-yellow-500 text-yellow-600">Growing</Badge>
-                      </div>
-                      <div className="text-2xl font-bold text-yellow-600 mb-1">Jan - Feb</div>
-                      <p className="text-sm text-gray-600 mb-2">25% increase in health-focused purchases</p>
-                      <div className="text-xs text-yellow-700">
-                        • Sleep improvement resolutions<br/>
-                        • Wellness and self-care trends<br/>
-                        • Post-holiday health focus
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Weekly Pattern Analysis */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Weekly Trend Analysis
-                    {(data.demandData.salesRankHistory?.length > 0 || data.demandData._priceHistory?.length > 0 || data.salesRankHistory?.length > 0 || data._nicheData?.salesRankHistory?.length > 0) && (
-                      <span className="ml-2 text-xs text-blue-600 font-normal">● Real Sales Rank Data</span>
-                    )}
-                  </h4>
-                  <div className="space-y-3">
-                    {(() => {
-                      // Check multiple possible data sources for sales rank history
-                      const salesRankData = data.demandData.salesRankHistory || 
-                                          data.demandData._priceHistory || 
-                                          data.salesRankHistory || 
-                                          data._nicheData?.salesRankHistory
-                      
-                      
-                      if (salesRankData?.length > 0) {
-                        // Use real sales rank data only
-                        const sortedData = [...salesRankData].sort((a, b) => 
-                          new Date(a.timestamp || a.date).getTime() - new Date(b.timestamp || b.date).getTime()
-                        )
-                        
-                        // Group by week and analyze trends
-                        const weeklyGroups: { [key: string]: number[] } = {}
-                        sortedData.forEach((entry: any) => {
-                          const date = new Date(entry.timestamp || entry.date)
-                          const weekKey = `${date.getFullYear()}-W${Math.ceil(date.getDate() / 7)}-${date.getMonth() + 1}`
-                          if (!weeklyGroups[weekKey]) weeklyGroups[weekKey] = []
-                          weeklyGroups[weekKey].push(entry.rank || entry.sales_rank)
-                        })
-                        
-                        const weeklyAverages = Object.entries(weeklyGroups).map(([week, ranks]) => ({
-                          week,
-                          avgRank: ranks.reduce((a, b) => a + b, 0) / ranks.length,
-                          dataPoints: ranks.length
-                        })).sort((a, b) => a.avgRank - b.avgRank)
-                        
-                        // Find best and worst performing periods
-                        const bestWeeks = weeklyAverages.slice(0, 3)
-                        const worstWeeks = weeklyAverages.slice(-3)
-                        const allRanks = Object.values(weeklyGroups).flat()
-                        const volatility = ((Math.max(...allRanks) - Math.min(...allRanks)) / Math.min(...allRanks) * 100).toFixed(0)
-                        
-                        return (
-                          <div className="grid md:grid-cols-2 gap-4">
-                            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                              <h5 className="font-medium text-green-900 mb-2">🚀 Peak Performance Periods</h5>
-                              <div className="space-y-1 text-sm">
-                                {bestWeeks.map((week, index) => (
-                                  <div key={index} className="text-green-700">
-                                    • Best rank: #{Math.round(week.avgRank).toLocaleString()} ({week.dataPoints} data points)
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="mt-2 text-xs text-green-600">
-                                Peak performance shows {volatility}% rank variation
-                              </div>
-                            </div>
-                            
-                            <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                              <h5 className="font-medium text-orange-900 mb-2">⚠️ Low Performance Periods</h5>
-                              <div className="space-y-1 text-sm">
-                                {worstWeeks.map((week, index) => (
-                                  <div key={index} className="text-orange-700">
-                                    • Weak period: #{Math.round(week.avgRank).toLocaleString()} ({week.dataPoints} data points)
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="mt-2 text-xs text-orange-600">
-                                Avoid major launches during these periods
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      } else {
-                        return (
-                          <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-gray-500 text-sm">Weekly analysis requires historical sales rank data</p>
-                          </div>
-                        )
-                      }
-                    })()}
-                  </div>
-                </div>
-
-                {/* Enhanced Seasonality Insights */}
-                <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-3">Detailed Seasonality Analysis
-                    {(data.demandData.salesRankHistory?.length > 0 || data.demandData._priceHistory?.length > 0 || data.salesRankHistory?.length > 0 || data._nicheData?.salesRankHistory?.length > 0) && (
-                      <span className="ml-2 text-xs text-indigo-600 font-normal">● Real Sales Rank Analysis</span>
-                    )}
-                  </h4>
-                  <div className="space-y-4">
-                    {(() => {
-                      // Check multiple possible data sources for sales rank history
-                      const salesRankData = data.demandData.salesRankHistory || 
-                                          data.demandData._priceHistory || 
-                                          data.salesRankHistory || 
-                                          data._nicheData?.salesRankHistory
-                      
-                      if (salesRankData?.length > 0) {
-                        // Use real sales rank data only
-                        const sortedData = [...salesRankData].sort((a, b) => 
-                          new Date(a.timestamp || a.date).getTime() - new Date(b.timestamp || b.date).getTime()
-                        )
-                        
-                        const ranks = sortedData.map((entry: any) => entry.rank || entry.sales_rank)
-                        const maxRank = Math.max(...ranks)
-                        const minRank = Math.min(...ranks)
-                        const variance = ((maxRank - minRank) / minRank * 100).toFixed(0)
-                        
-                        // Weekly volatility analysis
-                        const weeklyVolatility = []
-                        for (let i = 7; i < ranks.length; i += 7) {
-                          const weekRanks = ranks.slice(i-7, i)
-                          const weekVariance = ((Math.max(...weekRanks) - Math.min(...weekRanks)) / Math.min(...weekRanks) * 100)
-                          weeklyVolatility.push(weekVariance)
-                        }
-                        const avgWeeklyVolatility = (weeklyVolatility.reduce((a, b) => a + b, 0) / weeklyVolatility.length).toFixed(0)
-                        
-                        // Trend analysis - find consistent growth/decline periods
-                        const movingAverage = []
-                        const windowSize = 7 // 7-day moving average
-                        for (let i = windowSize - 1; i < ranks.length; i++) {
-                          const avg = ranks.slice(i - windowSize + 1, i + 1).reduce((a, b) => a + b, 0) / windowSize
-                          movingAverage.push(avg)
-                        }
-                        
-                        // Find longest trends
-                        let longestGrowthStreak = 0
-                        let longestDeclineStreak = 0
-                        let currentGrowthStreak = 0
-                        let currentDeclineStreak = 0
-                        
-                        for (let i = 1; i < movingAverage.length; i++) {
-                          if (movingAverage[i] < movingAverage[i-1]) { // Lower rank = better performance
-                            currentGrowthStreak++
-                            currentDeclineStreak = 0
-                          } else if (movingAverage[i] > movingAverage[i-1]) {
-                            currentDeclineStreak++
-                            currentGrowthStreak = 0
-                          }
-                          longestGrowthStreak = Math.max(longestGrowthStreak, currentGrowthStreak)
-                          longestDeclineStreak = Math.max(longestDeclineStreak, currentDeclineStreak)
-                        }
-                        
-                        // Seasonal patterns by quarter
-                        const quarterlyData: { [key: string]: number[] } = { 'Q1': [], 'Q2': [], 'Q3': [], 'Q4': [] }
-                        sortedData.forEach((entry: any) => {
-                          const date = new Date(entry.timestamp || entry.date)
-                          const month = date.getMonth() + 1
-                          const quarter = month <= 3 ? 'Q1' : month <= 6 ? 'Q2' : month <= 9 ? 'Q3' : 'Q4'
-                          quarterlyData[quarter].push(entry.rank || entry.sales_rank)
-                        })
-                        
-                        const quarterlyPerformance = Object.entries(quarterlyData)
-                          .map(([quarter, ranks]) => ({
-                            quarter,
-                            avgRank: ranks.length > 0 ? ranks.reduce((a, b) => a + b, 0) / ranks.length : 0,
-                            dataPoints: ranks.length
-                          }))
-                          .filter(q => q.dataPoints > 0)
-                          .sort((a, b) => a.avgRank - b.avgRank)
-                        
-                        const bestQuarter = quarterlyPerformance[0]
-                        const worstQuarter = quarterlyPerformance[quarterlyPerformance.length - 1]
-                        
-                        // Calculate data span and quality
-                        const firstDate = new Date(sortedData[0].timestamp || sortedData[0].date)
-                        const lastDate = new Date(sortedData[sortedData.length - 1].timestamp || sortedData[sortedData.length - 1].date)
-                        const dataSpanDays = Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24))
-                        const dataSpanWeeks = Math.ceil(dataSpanDays / 7)
-                        
-                        return (
-                          <div className="space-y-4">
-                            {/* Primary Insights Grid */}
-                            <div className="grid md:grid-cols-3 gap-4">
-                              <div className="p-3 bg-white rounded-lg border border-indigo-200">
-                                <h5 className="text-sm font-semibold text-indigo-800 mb-2">📈 Seasonality Strength</h5>
-                                <div className="text-lg font-bold text-indigo-600">{variance}% Variation</div>
-                                <div className="text-xs text-gray-600">
-                                  {Number(variance) > 100 ? 'Highly seasonal' : 
-                                   Number(variance) > 50 ? 'Moderately seasonal' : 'Low seasonality'}
-                                </div>
-                              </div>
-                              
-                              <div className="p-3 bg-white rounded-lg border border-green-200">
-                                <h5 className="text-sm font-semibold text-green-800 mb-2">🎯 Best Performance</h5>
-                                <div className="text-lg font-bold text-green-600">#{minRank.toLocaleString()}</div>
-                                <div className="text-xs text-gray-600">Peak rank achieved</div>
-                              </div>
-                              
-                              <div className="p-3 bg-white rounded-lg border border-orange-200">
-                                <h5 className="text-sm font-semibold text-orange-800 mb-2">⚡ Weekly Volatility</h5>
-                                <div className="text-lg font-bold text-orange-600">{avgWeeklyVolatility}%</div>
-                                <div className="text-xs text-gray-600">Average weekly fluctuation</div>
-                              </div>
-                            </div>
-
-                            {/* Quarterly Performance Analysis */}
-                            <div className="p-4 bg-white rounded-lg border border-gray-200">
-                              <h5 className="text-sm font-semibold text-gray-800 mb-3">📅 Quarterly Performance Patterns</h5>
-                              <div className="grid md:grid-cols-2 gap-4">
-                                <div>
-                                  <div className="text-sm text-green-700 mb-1">
-                                    <strong>Best Quarter: {bestQuarter?.quarter}</strong>
-                                  </div>
-                                  <div className="text-xs text-gray-600 mb-2">
-                                    Avg rank: #{Math.round(bestQuarter?.avgRank || 0).toLocaleString()} ({bestQuarter?.dataPoints} data points)
-                                  </div>
-                                  <div className="text-xs text-green-600">
-                                    🚀 Optimal period for inventory scaling and marketing campaigns
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-sm text-orange-700 mb-1">
-                                    <strong>Challenging Quarter: {worstQuarter?.quarter}</strong>
-                                  </div>
-                                  <div className="text-xs text-gray-600 mb-2">
-                                    Avg rank: #{Math.round(worstQuarter?.avgRank || 0).toLocaleString()} ({worstQuarter?.dataPoints} data points)
-                                  </div>
-                                  <div className="text-xs text-orange-600">
-                                    ⚠️ Focus on optimization rather than aggressive growth
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Trend Analysis */}
-                            <div className="p-4 bg-white rounded-lg border border-gray-200">
-                              <h5 className="text-sm font-semibold text-gray-800 mb-3">🔄 Trend Patterns</h5>
-                              <div className="grid md:grid-cols-2 gap-4">
-                                <div>
-                                  <div className="text-sm text-gray-700 mb-1">
-                                    <strong>Growth Momentum</strong>
-                                  </div>
-                                  <div className="text-xs text-gray-600 mb-1">
-                                    Longest improvement streak: {longestGrowthStreak} days
-                                  </div>
-                                  <div className="text-xs text-green-600">
-                                    Shows strong potential for sustained growth periods
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-sm text-gray-700 mb-1">
-                                    <strong>Market Volatility</strong>
-                                  </div>
-                                  <div className="text-xs text-gray-600 mb-1">
-                                    Data span: {dataSpanWeeks} weeks ({dataSpanDays} days)
-                                  </div>
-                                  <div className="text-xs text-blue-600">
-                                    {dataSpanWeeks >= 52 ? 'Full year data available' : dataSpanWeeks >= 26 ? 'Strong seasonal coverage' : 'Limited seasonal data'}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Actionable Insights */}
-                            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                              <h5 className="text-sm font-semibold text-blue-800 mb-2">💡 Strategic Recommendations</h5>
-                              <div className="space-y-1 text-sm text-blue-700">
-                                <div>• <strong>Inventory Planning:</strong> Scale up before {bestQuarter?.quarter} (best performance period)</div>
-                                <div>• <strong>Marketing Budget:</strong> Increase spend during low-volatility weeks (under {avgWeeklyVolatility}% variation)</div>
-                                <div>• <strong>Launch Timing:</strong> Target launches during sustained growth periods ({longestGrowthStreak}+ day trends)</div>
-                                <div>• <strong>Risk Management:</strong> Expect {variance}% rank variation - plan inventory accordingly</div>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      } else {
-                        // Enhanced fallback when no data is available
-                        return (
-                          <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <h5 className="font-medium text-gray-900 mb-2">📊 Seasonality Analysis Not Available</h5>
-                            <p className="text-gray-600 text-sm mb-3">
-                              Historical sales rank data is required for detailed seasonality analysis.
-                            </p>
-                            <div className="text-xs text-gray-500">
-                              Once sales rank data is available, you'll see:
-                              <br />• Week-to-week performance patterns
-                              <br />• Quarterly trend analysis  
-                              <br />• Optimal timing recommendations
-                              <br />• Volatility and risk assessment
-                            </div>
-                          </div>
-                        )
-                      }
-                    })()}
                   </div>
                 </div>
               </div>
@@ -1130,8 +1155,41 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
       {/* Social Signals Tab */}
       {activeTab === 'social' && (
         <div className="space-y-6">
-          {/* TikTok */}
-          <Card>
+          {!data.demandData?.socialSignals ? (
+            /* No Social Data Available */
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Users className="h-5 w-5 text-gray-400" />
+                  <span>Social Signals</span>
+                </CardTitle>
+                <CardDescription>
+                  Social media analytics and engagement data
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12 text-gray-500">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Social Signals Not Available</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Social media data is not currently available for this niche.
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Social signals data will be displayed here when available, including:
+                  </p>
+                  <div className="mt-3 text-xs text-gray-500 space-y-1">
+                    <div>📱 TikTok posts and engagement</div>
+                    <div>📸 Instagram content analysis</div>
+                    <div>📺 YouTube video performance</div>
+                    <div>💬 Reddit discussions and sentiment</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* TikTok */}
+              <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <div className="text-2xl">📱</div>
@@ -1141,7 +1199,7 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                 )}
               </CardTitle>
               <CardDescription>
-                {data.demandData.socialSignals.tiktok.posts.toLocaleString()} posts • {(data.demandData.socialSignals.tiktok.views / 1000000).toFixed(1)}M views • {data.demandData.socialSignals.tiktok.engagement} engagement
+                {data.demandData?.socialSignals?.tiktok?.posts?.toLocaleString() || 'N/A'} posts • {data.demandData?.socialSignals?.tiktok?.views ? (data.demandData.socialSignals.tiktok.views / 1000000).toFixed(1) : 'N/A'}M views • {data.demandData?.socialSignals?.tiktok?.engagement || 'N/A'} engagement
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1189,7 +1247,7 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                 <span>Instagram</span>
               </CardTitle>
               <CardDescription>
-                {data.demandData.socialSignals.instagram.posts.toLocaleString()} posts • {data.demandData.socialSignals.instagram.engagement} engagement • Medium influencer reach
+                {data.demandData?.socialSignals?.instagram?.posts?.toLocaleString() || 'N/A'} posts • {data.demandData?.socialSignals?.instagram?.engagement || 'N/A'} engagement • Medium influencer reach
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1229,7 +1287,7 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                 <span>YouTube</span>
               </CardTitle>
               <CardDescription>
-                {data.demandData.socialSignals.youtube.videos} videos • {data.demandData.socialSignals.youtube.avgViews.toLocaleString()} average views
+                {data.demandData?.socialSignals?.youtube?.videos || 'N/A'} videos • {data.demandData?.socialSignals?.youtube?.avgViews?.toLocaleString() || 'N/A'} average views
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1272,7 +1330,7 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                 <span>Reddit</span>
               </CardTitle>
               <CardDescription>
-                {data.demandData.socialSignals.reddit.discussions} discussions • {data.demandData.socialSignals.reddit.sentiment} sentiment
+                {data.demandData?.socialSignals?.reddit?.discussions || 'N/A'} discussions • {data.demandData?.socialSignals?.reddit?.sentiment || 'N/A'} sentiment
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1355,332 +1413,8 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
               </div>
             </CardContent>
           </Card>
-        </div>
-      )}
-
-      {/* Pricing Trends Tab */}
-      {activeTab === 'pricing' && (
-        <div className="space-y-6">
-          {/* Combined Market & Competitor Price Tracking */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <DollarSign className="h-5 w-5 text-green-600" />
-                <span>Market Price Trends</span>
-              </CardTitle>
-              <CardDescription>
-                Historical pricing trends showing market average and individual competitors
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Current Market Pricing Stats */}
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="text-center p-3 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">
-                      ${(() => {
-                        if (data.demandData._priceHistory?.length > 0) {
-                          const allPrices = data.demandData._priceHistory.flatMap((d: any) => [d.min, d.max, d.avg])
-                          return (allPrices.reduce((a: number, b: number) => a + b, 0) / allPrices.length).toFixed(2)
-                        }
-                        return '22.99'
-                      })()}
-                    </div>
-                    <div className="text-sm text-gray-600">Current Average</div>
-                  </div>
-                  <div className="text-center p-3 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">
-                      ${data.demandData._priceHistory?.length > 0 
-                        ? Math.min(...data.demandData._priceHistory.map((d: any) => d.min)).toFixed(2)
-                        : '19.99'}
-                    </div>
-                    <div className="text-sm text-gray-600">All-Time Low</div>
-                  </div>
-                  <div className="text-center p-3 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">
-                      ${data.demandData._priceHistory?.length > 0 
-                        ? Math.max(...data.demandData._priceHistory.map((d: any) => d.max)).toFixed(2)
-                        : '29.99'}
-                    </div>
-                    <div className="text-sm text-gray-600">All-Time High</div>
-                  </div>
-                  <div className="text-center p-3 bg-orange-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {(() => {
-                        // Calculate percentage change over time
-                        if (data.demandData._priceHistory?.length > 1) {
-                          const first = data.demandData._priceHistory[0].avg
-                          const last = data.demandData._priceHistory[data.demandData._priceHistory.length - 1].avg
-                          const change = ((last - first) / first * 100).toFixed(1)
-                          return change.startsWith('-') ? change + '%' : '+' + change + '%'
-                        }
-                        return '+5.2%'
-                      })()}
-                    </div>
-                    <div className="text-sm text-gray-600">YoY Change</div>
-                  </div>
-                </div>
-
-                {/* Combined Price Trend Chart */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">
-                    {selectedCompetitors.length > 0
-                      ? `Price History: ${selectedCompetitors.length} Selected Competitor${selectedCompetitors.length > 1 ? 's' : ''} (${viewMode})`
-                      : 'Historical Price Trends'
-                    }
-                  </h4>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart 
-                        data={(() => {
-                          if (viewMode === 'individual' && selectedCompetitors.length > 0) {
-                            // Generate data for multiple competitors
-                            return Array.from({length: 52}, (_, i) => {
-                              const date = new Date()
-                              date.setDate(date.getDate() - (52 - i) * 7)
-                              const dataPoint: any = {
-                                date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                              }
-                              
-                              selectedCompetitors.forEach(asin => {
-                                const product = data.demandData._nicheProducts?.find((p: any) => p.asin === asin)
-                                const basePrice = product?.price || 25
-                                const seasonalFactor = Math.sin((i / 52) * Math.PI * 2) * 0.1
-                                const randomFactor = (Math.random() - 0.5) * 0.05
-                                const trendFactor = (i / 52) * 0.02
-                                const price = basePrice * (1 + seasonalFactor + randomFactor + trendFactor)
-                                dataPoint[asin] = Number(price.toFixed(2))
-                              })
-                              
-                              return dataPoint
-                            })
-                          } else {
-                            // Aggregated average price for selected competitors
-                            return Array.from({length: 52}, (_, i) => {
-                              const date = new Date()
-                              date.setDate(date.getDate() - (52 - i) * 7)
-                              
-                              // Calculate average price from selected competitors
-                              let avgPrice = 22.99 // Default if no selections
-                              if (selectedCompetitors.length > 0) {
-                                const competitorPrices = selectedCompetitors.map(asin => {
-                                  const product = data.demandData._nicheProducts?.find((p: any) => p.asin === asin)
-                                  const basePrice = product?.price || 25
-                                  const seasonalFactor = Math.sin((i / 52) * Math.PI * 2) * 0.1
-                                  const randomFactor = (Math.random() - 0.5) * 0.05
-                                  const trendFactor = (i / 52) * 0.02
-                                  return basePrice * (1 + seasonalFactor + randomFactor + trendFactor)
-                                })
-                                avgPrice = competitorPrices.reduce((sum, price) => sum + price, 0) / competitorPrices.length
-                              }
-                              
-                              return {
-                                date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                                price: Number(avgPrice.toFixed(2))
-                              }
-                            })
-                          }
-                        })()} 
-                        margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                        <XAxis dataKey="date" />
-                        <YAxis tickFormatter={(value) => `$${value}`} />
-                        <Tooltip 
-                          formatter={(value: any, name: string) => {
-                            if (viewMode === 'individual' && selectedCompetitors.includes(name)) {
-                              const product = data.demandData._nicheProducts?.find((p: any) => p.asin === name)
-                              return [`$${value}`, product?.title?.substring(0, 30) || name]
-                            }
-                            return [`$${value}`, 'Market Average']
-                          }} 
-                        />
-                        {viewMode === 'individual' && selectedCompetitors.length > 0 ? (
-                          // Render multiple lines for selected competitors
-                          selectedCompetitors.map((asin, index) => (
-                            <Line 
-                              key={asin}
-                              type="monotone" 
-                              dataKey={asin}
-                              stroke={getCompetitorColor(index)}
-                              strokeWidth={2} 
-                              dot={false}
-                              name={asin}
-                            />
-                          ))
-                        ) : (
-                          // Render single market average line
-                          <Line 
-                            type="monotone" 
-                            dataKey="price" 
-                            stroke="#3B82F6" 
-                            strokeWidth={2} 
-                            dot={false}
-                            name="Market Average"
-                          />
-                        )}
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* View Toggle */}
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium text-gray-700">
-                    Individual Competitors
-                    {viewMode === 'individual' && selectedCompetitors.length > 0 && (
-                      <span className="ml-2 text-xs text-purple-600">({selectedCompetitors.length} selected)</span>
-                    )}
-                  </h4>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-600">View:</span>
-                    <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-                      <button
-                        onClick={() => setViewMode('aggregated')}
-                        className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                          viewMode === 'aggregated'
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Aggregated
-                      </button>
-                      <button
-                        onClick={() => setViewMode('individual')}
-                        className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                          viewMode === 'individual'
-                            ? 'bg-purple-600 text-white'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Individual
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Competitor Price Cards */}
-                <div className="grid grid-cols-3 gap-4">
-                  {data.demandData._nicheProducts?.length > 0 ? (
-                    data.demandData._nicheProducts.slice(0, 9).map((product: any, index: number) => (
-                      <div 
-                        key={product.id} 
-                        onClick={() => toggleCompetitor(product.asin)}
-                        className={`p-4 rounded-lg border-2 transition-all hover:shadow-md cursor-pointer ${
-                          selectedCompetitors.includes(product.asin)
-                            ? 'border-purple-300 bg-purple-50 shadow-lg' 
-                            : 'border-gray-200 bg-white hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-start space-x-3">
-                          {/* Image on the left */}
-                          <div className="flex-shrink-0">
-                            {(() => {
-                              let imageUrl = null
-                              if (product.image_urls) {
-                                try {
-                                  // Try parsing as JSON first
-                                  const urls = typeof product.image_urls === 'string' ? JSON.parse(product.image_urls) : product.image_urls
-                                  imageUrl = Array.isArray(urls) ? urls[0] : urls
-                                } catch {
-                                  // If not JSON, try splitting by comma
-                                  const urls = product.image_urls.split(',').map((url: string) => url.trim())
-                                  imageUrl = urls[0]
-                                }
-                                // Convert to full URL if needed
-                                if (imageUrl && !imageUrl.startsWith('http')) {
-                                  imageUrl = `https://m.media-amazon.com/images/I/${imageUrl}`
-                                }
-                              }
-                              return imageUrl ? (
-                                <img 
-                                  src={imageUrl} 
-                                  alt={product.title}
-                                  className="w-20 h-20 object-cover rounded-lg"
-                                />
-                              ) : (
-                                <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                                  <span className="text-gray-400 text-xs">No Image</span>
-                                </div>
-                              )
-                            })()}
-                          </div>
-                          
-                          {/* Metadata on the right */}
-                          <div className="flex-1 min-w-0 relative">
-                            <div className="text-lg font-bold text-green-600">
-                              ${typeof product.price === 'number' ? product.price.toFixed(2) : 'N/A'}
-                            </div>
-                            <div className="text-xs text-gray-600 mb-1" title={product.title || 'Unknown Product'}>
-                              {product.title || 'Unknown Product'}
-                            </div>
-                            <div className="text-xs text-gray-500 mb-1">
-                              BSR: #{(product.bsr || product.sales_rank || 0) > 0 ? (product.bsr || product.sales_rank).toLocaleString() : 'N/A'}
-                            </div>
-                            <div className="text-xs text-gray-500 mb-2">
-                              {product.asin}
-                            </div>
-                            {selectedCompetitors.includes(product.asin) && (
-                              <span className="text-xs font-medium text-purple-600">
-                                ✓ Selected
-                              </span>
-                            )}
-                            {viewMode === 'individual' && selectedCompetitors.includes(product.asin) && (
-                              <div 
-                                className="absolute top-0 right-0 w-3 h-3 rounded-full"
-                                style={{ backgroundColor: getCompetitorColor(selectedCompetitors.indexOf(product.asin)) }}
-                              ></div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    // Show message when no real data
-                    <div className="col-span-5 text-center py-8 text-gray-500">
-                      <p>No competitor data available</p>
-                      <p className="text-xs mt-1">Real competitor pricing will be displayed when data is loaded</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-        </div>
-      )}
-
-
-      {/* Keyword Network Tab */}
-      {activeTab === 'network' && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5 text-purple-600" />
-                <span>Keyword Market Network</span>
-              </CardTitle>
-              <CardDescription>
-                Visual representation of keyword relationships and market size
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {data.keywordHierarchy ? (
-                <KeywordNetworkVisualization
-                  keywordHierarchy={data.keywordHierarchy}
-                  primaryKeyword={data.title || 'Product'}
-                  minKeywordsPerRoot={5}
-                  minKeywordsPerSubRoot={3}
-                />
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Activity className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p>No keyword data available for this level</p>
-                  <p className="text-sm mt-1">Try switching to a different level</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            </>
+          )}
         </div>
       )}
     </div>
