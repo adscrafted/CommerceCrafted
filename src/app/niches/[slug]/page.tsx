@@ -31,7 +31,6 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 import { MembershipGate } from '@/components/MembershipGate'
-import { getNicheBySlug } from '@/lib/niche-service'
 
 interface NichePageProps {
   params: Promise<{ slug: string }>
@@ -130,7 +129,12 @@ export default function NichePage({ params }: NichePageProps) {
       try {
         const resolvedParams = await params
         setSlug(resolvedParams.slug)
-        const data = await getNicheBySlug(resolvedParams.slug)
+        
+        // Fetch real data from API
+        const response = await fetch(`/api/niches/${resolvedParams.slug}/overview`)
+        if (!response.ok) throw new Error('Failed to fetch niche data')
+        
+        const data = await response.json()
         setNicheData(data)
       } catch (error) {
         console.error('Error loading niche data:', error)
@@ -431,7 +435,7 @@ export default function NichePage({ params }: NichePageProps) {
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Analysis Summary Card - Takes 2 slots */}
+          {/* Product Summary Card - Takes 2 slots */}
           <div className="md:col-span-2">
             <Card className="h-full hover:shadow-lg transition-all duration-300 border-2 hover:border-purple-200 bg-gradient-to-br from-indigo-50 to-indigo-100">
               <CardHeader>
@@ -441,8 +445,8 @@ export default function NichePage({ params }: NichePageProps) {
                       <BarChart3 className="h-6 w-6 text-gray-700" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg">Niche Summary</CardTitle>
-                      <CardDescription className="text-sm">Key insights and opportunities</CardDescription>
+                      <CardTitle className="text-lg">Product Summary</CardTitle>
+                      <CardDescription className="text-sm">Comprehensive market overview</CardDescription>
                     </div>
                   </div>
                   <div className="text-center">
@@ -454,43 +458,23 @@ export default function NichePage({ params }: NichePageProps) {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <Progress value={nicheData.opportunityScore} className="h-2" />
-                  <div className="grid md:grid-cols-2 gap-6 mt-4">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">Market Strengths</h3>
-                      <ul className="space-y-1">
-                        <li className="text-sm text-gray-700 flex items-start space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>High demand with {(nicheData.demandData.monthlySearchVolume / 1000).toFixed(0)}K searches/month</span>
-                        </li>
-                        <li className="text-sm text-gray-700 flex items-start space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>Growing market ({nicheData.marketOverview.marketGrowth} YoY)</span>
-                        </li>
-                        <li className="text-sm text-gray-700 flex items-start space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>Strong profit margins ({nicheData.financialData.profitMargin}%)</span>
-                        </li>
-                        <li className="text-sm text-gray-700 flex items-start space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>Multiple sub-niches to explore</span>
-                        </li>
-                      </ul>
+                  
+                  {/* Niche Summary Description */}
+                  {nicheData.nicheSummary ? (
+                    <div className="bg-white/70 rounded-lg p-6">
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {nicheData.nicheSummary}
+                      </p>
                     </div>
-                    
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">Top Opportunities</h3>
-                      <ul className="space-y-1">
-                        {nicheData.intelligenceData.opportunities.slice(0, 4).map((opp: any, index: number) => (
-                          <li key={index} className="text-sm text-gray-700 flex items-start space-x-2">
-                            <ArrowRight className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                            <span>{opp.opportunity}</span>
-                          </li>
-                        ))}
-                      </ul>
+                  ) : (
+                    <div className="bg-white/70 rounded-lg p-6">
+                      <p className="text-sm text-gray-600 italic">
+                        Loading product summary data... This comprehensive analysis will provide insights into market opportunities, competitive landscape, and growth potential.
+                      </p>
                     </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

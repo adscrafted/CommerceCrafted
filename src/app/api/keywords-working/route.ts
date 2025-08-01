@@ -32,12 +32,19 @@ async function fetchComprehensiveKeywords(asin: string) {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
     
+    // Debug access token
+    console.log('Access token length:', accessToken?.length);
+    console.log('Access token first 20 chars:', accessToken?.substring(0, 20));
+    
     const headers = {
       'Authorization': `Bearer ${accessToken}`,
       'Amazon-Advertising-API-ClientId': clientId,
       'Amazon-Advertising-API-Scope': profileId,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'User-Agent': 'CommerceCrafted/1.0 (Language=TypeScript)'
     };
+    
+    console.log('Headers being sent:', JSON.stringify(headers, null, 2));
     
     const allKeywords = [];
     
@@ -61,11 +68,17 @@ async function fetchComprehensiveKeywords(asin: string) {
       
       if (suggestedResponse.ok) {
         const suggestedData = await suggestedResponse.json();
-        suggestedKeywords = (Array.isArray(suggestedData) ? suggestedData : []).map((item: any) => ({
-          keyword: item.keywordText || item.keyword || item,
-          matchType: item.matchType || 'BROAD',
-          // Use rangeMedian as primary bid source (like JungleAce)
-          suggestedBid: item.suggestedBid?.rangeMedian ? Math.round(item.suggestedBid.rangeMedian * 100) :
+        suggestedKeywords = (Array.isArray(suggestedData) ? suggestedData : [])
+          .filter((item: any) => {
+            // Only include items that have a valid keyword string
+            const keyword = item.keywordText || item.keyword;
+            return keyword && typeof keyword === 'string' && keyword.trim().length > 0;
+          })
+          .map((item: any) => ({
+            keyword: (item.keywordText || item.keyword).trim(),
+            matchType: item.matchType || 'BROAD',
+            // Use rangeMedian as primary bid source (like JungleAce)
+            suggestedBid: item.suggestedBid?.rangeMedian ? Math.round(item.suggestedBid.rangeMedian * 100) :
                        item.bid?.suggested ? Math.round(item.bid.suggested * 100) : 
                        item.suggestedBid ? Math.round(item.suggestedBid * 100) : 
                        100,
@@ -110,9 +123,15 @@ async function fetchComprehensiveKeywords(asin: string) {
       if (recommendationResponse.ok) {
         const recommendationData = await recommendationResponse.json();
         const recommendations = recommendationData.recommendations || [];
-        recommendedKeywords = recommendations.map((item: any) => ({
-          keyword: item.keyword || item.keywordText,
-          matchType: item.matchType || 'BROAD',
+        recommendedKeywords = recommendations
+          .filter((item: any) => {
+            // Only include items that have a valid keyword string
+            const keyword = item.keyword || item.keywordText;
+            return keyword && typeof keyword === 'string' && keyword.trim().length > 0;
+          })
+          .map((item: any) => ({
+            keyword: (item.keyword || item.keywordText).trim(),
+            matchType: item.matchType || 'BROAD',
           // Use rangeMedian as primary bid source (like JungleAce)
           suggestedBid: item.suggestedBid?.rangeMedian ? Math.round(item.suggestedBid.rangeMedian * 100) :
                        item.bid?.suggested ? Math.round(item.bid.suggested * 100) : 
@@ -140,7 +159,9 @@ async function fetchComprehensiveKeywords(asin: string) {
     // PHASE 4: Match Type Expansion (JungleAce's deduplication strategy)
     console.log(`  🔄 Expanding keywords with match type variations...`);
     const expandedKeywords = [];
-    const baseKeywords = allKeywords.filter(k => k.source === 'suggested').slice(0, 200);
+    const baseKeywords = allKeywords
+      .filter(k => k && k.source === 'suggested' && k.keyword && typeof k.keyword === 'string')
+      .slice(0, 200);
     
     baseKeywords.forEach(baseKeyword => {
       const keyword = baseKeyword.keyword;
@@ -163,6 +184,11 @@ async function fetchComprehensiveKeywords(asin: string) {
     // Merge and deduplicate (JungleAce approach)
     const keywordMap = new Map();
     [...allKeywords, ...expandedKeywords].forEach(keyword => {
+      // Skip invalid keywords
+      if (!keyword || !keyword.keyword || typeof keyword.keyword !== 'string') {
+        return;
+      }
+      
       const key = `${keyword.keyword.toLowerCase()}|${keyword.matchType}`;
       if (!keywordMap.has(key)) {
         keywordMap.set(key, keyword);
@@ -351,16 +377,60 @@ async function generateFallbackKeywords(asin: string, supabase: any) {
  * Uses fallback hierarchy: EXACT > BROAD > PHRASE for best available bid data
  */
 async function enrichKeywordsWithMatchTypeFallback(allKeywords: any[], asin: string, headers: any) {
-  const uniqueKeywordTexts = [...new Set(allKeywords.map(k => k.keyword.toLowerCase()))];
+  // Filter to only include keywords with valid keyword strings
+  const validKeywords = allKeywords.filter(k => 
+    k && k.keyword && typeof k.keyword === 'string' && k.keyword.trim().length > 0
+  );
+  
+  const uniqueKeywordTexts = [...new Set(validKeywords.map(k => k.keyword.toLowerCase()))];
   
   if (uniqueKeywordTexts.length === 0) {
-    console.log(`    ⚠️ No keywords to enrich for ${asin}`);
+    console.log(`    ⚠️ No valid keywords to enrich for ${asin}`);
     return;
   }
 
   console.log(`  💰 Enriching ${uniqueKeywordTexts.length} unique keywords with match type fallback strategy...`);
   
   try {
+    // First, get advertiser-owned ASINs to use for bid recommendations
+    console.log(`    🔍 Fetching advertiser-owned ASINs...`);
+    let ownedAsin = asin; // Default to original ASIN
+    
+    try {
+      const productAdsResponse = await fetch(
+        'https://advertising-api.amazon.com/sp/productAds/list',
+        {
+          method: 'POST',
+          headers: {
+            ...headers,
+            'Content-Type': 'application/vnd.spproductAd.v3+json',
+            'Accept': 'application/vnd.spproductAd.v3+json'
+          },
+          body: JSON.stringify({
+            maxResults: 50,
+            stateFilter: {
+              include: ['ENABLED', 'PAUSED']
+            }
+          })
+        }
+      );
+      
+      if (productAdsResponse.ok) {
+        const productAdsData = await productAdsResponse.json();
+        if (productAdsData?.productAds && productAdsData.productAds.length > 0) {
+          // Use the first owned ASIN we find
+          ownedAsin = productAdsData.productAds[0].asin;
+          console.log(`    ✅ Using advertiser-owned ASIN: ${ownedAsin} (original: ${asin})`);
+        } else {
+          console.log(`    ⚠️ No advertiser-owned ASINs found, using original ASIN: ${asin}`);
+        }
+      } else {
+        console.log(`    ⚠️ Could not fetch product ads: ${productAdsResponse.status}`);
+      }
+    } catch (error) {
+      console.log(`    ⚠️ Error fetching owned ASINs: ${error.message}`);
+    }
+    
     // Build enrichment map: keyword => { EXACT: data, BROAD: data, PHRASE: data }
     const enrichmentMap = new Map();
     
@@ -384,7 +454,7 @@ async function enrichKeywordsWithMatchTypeFallback(allKeywords: any[], asin: str
       
       const bidRequestPayload = {
         recommendationType: 'BIDS_FOR_NEW_AD_GROUP',
-        asins: [asin],
+        asins: [ownedAsin], // Use owned ASIN instead of original ASIN
         targetingExpressions: targetingExpressions,
         bidding: { 
           strategy: 'AUTO_FOR_SALES', 
@@ -392,14 +462,31 @@ async function enrichKeywordsWithMatchTypeFallback(allKeywords: any[], asin: str
         }
       };
       
+      console.log(`      📝 Sending bid request for ${targetingExpressions.length} targeting expressions`);
+      console.log(`      📝 Using owned ASIN: ${ownedAsin}, Profile: ${headers['Amazon-Advertising-API-Scope']}`);
+      
+      // Create fresh headers for this request to avoid any contamination
+      const bidHeaders = {
+        'Authorization': headers['Authorization'],
+        'Amazon-Advertising-API-ClientId': headers['Amazon-Advertising-API-ClientId'],
+        'Amazon-Advertising-API-Scope': headers['Amazon-Advertising-API-Scope'],
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': headers['User-Agent']
+      };
+      
+      console.log(`      📝 Bid request headers:`, JSON.stringify(bidHeaders, null, 2));
+      console.log(`      📝 Bid request URL: https://advertising-api.amazon.com/sp/targets/bid/recommendations`);
+      console.log(`      📝 Bid request payload sample:`, JSON.stringify({
+        ...bidRequestPayload,
+        targetingExpressions: bidRequestPayload.targetingExpressions.slice(0, 3) // Show first 3 for brevity
+      }, null, 2));
+      
       const bidResponse = await fetch(
-        `https://advertising-api.amazon.com/v2/sp/targets/bid/recommendations`,
+        `https://advertising-api.amazon.com/sp/targets/bid/recommendations`,
         {
           method: 'POST',
-          headers: {
-            ...headers,
-            'Content-Type': 'application/json'
-          },
+          headers: bidHeaders,
           body: JSON.stringify(bidRequestPayload)
         }
       );
@@ -467,7 +554,22 @@ async function enrichKeywordsWithMatchTypeFallback(allKeywords: any[], asin: str
         });
         
       } else {
-        console.log(`      ⚠️ Bid recommendation request failed: ${bidResponse.status}`);
+        console.log(`      ⚠️ Bid recommendation request failed: ${bidResponse.status} ${bidResponse.statusText}`);
+        // Log response details for debugging but continue processing
+        try {
+          const errorBody = await bidResponse.text();
+          console.log(`      📝 Full error response: ${errorBody}`);
+          
+          // Try to parse as JSON if possible
+          try {
+            const errorJson = JSON.parse(errorBody);
+            console.log(`      📝 Error JSON:`, JSON.stringify(errorJson, null, 2));
+          } catch (e) {
+            // Not JSON, that's fine
+          }
+        } catch (e) {
+          console.log(`      📝 Could not read error response`);
+        }
       }
       
       // Rate limiting between batches
@@ -480,7 +582,14 @@ async function enrichKeywordsWithMatchTypeFallback(allKeywords: any[], asin: str
     
     // Apply enrichment to all keywords using fallback hierarchy
     let enrichedCount = 0;
+    let skippedInvalidCount = 0;
     allKeywords.forEach(keyword => {
+      // Skip invalid keywords
+      if (!keyword || !keyword.keyword || typeof keyword.keyword !== 'string') {
+        skippedInvalidCount++;
+        return;
+      }
+      
       const keywordLower = keyword.keyword.toLowerCase();
       
       if (enrichmentMap.has(keywordLower)) {
@@ -510,6 +619,9 @@ async function enrichKeywordsWithMatchTypeFallback(allKeywords: any[], asin: str
     });
     
     console.log(`    ✅ Successfully enriched ${enrichedCount}/${allKeywords.length} keywords using match type fallback strategy`);
+    if (skippedInvalidCount > 0) {
+      console.log(`    ⚠️ Skipped ${skippedInvalidCount} invalid keywords during enrichment`);
+    }
     
   } catch (error) {
     console.log(`    ⚠️ Bid enrichment failed: ${error.message}`);

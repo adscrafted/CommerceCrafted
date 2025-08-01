@@ -1,5 +1,4 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { UserRole, SubscriptionTier } from '@/types/auth'
 
 // Role hierarchy: ADMIN > USER
@@ -22,9 +21,10 @@ export interface AuthorizationResult {
 }
 
 export async function requireAuth(): Promise<AuthorizationResult> {
-  const session = await getServerSession(authOptions)
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
   
-  if (!session?.user) {
+  if (!user) {
     return {
       authorized: false,
       message: 'Authentication required',
@@ -43,8 +43,33 @@ export async function requireRole(
     return authResult
   }
 
-  const session = await getServerSession(authOptions)
-  const userRole = session!.user.role as UserRole
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    return {
+      authorized: false,
+      message: 'Authentication required',
+      redirectTo: '/auth/signin'
+    }
+  }
+
+  // Get user profile with role
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) {
+    return {
+      authorized: false,
+      message: 'User profile not found',
+      redirectTo: '/auth/signin'
+    }
+  }
+
+  const userRole = profile.role as UserRole
   const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole]
   
   const userRoleLevel = ROLE_HIERARCHY[userRole] || 0
@@ -72,13 +97,38 @@ export async function requireSubscriptionTier(
     return authResult
   }
 
-  const session = await getServerSession(authOptions)
-  const userTier = session!.user.subscriptionTier
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    return {
+      authorized: false,
+      message: 'Authentication required',
+      redirectTo: '/auth/signin'
+    }
+  }
+
+  // Get user profile with subscription info
+  const { data: profile } = await supabase
+    .from('users')
+    .select('subscription_tier, subscription_expires_at')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) {
+    return {
+      authorized: false,
+      message: 'User profile not found',
+      redirectTo: '/auth/signin'
+    }
+  }
+
+  const userTier = profile.subscription_tier
   const requiredTiers = Array.isArray(requiredTier) ? requiredTier : [requiredTier]
   
   // Check if subscription has expired
   const now = new Date()
-  const expiresAt = session!.user.subscriptionExpiresAt
+  const expiresAt = profile.subscription_expires_at
   
   if (userTier !== 'free' && expiresAt && new Date(expiresAt) < now) {
     return {
@@ -111,9 +161,25 @@ export async function requireEmailVerification(): Promise<AuthorizationResult> {
     return authResult
   }
 
-  const session = await getServerSession(authOptions)
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
   
-  if (!session!.user.emailVerified) {
+  if (!user) {
+    return {
+      authorized: false,
+      message: 'Authentication required',
+      redirectTo: '/auth/signin'
+    }
+  }
+
+  // Get user profile with email verification status
+  const { data: profile } = await supabase
+    .from('users')
+    .select('email_verified')
+    .eq('id', user.id)
+    .single()
+  
+  if (!profile?.email_verified) {
     return {
       authorized: false,
       message: 'Email verification required',
@@ -125,9 +191,10 @@ export async function requireEmailVerification(): Promise<AuthorizationResult> {
 }
 
 export async function checkFeatureAccess(feature: string): Promise<AuthorizationResult> {
-  const session = await getServerSession(authOptions)
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
   
-  if (!session?.user) {
+  if (!user) {
     return {
       authorized: false,
       message: 'Authentication required',
@@ -135,7 +202,22 @@ export async function checkFeatureAccess(feature: string): Promise<Authorization
     }
   }
 
-  const userTier = session.user.subscriptionTier
+  // Get user profile with subscription info
+  const { data: profile } = await supabase
+    .from('users')
+    .select('subscription_tier, subscription_expires_at')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) {
+    return {
+      authorized: false,
+      message: 'User profile not found',
+      redirectTo: '/auth/signin'
+    }
+  }
+
+  const userTier = profile.subscription_tier
   
   // Feature access mapping
   const featureAccess: Record<string, string[]> = {
@@ -166,7 +248,7 @@ export async function checkFeatureAccess(feature: string): Promise<Authorization
   // Check subscription expiry for paid plans
   if (userTier !== 'free') {
     const now = new Date()
-    const expiresAt = session.user.subscriptionExpiresAt
+    const expiresAt = profile.subscription_expires_at
     
     if (expiresAt && new Date(expiresAt) < now) {
       return {
@@ -211,9 +293,10 @@ export async function checkUsageLimit(
   feature: keyof typeof USAGE_LIMITS.free,
   currentUsage: number
 ): Promise<AuthorizationResult> {
-  const session = await getServerSession(authOptions)
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
   
-  if (!session?.user) {
+  if (!user) {
     return {
       authorized: false,
       message: 'Authentication required',
@@ -221,7 +304,22 @@ export async function checkUsageLimit(
     }
   }
 
-  const userTier = session.user.subscriptionTier as SubscriptionTier
+  // Get user profile with subscription tier
+  const { data: profile } = await supabase
+    .from('users')
+    .select('subscription_tier')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) {
+    return {
+      authorized: false,
+      message: 'User profile not found',
+      redirectTo: '/auth/signin'
+    }
+  }
+
+  const userTier = profile.subscription_tier as SubscriptionTier
   const limits = USAGE_LIMITS[userTier] || USAGE_LIMITS.free
   const limit = limits[feature]
 

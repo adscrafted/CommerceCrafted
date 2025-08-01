@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getBackfillService } from '@/lib/backfill-service'
 import { z } from 'zod'
 
@@ -13,8 +12,9 @@ const BackfillRequestSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -107,8 +107,9 @@ export async function POST(request: NextRequest) {
 export async function GET(_request: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

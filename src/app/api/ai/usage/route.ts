@@ -2,16 +2,16 @@
 // Handles tier-based usage limits and statistics
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { AIResearchAgent } from '@/lib/ai-research-agent'
-import { authOptions } from '@/lib/auth'
 
 // GET /api/ai/usage - Get current usage statistics
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -88,8 +88,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }

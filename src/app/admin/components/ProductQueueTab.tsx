@@ -288,12 +288,24 @@ function ProductQueueTab() {
       console.log('[Client] Making DELETE request to:', `/api/niches/by-id?id=${nicheId}`)
       console.log('[Client] Document cookies:', document.cookie)
       
+      // Get the current session token from Supabase client
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      // Add authorization header if session exists
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+        console.log('[Client] Added auth header with token')
+      } else {
+        console.log('[Client] No session token available')
+      }
+      
       // Use the API endpoint to properly cascade delete
       const response = await fetch(`/api/niches/by-id?id=${nicheId}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         credentials: 'include'  // Include cookies for authentication
       })
       
@@ -319,7 +331,9 @@ function ProductQueueTab() {
             status: response.status,
             statusText: response.statusText,
             errorData,
-            nicheId
+            nicheId,
+            hasAuthToken: session?.access_token ? 'Yes' : 'No',
+            requestHeaders: headers
           })
         } catch (jsonError) {
           // If response is not JSON, use status text

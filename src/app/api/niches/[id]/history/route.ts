@@ -59,7 +59,7 @@ export async function GET(
       .from('product_keywords')
       .select('*')
       .in('product_id', asinList)
-      .limit(10000) // Set a high limit to get all keywords
+      .limit(100000) // Set a high limit to get all keywords (increased from 10k to 100k)
     
     if (keywordsError) {
       console.error('Error fetching keywords:', keywordsError)

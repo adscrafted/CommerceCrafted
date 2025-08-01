@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAuthActions } from '@/lib/supabase/hooks'
+import { supabase } from '@/lib/supabase/client'
 import {
   KeyRound,
   Lock,
@@ -27,15 +28,51 @@ function ResetPasswordComponent() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [isValidToken, setIsValidToken] = useState<boolean | null>(true) // Assume valid initially
+  const [isValidToken, setIsValidToken] = useState<boolean | null>(null) // Check token first
   const [isSuccess, setIsSuccess] = useState(false)
   
   const router = useRouter()
   const searchParams = useSearchParams()
   const { updatePassword } = useAuthActions()
 
-  // For Supabase, we don't need to verify token separately - just try to update password
-  // The token verification is handled by Supabase automatically
+  // Check if we have the proper auth session from the reset link
+  useEffect(() => {
+    const handlePasswordReset = async () => {
+      try {
+        // Get the code from URL
+        const code = searchParams.get('code')
+        
+        if (!code) {
+          console.error('No reset code in URL')
+          setIsValidToken(false)
+          return
+        }
+
+        // For Supabase Auth, the reset link should automatically create a session
+        // Let's check if we have a session
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Error getting session:', error)
+          setIsValidToken(false)
+          setError(error.message)
+        } else if (!session) {
+          console.error('No session found. The reset link may have expired.')
+          setIsValidToken(false)
+          setError('This reset link has expired or has already been used.')
+        } else {
+          console.log('Valid reset session found')
+          setIsValidToken(true)
+        }
+      } catch (err) {
+        console.error('Error handling password reset:', err)
+        setIsValidToken(false)
+        setError('An error occurred while validating the reset link.')
+      }
+    }
+    
+    handlePasswordReset()
+  }, [searchParams])
 
   const validateForm = () => {
     if (password.length < 6) {
@@ -60,23 +97,42 @@ function ResetPasswordComponent() {
     setIsLoading(true)
 
     try {
+      console.log('Attempting to update password...')
+      
+      // First check if we still have a valid session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError || !session) {
+        console.error('No valid session for password update:', sessionError)
+        setError('Your reset link has expired. Please request a new one.')
+        setIsValidToken(false)
+        setIsLoading(false)
+        return
+      }
+
       const result = await updatePassword(password)
+      console.log('Update password result:', result)
 
       if (result.error) {
+        console.error('Password update error:', result.error)
         setError(result.error)
         // If token is invalid, show invalid token state
         if (result.error.includes('invalid') || result.error.includes('expired')) {
           setIsValidToken(false)
         }
       } else {
+        console.log('Password updated successfully')
         setIsSuccess(true)
-        // Redirect to signin after 3 seconds
+        // Sign out to clear the reset session
+        await supabase.auth.signOut()
+        // Redirect to signin after 2 seconds
         setTimeout(() => {
           router.push('/auth/signin?message=Password reset successfully. Please sign in.')
-        }, 3000)
+        }, 2000)
       }
-    } catch {
-      setError('An error occurred. Please try again.')
+    } catch (error) {
+      console.error('Unexpected error during password reset:', error)
+      setError('An unexpected error occurred. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -163,7 +219,9 @@ function ResetPasswordComponent() {
             <CardContent className="space-y-6">
               <Alert variant="destructive">
                 <XCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>
+                  {error || 'This password reset link is invalid or has expired.'}
+                </AlertDescription>
               </Alert>
 
               <div className="bg-yellow-50 p-4 rounded-lg">
@@ -293,7 +351,7 @@ function ResetPasswordComponent() {
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Resetting...
+                    Resetting Password...
                   </>
                 ) : (
                   <>
@@ -303,19 +361,14 @@ function ResetPasswordComponent() {
                 )}
               </Button>
             </form>
+
+            {/* Additional help text */}
+            <div className="text-center text-sm text-gray-600">
+              <p>Having trouble? Try using a different password than your current one.</p>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Security Tips */}
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <h4 className="text-sm font-medium text-blue-900 mb-2">Password Security Tips</h4>
-          <ul className="text-xs text-blue-800 space-y-1">
-            <li>• Use a combination of letters, numbers, and symbols</li>
-            <li>• Make it at least 8 characters long</li>
-            <li>• Don&apos;t reuse passwords from other accounts</li>
-            <li>• Consider using a password manager</li>
-          </ul>
-        </div>
       </div>
     </div>
   )

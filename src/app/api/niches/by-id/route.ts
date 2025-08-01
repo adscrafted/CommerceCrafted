@@ -14,15 +14,20 @@ const updateNicheSchema = z.object({
   status: z.enum(['active', 'archived', 'draft']).optional(),
 })
 
-// GET /api/niches/[id] - Get a single niche
-async function handleGet(req: NextRequest, { params }: { params: { id: string } }) {
+// GET /api/niches/by-id - Get a single niche by query parameter
+async function handleGet(req: NextRequest) {
   try {
     const userId = req.headers.get('x-user-id')
     if (!userId) {
       return NextResponse.json({ error: 'User ID not found' }, { status: 401 })
     }
     
-    const nicheId = params.id
+    const { searchParams } = new URL(req.url)
+    const nicheId = searchParams.get('id')
+    
+    if (!nicheId) {
+      return NextResponse.json({ error: 'Niche ID is required' }, { status: 400 })
+    }
     
     // Fetch niche
     const niche = await nicheService.getNiche(nicheId, userId)
@@ -63,15 +68,20 @@ async function handleGet(req: NextRequest, { params }: { params: { id: string } 
   }
 }
 
-// PUT /api/niches/[id] - Update a niche
-async function handlePut(req: NextRequest, { params }: { params: { id: string } }) {
+// PUT /api/niches/by-id - Update a niche by query parameter
+async function handlePut(req: NextRequest) {
   try {
     const userId = req.headers.get('x-user-id')
     if (!userId) {
       return NextResponse.json({ error: 'User ID not found' }, { status: 401 })
     }
     
-    const nicheId = params.id
+    const { searchParams } = new URL(req.url)
+    const nicheId = searchParams.get('id')
+    
+    if (!nicheId) {
+      return NextResponse.json({ error: 'Niche ID is required' }, { status: 400 })
+    }
     
     // Parse and validate request body
     const body = await req.json()
@@ -114,15 +124,27 @@ async function handlePut(req: NextRequest, { params }: { params: { id: string } 
   }
 }
 
-// DELETE /api/niches/[id] - Delete a niche
-async function handleDelete(req: NextRequest, { params }: { params: { id: string } }) {
+// DELETE /api/niches/by-id - Delete a niche by query parameter
+async function handleDelete(req: NextRequest) {
+  console.log('[API Route DELETE] Starting delete request')
+  console.log('[API Route DELETE] URL:', req.url)
+  console.log('[API Route DELETE] Headers:', Object.fromEntries(req.headers.entries()))
+  
+  const userId = req.headers.get('x-user-id')
+  const { searchParams } = new URL(req.url)
+  const nicheId = searchParams.get('id')
+  
+  console.log('[API Route DELETE] Extracted values:', { userId, nicheId })
+  
   try {
-    const userId = req.headers.get('x-user-id')
     if (!userId) {
+      console.log('[API Route DELETE] No user ID found in headers - returning 401')
       return NextResponse.json({ error: 'User ID not found' }, { status: 401 })
     }
     
-    const nicheId = params.id
+    if (!nicheId) {
+      return NextResponse.json({ error: 'Niche ID is required' }, { status: 400 })
+    }
     
     // Delete niche (cascade deletes products and analyses)
     await nicheService.deleteNiche(nicheId, userId)
@@ -139,25 +161,37 @@ async function handleDelete(req: NextRequest, { params }: { params: { id: string
     }
     
     console.error('Error deleting niche:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      nicheId: nicheId,
+      userId: userId
+    })
+    
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete niche'
     return NextResponse.json(
-      { error: 'Failed to delete niche' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
 }
 
-// Export routes with authentication and rate limiting
-export const GET = withAuth(
-  withRateLimit(handleGet, rateLimiters.api),
-  { requireAuth: true }
-)
+// Create wrapped handlers
+const wrappedGet = withRateLimit(handleGet, rateLimiters.api)
+const wrappedPut = withRateLimit(handlePut, rateLimiters.nicheOperations)
+const wrappedDelete = withRateLimit(handleDelete, rateLimiters.nicheOperations)
 
-export const PUT = withAuth(
-  withRateLimit(handlePut, rateLimiters.nicheOperations),
-  { requireAuth: true }
-)
+// Export routes with authentication
+export const GET = (req: NextRequest, context?: any) => 
+  withAuth(wrappedGet, { requireAuth: true })(req, context)
 
-export const DELETE = withAuth(
-  withRateLimit(handleDelete, rateLimiters.nicheOperations),
-  { requireAuth: true }
-)
+export const PUT = (req: NextRequest, context?: any) => 
+  withAuth(wrappedPut, { requireAuth: true })(req, context)
+
+export const DELETE = async (req: NextRequest, context?: any) => {
+  console.log('[API Route] DELETE export called')
+  console.log('[API Route] Request method:', req.method)
+  console.log('[API Route] Request URL:', req.url)
+  console.log('[API Route] Calling withAuth wrapper')
+  return withAuth(wrappedDelete, { requireAuth: true })(req, context)
+}

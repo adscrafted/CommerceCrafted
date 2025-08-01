@@ -99,9 +99,11 @@ export default function KeywordsPage({ params }: KeywordsPageProps) {
               
               setProductData(transformedData)
             } else {
+              // No product found
               setProductData(null)
             }
           } else {
+            console.error('Failed to fetch niche data')
             setProductData(null)
           }
         } catch (error) {
@@ -109,6 +111,7 @@ export default function KeywordsPage({ params }: KeywordsPageProps) {
           setProductData(null)
         }
       } else {
+        // No nicheId provided
         setProductData(null)
       }
       
@@ -204,10 +207,12 @@ export default function KeywordsPage({ params }: KeywordsPageProps) {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Keywords Analysis Component */}
-        {!productData && !nicheId ? (
+        {!productData ? (
           <div className="text-center py-8">
             <div className="text-gray-500 mb-4">No Data Available</div>
-            <p className="text-gray-600">Please provide a valid nicheId parameter to view keywords analysis.</p>
+            <p className="text-gray-600">
+              {nicheId ? 'Unable to load keywords data for this niche.' : 'Please provide a valid nicheId parameter to view keywords analysis.'}
+            </p>
           </div>
         ) : (
           <KeywordsAnalysis data={productData} searchTermsData={searchTermsData} />

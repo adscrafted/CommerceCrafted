@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { checkUsageLimit, UsageType } from '@/lib/usage'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
     
-    if (!session?.user) {
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -23,12 +23,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const canUse = await checkUsageLimit(session.user.id, usageType)
+    const canUse = await checkUsageLimit(authUser.id, usageType)
 
     return NextResponse.json({ 
       canUse,
       usageType,
-      userId: session.user.id 
+      userId: authUser.id 
     })
 
   } catch (error) {

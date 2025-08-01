@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createStripeCustomer, getStripeCustomerByEmail, createCheckoutSession, STRIPE_CONFIG } from '@/lib/stripe'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
     
-    if (!session?.user) {
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -27,13 +27,20 @@ export async function POST(request: NextRequest) {
     const billing = isAnnual ? plan.annual : plan.monthly
     const priceId = billing.priceId
 
+    // Get user details from database
+    const { data: userRecord } = await supabase
+      .from('users')
+      .select('name')
+      .eq('id', authUser.id)
+      .single()
+    
     // Get or create Stripe customer
-    let stripeCustomer = await getStripeCustomerByEmail(session.user.email)
+    let stripeCustomer = await getStripeCustomerByEmail(authUser.email!)
     
     if (!stripeCustomer) {
       stripeCustomer = await createStripeCustomer(
-        session.user.email,
-        session.user.name
+        authUser.email!,
+        userRecord?.name || undefined
       )
     }
 
@@ -44,7 +51,7 @@ export async function POST(request: NextRequest) {
       successUrl,
       cancelUrl,
       metadata: {
-        userId: session.user.id,
+        userId: authUser.id,
         planId,
         isAnnual: isAnnual.toString(),
       }

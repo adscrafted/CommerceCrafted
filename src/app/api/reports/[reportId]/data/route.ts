@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { getServerSupabase } from '@/lib/supabase-server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 // GET report data
 export async function GET(
@@ -10,8 +8,9 @@ export async function GET(
 ) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -25,9 +24,12 @@ export async function GET(
     const search = searchParams.get('search') || ''
 
     // Verify user owns this report
-    // TODO: Convert to Supabase
-    // const { data: report } = await supabase.from('amazon_reports').select('id, type, status').eq('id', reportId).eq('user_id', session.user.id).single()
-    const report = null
+    const { data: report } = await supabase
+      .from('amazon_reports')
+      .select('id, type, status')
+      .eq('id', reportId)
+      .eq('user_id', authUser.id)
+      .single()
 
     if (!report) {
       return NextResponse.json(
@@ -57,10 +59,12 @@ export async function GET(
         })
       }
 
-      // TODO: Convert to Supabase
-      // const { data, count } = await supabase.from('search_terms').select('*', { count: 'exact' }).eq('report_id', reportId).range((page - 1) * limit, page * limit - 1)
-      const data = []
-      const total = 0
+      const { data, count } = await supabase
+        .from('search_terms')
+        .select('*', { count: 'exact' })
+        .eq('report_id', reportId)
+        .range((page - 1) * limit, page * limit - 1)
+      const total = count || 0
 
       return NextResponse.json({
         success: true,
@@ -74,9 +78,11 @@ export async function GET(
       })
     } else {
       // For other report types, get from report data
-      // TODO: Convert to Supabase
-      // const { data: reportData } = await supabase.from('amazon_report_data').select('data, record_count').eq('report_id', reportId).single()
-      const reportData = null
+      const { data: reportData } = await supabase
+        .from('amazon_report_data')
+        .select('data, record_count')
+        .eq('report_id', reportId)
+        .single()
 
       if (!reportData) {
         return NextResponse.json(
@@ -87,8 +93,8 @@ export async function GET(
 
       return NextResponse.json({
         success: true,
-        data: reportData.data,
-        recordCount: reportData.recordCount
+        data: reportData?.data,
+        recordCount: reportData?.record_count
       })
     }
 

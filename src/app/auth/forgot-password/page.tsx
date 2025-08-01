@@ -202,15 +202,6 @@ export default function ForgotPasswordPage() {
           </CardContent>
         </Card>
 
-        {/* Security Notice */}
-        <div className="bg-yellow-50 p-4 rounded-lg">
-          <h4 className="text-sm font-medium text-yellow-900 mb-2">Security Notice</h4>
-          <ul className="text-xs text-yellow-800 space-y-1">
-            <li>• Reset links expire after 1 hour for security</li>
-            <li>• Only the most recent reset link will work</li>
-            <li>• We&apos;ll never ask for your password via email</li>
-          </ul>
-        </div>
       </div>
     </div>
   )

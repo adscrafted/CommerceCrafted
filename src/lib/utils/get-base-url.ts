@@ -11,6 +11,14 @@ export function getBaseUrl() {
   // If we have a public app URL configured, use it
   // This is the most reliable way to ensure consistent URLs across all contexts
   if (process.env.NEXT_PUBLIC_APP_URL) {
+    // For local development, check if we need to use a different port
+    if (process.env.NEXT_PUBLIC_APP_URL.includes('localhost:3000')) {
+      // Check if server is actually on 3003
+      const actualPort = process.env.PORT || '3003'
+      if (actualPort !== '3000') {
+        return process.env.NEXT_PUBLIC_APP_URL.replace(':3000', `:${actualPort}`)
+      }
+    }
     return process.env.NEXT_PUBLIC_APP_URL
   }
   

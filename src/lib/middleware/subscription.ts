@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { checkUsageLimit, incrementUsage, UsageType } from '@/lib/usage'
 import { STRIPE_CONFIG } from '@/lib/stripe'
 
@@ -14,148 +13,134 @@ export async function withSubscriptionCheck(
   request: NextRequest,
   options: SubscriptionCheckOptions = {}
 ) {
-  const session = await getServerSession(authOptions)
+  const supabase = await createServerSupabaseClient()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
   
-  if (!session?.user) {
+  if (!authUser) {
     return NextResponse.json(
       { error: 'Authentication required' },
       { status: 401 }
     )
   }
 
-  const user = session.user
+  // Get user profile with subscription info
+  const { data: profile } = await supabase
+    .from('users')
+    .select('subscription_tier, subscription_expires_at')
+    .eq('id', authUser.id)
+    .single()
+
+  if (!profile) {
+    return NextResponse.json(
+      { error: 'User profile not found' },
+      { status: 404 }
+    )
+  }
+
   const { requiredTier, usageType, incrementOnSuccess = false } = options
 
   // Check subscription tier requirement
   if (requiredTier && requiredTier !== 'free') {
     const tierHierarchy = { free: 0, pro: 1, enterprise: 2 }
-    const userTierLevel = tierHierarchy[user.subscriptionTier as keyof typeof tierHierarchy] || 0
-    const requiredTierLevel = tierHierarchy[requiredTier]
+    const userTierLevel = tierHierarchy[profile.subscription_tier as keyof typeof tierHierarchy] || 0
+    const requiredTierLevel = tierHierarchy[requiredTier] || 0
 
     if (userTierLevel < requiredTierLevel) {
       return NextResponse.json(
         { 
-          error: 'Subscription upgrade required',
+          error: 'Insufficient subscription tier',
           requiredTier,
-          currentTier: user.subscriptionTier,
-          upgradeUrl: '/pricing'
+          currentTier: profile.subscription_tier,
+          upgradeUrl: STRIPE_CONFIG.priceIds[requiredTier]
         },
-        { status: 402 } // Payment Required
+        { status: 403 }
       )
     }
-  }
 
-  // Check usage limits
-  if (usageType) {
-    try {
-      const canUse = await checkUsageLimit(user.id, usageType)
-      
-      if (!canUse) {
-        const plan = STRIPE_CONFIG.plans[user.subscriptionTier as keyof typeof STRIPE_CONFIG.plans]
-        const limit = plan?.limits?.[usageType]
-        
+    // Check if subscription is expired for paid tiers
+    if (profile.subscription_tier !== 'free' && profile.subscription_expires_at) {
+      const expiresAt = new Date(profile.subscription_expires_at)
+      if (expiresAt < new Date()) {
         return NextResponse.json(
           { 
-            error: 'Usage limit exceeded',
-            usageType,
-            limit,
-            upgradeUrl: '/pricing'
+            error: 'Subscription expired',
+            expiredAt: expiresAt.toISOString(),
+            renewUrl: '/billing'
           },
-          { status: 429 } // Too Many Requests
+          { status: 403 }
         )
       }
-
-      // Increment usage if requested and check passed
-      if (incrementOnSuccess) {
-        await incrementUsage(user.id, usageType)
-      }
-    } catch (error) {
-      console.error('Error checking usage limits:', error)
-      return NextResponse.json(
-        { error: 'Error checking subscription limits' },
-        { status: 500 }
-      )
     }
   }
 
-  // Check subscription expiration
-  if (user.subscriptionExpiresAt && new Date() > new Date(user.subscriptionExpiresAt)) {
-    return NextResponse.json(
-      { 
-        error: 'Subscription expired',
-        expiredAt: user.subscriptionExpiresAt,
-        renewUrl: '/billing'
-      },
-      { status: 402 }
+  // Check usage limits if specified
+  if (usageType) {
+    const { allowed, remaining, limit, resetDate } = await checkUsageLimit(
+      authUser.id,
+      usageType
     )
+
+    if (!allowed) {
+      return NextResponse.json(
+        { 
+          error: 'Usage limit exceeded',
+          usageType,
+          limit,
+          remaining: 0,
+          resetDate,
+          upgradeUrl: '/pricing'
+        },
+        { status: 429 }
+      )
+    }
+
+    // Add usage info to request headers for the handler
+    request.headers.set('x-usage-remaining', remaining.toString())
+    request.headers.set('x-usage-limit', limit.toString())
+    request.headers.set('x-usage-reset', resetDate.toISOString())
   }
 
-  return null // No restrictions, continue with request
+  // Store user info in headers for the handler
+  request.headers.set('x-user-id', authUser.id)
+  request.headers.set('x-user-tier', profile.subscription_tier)
+
+  // Set up a flag to track if usage should be incremented
+  if (incrementOnSuccess && usageType) {
+    request.headers.set('x-increment-usage', 'true')
+    request.headers.set('x-usage-type', usageType)
+  }
+
+  return null // Continue with the request
 }
 
 export function createSubscriptionMiddleware(options: SubscriptionCheckOptions) {
-  return async (request: NextRequest) => {
-    const restriction = await withSubscriptionCheck(request, options)
-    if (restriction) {
-      return restriction
+  return (handler: (req: NextRequest) => Promise<NextResponse>) => {
+    return async (req: NextRequest) => {
+      const subscriptionCheck = await withSubscriptionCheck(req, options)
+      if (subscriptionCheck) {
+        return subscriptionCheck
+      }
+
+      const response = await handler(req)
+
+      // Increment usage on successful response if configured
+      if (
+        response.status >= 200 && 
+        response.status < 300 && 
+        req.headers.get('x-increment-usage') === 'true'
+      ) {
+        const userId = req.headers.get('x-user-id')!
+        const usageType = req.headers.get('x-usage-type') as UsageType
+        
+        try {
+          await incrementUsage(userId, usageType)
+        } catch (error) {
+          console.error('Failed to increment usage:', error)
+          // Don't fail the request if usage increment fails
+        }
+      }
+
+      return response
     }
-    // Continue to the actual API handler
-    return null
   }
-}
-
-// Helper function to enforce subscription in API routes
-export async function enforceSubscription(
-  request: NextRequest,
-  options: SubscriptionCheckOptions = {}
-): Promise<NextResponse | null> {
-  return await withSubscriptionCheck(request, options)
-}
-
-// Higher-order function to wrap API handlers with subscription checks
-export function withSubscription(
-  handler: (request: NextRequest) => Promise<NextResponse>,
-  options: SubscriptionCheckOptions = {}
-) {
-  return async (request: NextRequest): Promise<NextResponse> => {
-    const restriction = await withSubscriptionCheck(request, options)
-    if (restriction) {
-      return restriction
-    }
-    return await handler(request)
-  }
-}
-
-// Usage tracking decorators for common operations
-export const trackAnalysisUsage = (handler: (request: NextRequest) => Promise<NextResponse>) => {
-  return withSubscription(handler, {
-    usageType: 'analyses',
-    incrementOnSuccess: true
-  })
-}
-
-export const trackAIQueryUsage = (handler: (request: NextRequest) => Promise<NextResponse>) => {
-  return withSubscription(handler, {
-    usageType: 'aiQueries',
-    incrementOnSuccess: true
-  })
-}
-
-export const trackExportUsage = (handler: (request: NextRequest) => Promise<NextResponse>) => {
-  return withSubscription(handler, {
-    usageType: 'exports',
-    incrementOnSuccess: true
-  })
-}
-
-export const requireProTier = (handler: (request: NextRequest) => Promise<NextResponse>) => {
-  return withSubscription(handler, {
-    requiredTier: 'pro'
-  })
-}
-
-export const requireEnterpriseTier = (handler: (request: NextRequest) => Promise<NextResponse>) => {
-  return withSubscription(handler, {
-    requiredTier: 'enterprise'
-  })
 }

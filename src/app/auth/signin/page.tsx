@@ -52,6 +52,25 @@ function SignInComponent() {
     }
   }, [searchParams])
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('User already authenticated, redirecting...')
+      const callbackUrl = searchParams.get('callbackUrl')
+      const plan = searchParams.get('plan')
+      
+      if (callbackUrl) {
+        router.push(callbackUrl)
+      } else if (plan) {
+        router.push(`/pricing?plan=${plan}`)
+      } else if (user.email === 'anthony@adscrafted.com') {
+        router.push('/admin/niche')
+      } else {
+        router.push('/')
+      }
+    }
+  }, [isAuthenticated, user, router, searchParams])
+
   // DISABLED: Auto-redirect to prevent loops
   // useEffect(() => {
   //   // Auto-redirect logic disabled
@@ -63,18 +82,28 @@ function SignInComponent() {
     console.log('Email:', email)
     console.log('Password length:', password.length)
     
+    if (isLoading) {
+      console.log('Already loading, preventing duplicate submission')
+      return
+    }
+    
     setIsLoading(true)
     setError('')
-    setHasRedirected(false) // Reset redirect flag for new sign-in attempt
+    setHasRedirected(false)
     
-    console.log('Starting sign in...')
+    // Set a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      console.log('Sign in taking too long, clearing loading state')
+      setIsLoading(false)
+      setError('Sign in is taking longer than expected. Please try again.')
+    }, 30000) // 30 second timeout
 
     try {
       console.log('Calling signIn function...')
       const result = await signIn(email, password)
+      clearTimeout(loadingTimeout) // Clear timeout on success
+      
       console.log('Sign in result:', result)
-      console.log('Result type:', typeof result)
-      console.log('Result keys:', Object.keys(result))
 
       if (result.error) {
         console.error('Sign in error:', result.error)
@@ -82,23 +111,35 @@ function SignInComponent() {
         setIsLoading(false)
       } else if (result.success) {
         console.log('Sign in successful, user:', result.user)
-        setIsLoading(false)
         
-        // Simple redirect for admin users
-        if (email === 'anthony@adscrafted.com') {
+        // Check where to redirect
+        const callbackUrl = searchParams.get('callbackUrl')
+        const plan = searchParams.get('plan')
+        
+        if (callbackUrl) {
+          console.log('Redirecting to callback URL:', callbackUrl)
+          router.push(callbackUrl)
+        } else if (plan) {
+          console.log('Redirecting to checkout with plan:', plan)
+          router.push(`/pricing?plan=${plan}`)
+        } else if (result.user?.email === 'anthony@adscrafted.com') {
           console.log('Redirecting admin user to admin panel')
-          setTimeout(() => {
-            window.location.href = '/admin'
-          }, 500)
+          router.push('/admin/niche')
+        } else {
+          console.log('Redirecting to home page')
+          router.push('/')
         }
+        
+        // Clear loading state after a short delay for redirect
+        setTimeout(() => setIsLoading(false), 500)
       } else {
         console.error('Unexpected result structure:', result)
         setError('An unexpected error occurred')
         setIsLoading(false)
       }
     } catch (error) {
+      clearTimeout(loadingTimeout) // Clear timeout on error
       console.error('Sign in exception:', error)
-      console.error('Exception stack:', error.stack)
       setError('An error occurred. Please try again.')
       setIsLoading(false)
     }

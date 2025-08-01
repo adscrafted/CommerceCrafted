@@ -24,35 +24,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<AuthSession | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // Helper function to clear all auth state
+  const clearAuthState = () => {
+    console.log('[Auth Context] Clearing auth state')
+    setUser(null)
+    setSession(null)
+    
+    // Only clear storage if we're actually signed out, not during initialization
+    if (typeof window !== 'undefined') {
+      // Don't clear everything aggressively - let Supabase handle its own cleanup
+      console.log('[Auth Context] Auth state cleared in memory')
+    }
+    setLoading(false)
+  }
+
   // Helper function to transform Supabase user to AuthUser
   const transformUser = async (supabaseUser: User): Promise<AuthUser | null> => {
     try {
       console.log('transformUser called for:', supabaseUser.email, 'ID:', supabaseUser.id)
-      console.log('DEBUG: Checking admin email condition:', supabaseUser.email === 'anthony@adscrafted.com')
-      
-      // For admin users, return hardcoded admin data to bypass database issues
-      if (supabaseUser.email === 'anthony@adscrafted.com' || supabaseUser.email === 'admin@commercecrafted.com') {
-        console.log('BYPASSING DATABASE - Using hardcoded admin user for:', supabaseUser.email)
-        
-        const hardcodedAdmin = {
-          id: supabaseUser.id,
-          email: supabaseUser.email!,
-          name: 'Anthony (Admin)',
-          role: 'ADMIN' as UserRole,
-          subscriptionTier: 'enterprise' as SubscriptionTier,
-          subscriptionExpiresAt: undefined,
-          emailVerified: true,
-          isActive: true,
-          lastLoginAt: new Date(),
-          emailSubscribed: true,
-          stripeCustomerId: null,
-        }
-        
-        console.log('Returning hardcoded admin user:', hardcodedAdmin)
-        return hardcodedAdmin
-      }
-      
-      console.log('Starting database query by ID...')
       
       // Get user data from our custom users table
       const { data: userData, error } = await supabase
@@ -61,65 +50,67 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .eq('id', supabaseUser.id)
         .single()
       
-      console.log('Database query completed. Error:', error, 'Data:', userData)
+      console.log('Database query completed. Error:', error?.message, 'Data found:', !!userData)
 
-      if (error) {
-        // Log the specific error
-        console.error('Error fetching user from database:', error)
-        console.log('Trying alternative lookup by email...')
-        
-        
-        // Fallback to auth metadata
-        console.warn('User not found in users table, using auth metadata')
-        console.log('Supabase user metadata:', supabaseUser.user_metadata)
-        const role = (supabaseUser.user_metadata?.role as UserRole) || 'USER'
-        console.log('Using fallback role:', role)
-        
-        const fallbackUser = {
-          id: supabaseUser.id,
-          email: supabaseUser.email!,
-          name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
-          role: role,
-          subscriptionTier: 'free' as SubscriptionTier,
-          subscriptionExpiresAt: undefined,
-          emailVerified: !!supabaseUser.email_confirmed_at,
-          isActive: true,
-          lastLoginAt: supabaseUser.last_sign_in_at ? new Date(supabaseUser.last_sign_in_at) : undefined,
-          emailSubscribed: false,
-          stripeCustomerId: null,
+      // If we have user data from the database, use it
+      if (userData && !error) {
+        console.log('Found userData, creating user object')
+        const transformedUser = {
+          id: userData.id,
+          email: userData.email,
+          name: userData.name,
+          role: userData.role as UserRole,
+          subscriptionTier: userData.subscription_tier as SubscriptionTier,
+          subscriptionExpiresAt: userData.subscription_expires_at 
+            ? new Date(userData.subscription_expires_at) 
+            : undefined,
+          emailVerified: userData.email_verified,
+          isActive: userData.is_active,
+          lastLoginAt: userData.last_login_at 
+            ? new Date(userData.last_login_at) 
+            : undefined,
+          emailSubscribed: userData.email_subscribed,
+          stripeCustomerId: userData.stripe_customer_id,
         }
-        console.log('Created fallback user:', fallbackUser)
-        return fallbackUser
+        console.log('Returning transformed user from database')
+        return transformedUser
       }
 
-      if (!userData) {
-        console.log('No userData found, returning null')
-        return null
+      // If no database record or error, create fallback user from auth data
+      console.log('No database record found, creating fallback user from auth data')
+      const role = (supabaseUser.user_metadata?.role as UserRole) || 'USER'
+      
+      const fallbackUser = {
+        id: supabaseUser.id,
+        email: supabaseUser.email!,
+        name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
+        role: role,
+        subscriptionTier: 'free' as SubscriptionTier,
+        subscriptionExpiresAt: undefined,
+        emailVerified: !!supabaseUser.email_confirmed_at,
+        isActive: true,
+        lastLoginAt: supabaseUser.last_sign_in_at ? new Date(supabaseUser.last_sign_in_at) : undefined,
+        emailSubscribed: false,
+        stripeCustomerId: null,
       }
-
-      console.log('Found userData, creating user object:', userData)
-      const transformedUser = {
-        id: userData.id,
-        email: userData.email,
-        name: userData.name,
-        role: userData.role as UserRole,
-        subscriptionTier: userData.subscription_tier as SubscriptionTier,
-        subscriptionExpiresAt: userData.subscription_expires_at 
-          ? new Date(userData.subscription_expires_at) 
-          : undefined,
-        emailVerified: userData.email_verified,
-        isActive: userData.is_active,
-        lastLoginAt: userData.last_login_at 
-          ? new Date(userData.last_login_at) 
-          : undefined,
-        emailSubscribed: userData.email_subscribed,
-        stripeCustomerId: userData.stripe_customer_id,
-      }
-      console.log('Returning transformed user:', transformedUser)
-      return transformedUser
+      console.log('Created fallback user:', fallbackUser)
+      return fallbackUser
     } catch (error) {
       console.error('Error transforming user:', error)
-      return null
+      // Always return a fallback user rather than null to prevent auth blocking
+      return {
+        id: supabaseUser.id,
+        email: supabaseUser.email!,
+        name: supabaseUser.email?.split('@')[0] || 'User',
+        role: 'USER' as UserRole,
+        subscriptionTier: 'free' as SubscriptionTier,
+        subscriptionExpiresAt: undefined,
+        emailVerified: !!supabaseUser.email_confirmed_at,
+        isActive: true,
+        lastLoginAt: undefined,
+        emailSubscribed: false,
+        stripeCustomerId: null,
+      }
     }
   }
 
@@ -132,11 +123,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (error) {
           console.error('Error getting session:', error)
-          // Handle refresh token errors
-          if (error.message?.includes('Refresh Token') || error.message?.includes('invalid')) {
-            console.log('Invalid refresh token detected, clearing session')
-            await supabase.auth.signOut()
-          }
+          // Don't handle errors aggressively during signin - just continue
+          console.log('Session error during init, continuing normally')
           setLoading(false)
           return
         }
@@ -153,6 +141,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } catch (error) {
         console.error('Error initializing auth:', error)
+        // On any error, clear potentially corrupted session
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('sb-bcqhovifscrhlkvdhkuf-auth-token')
+        }
       } finally {
         setLoading(false)
       }
@@ -164,7 +156,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email)
-        setLoading(true)
+        
+        // Handle token refresh errors
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          console.log('Token refresh failed, clearing session')
+          clearAuthState()
+          return
+        }
+        
+        // Handle sign out events
+        if (event === 'SIGNED_OUT') {
+          console.log('User signed out, clearing state')
+          clearAuthState()
+          return
+        }
+        
+        // Don't clear state for missing sessions during initialization
+        if (!session && event !== 'SIGNED_IN') {
+          return
+        }
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
@@ -173,8 +183,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.log('Transformed user:', authUser)
             if (authUser) {
               console.log('Setting user state...')
-              console.log('Current user state before update:', user)
-              console.log('Current loading state before update:', loading)
               
               setUser(authUser)
               setSession({
@@ -183,23 +191,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               })
               
               console.log('User state set successfully')
-              console.log('New user state:', authUser)
-              
-              // Force loading to false to trigger re-render
-              console.log('Setting loading to false...')
-              setLoading(false)
-              
-              // Skip updating last login for now to avoid issues
             } else {
               console.error('Failed to transform user')
-              console.log('Setting loading to false due to transform failure...')
-              setLoading(false)
             }
           }
+          // Always set loading to false after processing auth state change
+          setLoading(false)
         } else if (event === 'SIGNED_OUT') {
           setUser(null)
           setSession(null)
           setLoading(false)
+        } else if (event === 'USER_DELETED') {
+          clearAuthState()
         }
       }
     )
@@ -211,24 +214,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('Attempting sign in for:', email)
+      console.log('[AuthContext] Attempting sign in for:', email)
+      setLoading(true) // Ensure loading state is set
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
-        console.error('Sign in error:', error)
+        console.error('[AuthContext] Sign in error:', error)
+        setLoading(false) // Clear loading on error
         return { error: error.message }
       }
 
-      console.log('Sign in successful:', data.user?.email)
-      console.log('Sign in data:', data)
-      // The auth state change listener will handle updating the user state
-      // Return success immediately
+      console.log('[AuthContext] Sign in successful:', data.user?.email)
+      
+      if (data.session?.user) {
+        // Transform and set user immediately for faster UI feedback
+        const authUser = await transformUser(data.session.user)
+        if (authUser) {
+          setUser(authUser)
+          setSession({
+            user: authUser,
+            supabaseUser: data.session.user
+          })
+        }
+      }
+      
+      setLoading(false) // Always clear loading after sign in attempt
       return { success: true, user: data.user }
     } catch (error) {
-      console.error('Sign in exception:', error)
+      console.error('[AuthContext] Sign in exception:', error)
+      setLoading(false) // Clear loading on exception
       return { error: 'An unexpected error occurred' }
     }
   }
@@ -313,7 +331,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${window.location.origin}/auth/callback#type=recovery`,
       })
 
       if (error) {
@@ -393,9 +411,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Handle refresh token errors
         if (error.message?.includes('Refresh Token') || error.message?.includes('invalid')) {
           console.log('Invalid refresh token detected during refresh, clearing session')
+          clearAuthState()
           await supabase.auth.signOut()
-          setUser(null)
-          setSession(null)
         }
         return
       }

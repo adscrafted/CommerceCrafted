@@ -80,7 +80,18 @@ export default function CompetitionPage({ params }: CompetitionPageProps) {
                 category: competitor.category || 'N/A',
                 bsr: competitor.bsr || 0,
                 monthly_orders: competitor.monthly_orders || 0,
-                fee: competitor.fba_fees ? JSON.parse(competitor.fba_fees).total || 0 : 0,
+                fee: (() => {
+                  try {
+                    if (competitor.fba_fees && typeof competitor.fba_fees === 'string') {
+                      const parsed = JSON.parse(competitor.fba_fees);
+                      return parsed.total || 0;
+                    }
+                    return 0;
+                  } catch (e) {
+                    console.warn(`Failed to parse fba_fees for competitor ${competitor.asin}:`, competitor.fba_fees);
+                    return 0;
+                  }
+                })(),
                 // Add individual dimension fields
                 length: competitor.length || 0,
                 width: competitor.width || 0,

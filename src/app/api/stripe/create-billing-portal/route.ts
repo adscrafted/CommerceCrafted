@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createBillingPortalSession, getStripeCustomerByEmail } from '@/lib/stripe'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
     
-    if (!session?.user) {
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Stripe customer
-    const stripeCustomer = await getStripeCustomerByEmail(session.user.email)
+    const stripeCustomer = await getStripeCustomerByEmail(authUser.email!)
     
     if (!stripeCustomer) {
       return NextResponse.json(

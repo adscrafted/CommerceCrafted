@@ -155,13 +155,13 @@ export default function VoiceOfCustomerEnhanced({ data }: VoiceOfCustomerEnhance
         <div className="space-y-4">
           {data.topPositives.map((positive, index) => (
             <div key={index} className="border-l-4 border-green-500 pl-4">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-medium">{positive.theme}</h4>
-                <span className="text-sm text-gray-600">{positive.mentions} mentions</span>
+              <div className="flex items-center justify-between mb-1">
+                <h4 className="font-medium text-gray-900">{positive.theme}</h4>
+                <span className="text-sm text-gray-500">{positive.mentions} mentions</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {positive.examples.map((example, i) => (
-                  <p key={i} className="text-sm text-gray-600 italic">"{example}"</p>
+                  <p key={i} className="text-sm text-gray-600 leading-relaxed">"{example}"</p>
                 ))}
               </div>
             </div>
@@ -178,13 +178,13 @@ export default function VoiceOfCustomerEnhanced({ data }: VoiceOfCustomerEnhance
         <div className="space-y-4">
           {data.topIssues.map((issue, index) => (
             <div key={index} className="border-l-4 border-red-500 pl-4">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-medium">{issue.issue}</h4>
-                <span className="text-sm text-gray-600">{issue.mentions} mentions</span>
+              <div className="flex items-center justify-between mb-1">
+                <h4 className="font-medium text-gray-900">{issue.issue}</h4>
+                <span className="text-sm text-gray-500">{issue.mentions} mentions</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {issue.examples.map((example, i) => (
-                  <p key={i} className="text-sm text-gray-600 italic">"{example}"</p>
+                  <p key={i} className="text-sm text-gray-600 leading-relaxed">"{example}"</p>
                 ))}
               </div>
             </div>
@@ -201,13 +201,13 @@ export default function VoiceOfCustomerEnhanced({ data }: VoiceOfCustomerEnhance
         <div className="space-y-4">
           {data.usageInsights.map((insight, index) => (
             <div key={index} className="border-l-4 border-blue-500 pl-4">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-medium">{insight.insight}</h4>
-                <span className="text-sm text-gray-600">{insight.frequency}</span>
+              <div className="flex items-center justify-between mb-1">
+                <h4 className="font-medium text-gray-900">{insight.insight}</h4>
+                <span className="text-sm text-gray-500">{insight.frequency}</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {insight.examples.map((example, i) => (
-                  <p key={i} className="text-sm text-gray-600 italic">"{example}"</p>
+                  <p key={i} className="text-sm text-gray-600 leading-relaxed">"{example}"</p>
                 ))}
               </div>
             </div>

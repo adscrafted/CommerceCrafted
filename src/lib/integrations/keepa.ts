@@ -417,7 +417,7 @@ class KeepaAPI {
     }
     
     // Parse images from Keepa's image objects
-    let imageUrls: string[] = []
+    const imageUrls: string[] = []
     if (product.images && Array.isArray(product.images)) {
       product.images.forEach(img => {
         // Use large image if available, otherwise medium

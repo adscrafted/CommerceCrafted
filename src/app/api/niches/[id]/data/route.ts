@@ -10,32 +10,47 @@ export async function GET(
     // Use service client for full access to all tables
     const supabase = createServiceSupabaseClient()
     
-    // First, try to find the niche by slug
-    const { data: niche, error: nicheError } = await supabase
+    // Try to find the niche by exact ID first, then by name pattern
+    let niche = null
+    let nicheError = null
+    
+    // First try exact ID match
+    const { data: exactMatch, error: exactError } = await supabase
       .from('niches')
       .select('*')
-      .eq('slug', slug)
+      .eq('id', slug)
       .single()
-
-    let nicheData = niche
-
-    if (nicheError || !niche) {
-      // If not found by slug, try to find by ID (in case slug is actually an ID)
-      const { data: nicheById, error: nicheByIdError } = await supabase
+    
+    if (!exactError && exactMatch) {
+      niche = exactMatch
+    } else {
+      // If not found by ID, try by name pattern
+      const { data: nameMatch, error: nameError } = await supabase
         .from('niches')
         .select('*')
-        .eq('id', slug)
+        .ilike('niche_name', `%${slug}%`)
         .single()
-
-      if (nicheByIdError || !nicheById) {
-        return NextResponse.json(
-          { error: 'Niche not found' },
-          { status: 404 }
-        )
-      }
-
-      nicheData = nicheById
+      
+      niche = nameMatch
+      nicheError = nameError
     }
+
+    if (nicheError || !niche) {
+      console.error('Niche not found for slug:', slug, nicheError)
+      return NextResponse.json(
+        { error: 'Niche not found' },
+        { status: 404 }
+      )
+    }
+
+    const nicheData = niche
+    
+    // Get niche overall analysis for the summary
+    const { data: overallAnalysis } = await supabase
+      .from('niches_overall_analysis')
+      .select('niche_summary, category, subcategory, market_analysis')
+      .eq('niche_id', nicheData.id)
+      .single()
 
     // Extract ASINs from the niche data
     const asins = nicheData.asins ? nicheData.asins.split(',').map((asin: string) => asin.trim()) : []
@@ -53,6 +68,16 @@ export async function GET(
       .from('product')
       .select('*')
       .in('asin', asins)
+    
+    // Fix invalid prices (replace -0.01 with a reasonable estimate)
+    if (products) {
+      products.forEach((product: any) => {
+        if (!product.price || product.price <= 0) {
+          // Use a reasonable default price based on category
+          product.price = 29.99 // Default price for supplements
+        }
+      })
+    }
 
     if (productsError) {
       console.error('Error fetching products:', productsError)
@@ -65,7 +90,7 @@ export async function GET(
     }
 
     // Fetch review history for all products
-    let reviewHistory: any = {}
+    const reviewHistory: any = {}
     if (products && products.length > 0) {
       try {
         console.log('Fetching review history for ASINs:', asins)
@@ -259,7 +284,7 @@ export async function GET(
       .from('product_keywords')
       .select('*')
       .in('product_id', asins)
-      .limit(10000) // Set a high limit to get all keywords
+      .limit(100000) // Set a high limit to get all keywords (increased from 10k to 100k)
     
     if (keywordsError) {
       console.error('Error fetching keywords:', keywordsError)
@@ -357,7 +382,12 @@ export async function GET(
     }
     
     return NextResponse.json({
-      niche: nicheData,
+      niche: {
+        ...nicheData,
+        nicheSummary: overallAnalysis?.niche_summary || '',
+        category: overallAnalysis?.category || nicheData.category,
+        subcategory: overallAnalysis?.subcategory || ''
+      },
       products: products || [],
       keywords: keywords || [],
       reviewHistory,

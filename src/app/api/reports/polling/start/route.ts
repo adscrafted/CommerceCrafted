@@ -1,14 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getReportPollingService } from '@/lib/report-polling-service'
 
 // Admin endpoint to start/stop polling
 export async function POST(request: NextRequest) {
   try {
     // Check authentication and admin role
-    const session = await getServerSession(authOptions)
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Admin access required' },
+        { status: 401 }
+      )
+    }
+    
+    // Check admin role
+    const { data: userRecord } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', authUser.id)
+      .single()
+      
+    if (userRecord?.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 401 }

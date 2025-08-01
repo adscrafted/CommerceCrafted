@@ -12,7 +12,39 @@ export default function CallbackPage() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        // Handle the auth callback
+        // Get URL parameters - check both hash and search params
+        const hashParams = new URLSearchParams(window.location.hash.substring(1))
+        const searchParams = new URLSearchParams(window.location.search)
+        
+        // Supabase often puts auth params in the hash
+        const access_token = hashParams.get('access_token') || searchParams.get('access_token')
+        const refresh_token = hashParams.get('refresh_token') || searchParams.get('refresh_token')
+        const type = hashParams.get('type') || searchParams.get('type')
+        const next = searchParams.get('next')
+        
+        console.log('Auth callback params:', { type, access_token: !!access_token, refresh_token: !!refresh_token })
+        
+        // If we have tokens in the URL, exchange them for a session
+        if (access_token && refresh_token) {
+          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+            access_token,
+            refresh_token
+          })
+          
+          if (sessionError) {
+            console.error('Error setting session:', sessionError)
+            router.push('/auth/signin?message=Authentication failed')
+            return
+          }
+          
+          // Check if this is a password recovery
+          if (type === 'recovery') {
+            router.push('/auth/reset-password')
+            return
+          }
+        }
+        
+        // Handle the auth callback normally
         const { data, error } = await supabase.auth.getSession()
         
         if (error) {
@@ -22,6 +54,11 @@ export default function CallbackPage() {
         }
 
         if (data.session) {
+          // Check if this is a password recovery from our custom flow
+          if (type === 'recovery' && next) {
+            router.push(next)
+            return
+          }
           // Check if user exists in our database
           const { data: userData, error: userError } = await supabase
             .from('users')

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { getServerSupabase } from '@/lib/supabase-server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { createEmailVerificationToken } from '@/lib/tokens'
 import { emailService } from '@/lib/email'
@@ -14,9 +12,10 @@ const updateProfileSchema = z.object({
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
     
-    if (!session?.user) {
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -39,7 +38,7 @@ export async function GET() {
         created_at,
         updated_at
       `)
-      .eq('id', session.user.id)
+      .eq('id', authUser.id)
       .single()
 
     if (!user) {
@@ -62,9 +61,10 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
     
-    if (!session?.user) {
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -77,7 +77,7 @@ export async function PUT(request: NextRequest) {
     const { data: currentUser } = await supabase
       .from('users')
       .select('email, email_verified')
-      .eq('id', session.user.id)
+      .eq('id', authUser.id)
       .single()
 
     if (!currentUser) {
@@ -125,10 +125,10 @@ export async function PUT(request: NextRequest) {
         if (validatedData.emailSubscribed) {
           await supabase.from('newsletter_subscriptions').upsert({
             email: validatedData.email || currentUser.email,
-            user_id: session.user.id,
+            user_id: authUser.id,
             subscription_type: 'daily_deals',
             subscribe_source: 'profile_update',
-            unsubscribe_token: `unsubscribe_${session.user.id}_${Date.now()}`,
+            unsubscribe_token: `unsubscribe_${authUser.id}_${Date.now()}`,
             is_active: true
           })
         } else {
@@ -146,7 +146,7 @@ export async function PUT(request: NextRequest) {
     const { data: updatedUser } = await supabase
       .from('users')
       .update(updateData)
-      .eq('id', session.user.id)
+      .eq('id', authUser.id)
       .select(`
         id,
         email,

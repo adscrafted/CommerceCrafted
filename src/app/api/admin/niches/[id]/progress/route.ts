@@ -38,7 +38,23 @@ export async function GET(
     // Parse ASINs to get total count
     const totalAsins = niche.asins ? niche.asins.split(',').length : 0
     
-    // Build progress response
+    // Get detailed counts for each type of data
+    const { count: productCount } = await supabase
+      .from('product')
+      .select('*', { count: 'exact', head: true })
+      .in('id', asins)
+    
+    const { count: keywordCount } = await supabase
+      .from('product_keywords')
+      .select('*', { count: 'exact', head: true })
+      .in('product_id', asins)
+    
+    const { count: reviewCount } = await supabase
+      .from('customer_reviews')
+      .select('*', { count: 'exact', head: true })
+      .in('product_id', asins)
+    
+    // Build progress response with detailed step tracking
     const response = {
       niche: {
         id: niche.id,
@@ -58,7 +74,29 @@ export async function GET(
         currentAsin: progress.currentAsin || null,
         apiCallsMade: progress.apiCallsMade || 0,
         errors: progress.errors || [],
-        lastUpdate: progress.lastUpdate || niche.updated_at
+        lastUpdate: progress.lastUpdate || niche.updated_at,
+        // Detailed step progress
+        steps: {
+          products: {
+            completed: productCount || 0,
+            total: totalAsins,
+            status: productCount === totalAsins ? 'completed' : productCount > 0 ? 'in_progress' : 'pending'
+          },
+          keywords: {
+            collected: keywordCount || 0,
+            asinsProcessed: progress.keywordsProcessed || 0,
+            status: progress.keywordsCompleted ? 'completed' : progress.keywordsProcessed > 0 ? 'in_progress' : 'pending'
+          },
+          reviews: {
+            collected: reviewCount || 0,
+            asinsProcessed: progress.reviewsProcessed || 0,
+            status: progress.reviewsCompleted ? 'completed' : progress.reviewsProcessed > 0 ? 'in_progress' : 'pending'
+          },
+          aiAnalysis: {
+            completed: progress.aiAnalysisCompleted || false,
+            status: progress.aiAnalysisCompleted ? 'completed' : 'pending'
+          }
+        }
       },
       analysisRun: analysisRun ? {
         id: analysisRun.id,

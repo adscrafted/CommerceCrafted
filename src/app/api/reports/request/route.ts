@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getReportPollingService, ReportType } from '@/lib/report-polling-service'
 import { z } from 'zod'
 
@@ -15,8 +14,9 @@ const RequestReportSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     // Request the report
     const pollingService = getReportPollingService()
     const reportId = await pollingService.requestReport(
-      session.user.id,
+      authUser.id,
       validatedData.type as ReportType,
       new Date(validatedData.startDate),
       new Date(validatedData.endDate),

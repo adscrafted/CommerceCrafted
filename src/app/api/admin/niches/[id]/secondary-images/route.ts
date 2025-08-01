@@ -12,7 +12,7 @@ export async function GET(
     const supabase = await createServerSupabaseClient()
     
     // First try to get niche by ID
-    let { data: niche, error: nicheError } = await supabase
+    const { data: niche, error: nicheError } = await supabase
       .from('niches')
       .select('*')
       .eq('id', id)

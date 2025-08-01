@@ -8,7 +8,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import CompetitionAnalysis from '@/components/products/analysis/CompetitionAnalysis'
 import { MembershipGate } from '@/components/MembershipGate'
-import { getNicheBySlug } from '@/lib/mockNicheData'
 import { NicheNavigation } from '@/components/niches/NicheNavigation'
 
 interface CompetitionPageProps {
@@ -20,14 +19,26 @@ export default function NicheCompetitionPage({ params }: CompetitionPageProps) {
   const [loading, setLoading] = useState(true)
   const [slug, setSlug] = useState<string>('')
   const [nicheData, setNicheData] = useState<any>(null)
+  const [competitionData, setCompetitionData] = useState<any>(null)
 
   useEffect(() => {
     const loadData = async () => {
       const resolvedParams = await params
       setSlug(resolvedParams.slug)
-      const data = getNicheBySlug(resolvedParams.slug)
-      setNicheData(data)
-      setTimeout(() => setLoading(false), 500)
+      
+      try {
+        // Fetch real data from API
+        const response = await fetch(`/api/niches/${resolvedParams.slug}/competition`)
+        if (!response.ok) throw new Error('Failed to fetch competition data')
+        
+        const data = await response.json()
+        setNicheData(data.niche)
+        setCompetitionData(data)
+      } catch (error) {
+        console.error('Error loading competition data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     loadData()
@@ -42,12 +53,12 @@ export default function NicheCompetitionPage({ params }: CompetitionPageProps) {
   }
 
   if (status === 'unauthenticated' || !session) {
-    return <MembershipGate productTitle={nicheData.nicheName} productImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=600&fit=crop" />
+    return <MembershipGate productTitle={nicheData?.niche_name || 'Niche Analysis'} productImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=600&fit=crop" />
   }
 
   const userTier = session.user?.subscriptionTier || 'free'
   if (userTier === 'free') {
-    return <MembershipGate productTitle={nicheData.nicheName} productImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=600&fit=crop" />
+    return <MembershipGate productTitle={nicheData?.niche_name || 'Niche Analysis'} productImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=600&fit=crop" />
   }
 
   const getScoreColor = (score: number) => {
@@ -64,46 +75,18 @@ export default function NicheCompetitionPage({ params }: CompetitionPageProps) {
     return 'Poor'
   }
 
-  // Transform niche data to match the component's expected format
+  // Transform real data to match the component's expected format
   const transformedData = {
-    ...nicheData,
-    title: nicheData.nicheName,
-    competitionData: {
-      ...nicheData.competitionData,
-      competitionLevel: nicheData.competitionData.totalCompetitors > 200 ? 'High' : 
-                       nicheData.competitionData.totalCompetitors > 100 ? 'Medium' : 'Low',
-      topCompetitors: nicheData.competitionData.topCompetitors.map((comp: any) => ({
-        ...comp,
-        asin: `B0${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
-        title: `${comp.brand} Premium ${nicheData.nicheName}`,
-        price: comp.avgPrice,
-        rating: comp.avgRating,
-        reviews: Math.floor(comp.marketShare * 1000),
-        monthlyRevenue: Math.floor(comp.marketShare * nicheData.marketOverview.totalMonthlyRevenue / 100),
-        bsr: Math.floor(Math.random() * 2000) + 500,
-        hasAPlus: Math.random() > 0.5,
-        hasVideo: Math.random() > 0.7,
-        hasBrandStore: true,
-        adSpend: Math.floor(comp.marketShare * 5000)
-      })),
-      priceDistribution: [
-        { range: '$0-20', count: Math.floor(nicheData.competitionData.totalCompetitors * 0.15) },
-        { range: '$20-30', count: Math.floor(nicheData.competitionData.totalCompetitors * 0.25) },
-        { range: '$30-40', count: Math.floor(nicheData.competitionData.totalCompetitors * 0.35) },
-        { range: '$40-50', count: Math.floor(nicheData.competitionData.totalCompetitors * 0.15) },
-        { range: '$50+', count: Math.floor(nicheData.competitionData.totalCompetitors * 0.10) }
-      ],
-      competitivePositioning: {
-        yourAdvantages: nicheData.competitionData.competitiveAdvantages,
-        marketGaps: nicheData.intelligenceData.opportunities.map((o: any) => o.opportunity),
-        differentiationStrategy: [
-          'Focus on underserved customer segments',
-          'Premium quality positioning',
-          'Superior customer service',
-          'Innovative features not offered by competitors'
-        ]
-      }
-    }
+    title: nicheData.niche_name || nicheData.name,
+    nicheName: nicheData.niche_name || nicheData.name,
+    scores: {
+      competition: competitionData?.competitionAnalysis?.average_rating ? 
+        Math.round((5 - competitionData.competitionAnalysis.average_rating) * 20) : 75
+    },
+    competitionData: competitionData?.competitionAnalysis || {},
+    competitors: competitionData?.products || [],
+    // Add any additional data the component expects
+    hasData: competitionData?.hasData || false
   }
 
   return (
@@ -128,11 +111,11 @@ export default function NicheCompetitionPage({ params }: CompetitionPageProps) {
             <Card className="border-2 border-red-200">
               <CardContent className="p-4">
                 <div className="text-center w-32 h-20 flex flex-col items-center justify-center">
-                  <div className={`text-3xl font-bold ${getScoreColor(nicheData.scores.competition)}`}>
-                    {nicheData.scores.competition}
+                  <div className={`text-3xl font-bold ${getScoreColor(transformedData.scores.competition)}`}>
+                    {transformedData.scores.competition}
                   </div>
-                  <div className="text-xs text-gray-600 mt-1">{getScoreLabel(nicheData.scores.competition)}</div>
-                  <Progress value={nicheData.scores.competition} className="h-2 mt-2 w-full" />
+                  <div className="text-xs text-gray-600 mt-1">{getScoreLabel(transformedData.scores.competition)}</div>
+                  <Progress value={transformedData.scores.competition} className="h-2 mt-2 w-full" />
                 </div>
               </CardContent>
             </Card>
@@ -141,13 +124,13 @@ export default function NicheCompetitionPage({ params }: CompetitionPageProps) {
       </div>
 
       {/* Navigation */}
-      <NicheNavigation nicheSlug={slug} nicheName={nicheData.nicheName} />
+      <NicheNavigation nicheSlug={slug} nicheName={transformedData.nicheName} />
 
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <nav className="flex text-sm text-gray-500">
           <Link href={`/niches/${slug}`} className="hover:text-blue-600">
-            {nicheData.nicheName}
+            {transformedData.nicheName}
           </Link>
           <span className="mx-2">/</span>
           <span className="text-gray-900">Competition Analysis</span>

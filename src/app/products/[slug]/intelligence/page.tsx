@@ -11,7 +11,6 @@ import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import MarketIntelligenceReal from '@/components/products/analysis/MarketIntelligenceReal'
 import { MembershipGate } from '@/components/MembershipGate'
-import { mockProductData } from '@/lib/mockProductData'
 
 interface IntelligencePageProps {
   params: Promise<{ slug: string }>
@@ -109,12 +108,12 @@ export default function IntelligencePage({ params }: IntelligencePageProps) {
   // You can uncomment these lines when subscription management is implemented
   /*
   if (!user) {
-    return <MembershipGate productTitle={mockProductData.title} productImage={mockProductData.mainImage} />
+    return <MembershipGate productTitle="Product Analysis" productImage="/placeholder-product.png" />
   }
 
   const userTier = user.subscriptionTier || 'free'
   if (userTier === 'free') {
-    return <MembershipGate productTitle={mockProductData.title} productImage={mockProductData.mainImage} />
+    return <MembershipGate productTitle="Product Analysis" productImage="/placeholder-product.png" />
   }
   */
 
@@ -160,11 +159,23 @@ export default function IntelligencePage({ params }: IntelligencePageProps) {
             <Card className="border-2 border-yellow-200 self-center sm:self-auto">
               <CardContent className="p-3 sm:p-4">
                 <div className="text-center w-24 sm:w-32 h-16 sm:h-20 flex flex-col items-center justify-center">
-                  <div className={`text-2xl sm:text-3xl font-bold ${getScoreColor(mockProductData.scores.intelligence)}`}>
-                    {mockProductData.scores.intelligence}
-                  </div>
-                  <div className="text-xs text-gray-600 mt-1">{getScoreLabel(mockProductData.scores.intelligence)}</div>
-                  <Progress value={mockProductData.scores.intelligence} className="h-1.5 sm:h-2 mt-1 sm:mt-2 w-full" />
+                  {marketData?.hasData ? (
+                    <>
+                      <div className={`text-2xl sm:text-3xl font-bold ${getScoreColor(85)}`}>
+                        85
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">{getScoreLabel(85)}</div>
+                      <Progress value={85} className="h-1.5 sm:h-2 mt-1 sm:mt-2 w-full" />
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-xl sm:text-2xl font-bold text-gray-400">
+                        --
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">No Data</div>
+                      <Progress value={0} className="h-1.5 sm:h-2 mt-1 sm:mt-2 w-full" />
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -432,7 +432,7 @@ async function handleDelete(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
-    let userId = user.id
+    const userId = user.id
     
     // Check if user is admin (skip in development or for known admin emails)
     if (process.env.NODE_ENV !== 'development' && user.email !== 'anthony@adscrafted.com') {

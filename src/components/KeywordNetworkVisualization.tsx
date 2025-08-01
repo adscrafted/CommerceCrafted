@@ -5,7 +5,7 @@ import KeywordNetwork from './KeywordNetwork'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ScoreCard } from '@/components/ui/score-card'
-import { Network, GitBranch, Share2, Target, TrendingUp, DollarSign, Hash } from 'lucide-react'
+import { Network, GitBranch, Share2, Target, TrendingUp, DollarSign, Hash, Search } from 'lucide-react'
 
 interface KeywordNetworkVisualizationProps {
   keywordHierarchy: any
@@ -15,6 +15,7 @@ interface KeywordNetworkVisualizationProps {
   onMinKeywordsPerRootChange?: (value: number) => void
   onMinKeywordsPerSubRootChange?: (value: number) => void
   productImageUrl?: string
+  onMetricsCalculated?: (metrics: any) => void
 }
 
 export default function KeywordNetworkVisualization({ 
@@ -24,11 +25,13 @@ export default function KeywordNetworkVisualization({
   minKeywordsPerSubRoot = 5,
   onMinKeywordsPerRootChange,
   onMinKeywordsPerSubRootChange,
-  productImageUrl
+  productImageUrl,
+  onMetricsCalculated
 }: KeywordNetworkVisualizationProps) {
   const [activeLevel, setActiveLevel] = useState<'root' | 'subroot' | 'level2'>('root')
   const [networkData, setNetworkData] = useState<any>({})
   const [selectedNodeData, setSelectedNodeData] = useState<any>(null)
+  const [searchTerm, setSearchTerm] = useState<string>('')
 
   // Calculate overall market metrics from all keyword data
   const calculateOverallMetrics = () => {
@@ -128,7 +131,13 @@ export default function KeywordNetworkVisualization({
     if (activeLevel === 'root') {
       // Show only top root keywords by total revenue/value
       const rootsWithMetrics = Object.entries(keywordHierarchy)
-        .filter(([, rootData]: [string, any]) => (rootData.keywordCount || 0) >= minKeywordsPerRoot)
+        .filter(([rootName, rootData]: [string, any]) => {
+          // Filter by minimum keywords
+          if ((rootData.keywordCount || 0) < minKeywordsPerRoot) return false
+          // Filter by search term
+          if (searchTerm && !rootName.toLowerCase().includes(searchTerm.toLowerCase())) return false
+          return true
+        })
         .map(([rootName, rootData]: [string, any]) => ({
           name: rootName,
           data: rootData,
@@ -152,7 +161,20 @@ export default function KeywordNetworkVisualization({
     } else if (activeLevel === 'subroot') {
       // Show top root keywords connected to their subroots (no leaf keywords)
       const rootsWithMetrics = Object.entries(keywordHierarchy)
-        .filter(([, rootData]: [string, any]) => (rootData.keywordCount || 0) >= minKeywordsPerRoot)
+        .filter(([rootName, rootData]: [string, any]) => {
+          // Filter by minimum keywords
+          if ((rootData.keywordCount || 0) < minKeywordsPerRoot) return false
+          // Filter by search term (check both root and subroots)
+          if (searchTerm) {
+            const searchLower = searchTerm.toLowerCase()
+            const rootMatches = rootName.toLowerCase().includes(searchLower)
+            const subrootMatches = Object.keys(rootData.subroots || {}).some(
+              subrootName => subrootName.toLowerCase().includes(searchLower)
+            )
+            if (!rootMatches && !subrootMatches) return false
+          }
+          return true
+        })
         .map(([rootName, rootData]: [string, any]) => ({
           name: rootName,
           data: rootData,
@@ -218,39 +240,40 @@ export default function KeywordNetworkVisualization({
     }
 
     setNetworkData(transformedData)
-  }, [keywordHierarchy, activeLevel, minKeywordsPerRoot, minKeywordsPerSubRoot])
+  }, [keywordHierarchy, activeLevel, minKeywordsPerRoot, minKeywordsPerSubRoot, searchTerm])
 
+  // Calculate and export metrics
+  const overallMetrics = calculateOverallMetrics()
+  const displayData = selectedNodeData || overallMetrics
+  
+  // Notify parent component of metrics
+  useEffect(() => {
+    if (onMetricsCalculated) {
+      onMetricsCalculated({
+        displayData,
+        overallMetrics,
+        selectedNodeData
+      })
+    }
+  }, [selectedNodeData, keywordHierarchy])
+  
   return (
     <div className="space-y-4">
-      {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-        {[
-          { id: 'root', label: 'Root Keywords', icon: Network },
-          { id: 'subroot', label: 'Subroots', icon: GitBranch },
-          { id: 'level2', label: 'Sub Roots (Level 2)', icon: Share2 }
-        ].map((tab) => (
-          <Button
-            key={tab.id}
-            variant={activeLevel === tab.id ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setActiveLevel(tab.id as any)}
-            className={`flex items-center space-x-2 ${
-              activeLevel === tab.id
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <tab.icon className="h-4 w-4" />
-            <span>{tab.label}</span>
-          </Button>
-        ))}
-      </div>
-      
       {/* Filter Controls */}
       {(onMinKeywordsPerRootChange || onMinKeywordsPerSubRootChange) && (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-3">
           <div className="flex-1">
-            {/* Placeholder for search if needed in future */}
+            {/* Search Bar - Full Width */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search keywords..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md">
@@ -279,54 +302,35 @@ export default function KeywordNetworkVisualization({
 
       {/* Network Visualization */}
       <div className="bg-white rounded-lg border overflow-hidden">
-        <div className="p-6">
-          {/* Scorecards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {(() => {
-              const displayData = selectedNodeData || calculateOverallMetrics()
-              const revenueValue = displayData.totalRevenue >= 1000000 
-                ? '$' + (displayData.totalRevenue / 1000000).toFixed(2) + 'M'
-                : displayData.totalRevenue >= 1000
-                ? '$' + (displayData.totalRevenue / 1000).toFixed(0) + 'K'
-                : '$' + (displayData.totalRevenue?.toFixed(0) || '0')
-              
-              const rootKeywordsValue = selectedNodeData && selectedNodeData.type === 'root' 
-                ? '1' 
-                : displayData.totalRootKeywords?.toLocaleString() || Object.keys(keywordHierarchy || {}).length.toLocaleString()
-              
-              return (
-                <>
-                  <ScoreCard
-                    value={revenueValue}
-                    label="Monthly Revenue"
-                    icon={DollarSign}
-                    description={selectedNodeData ? `For ${displayData.name}` : 'Across all keyword groups'}
-                    color="green"
-                  />
-                  
-                  <ScoreCard
-                    value={rootKeywordsValue}
-                    label="Total Root Keywords"
-                    icon={Hash}
-                    description={selectedNodeData ? 'Selected root keyword' : 'Primary keyword categories'}
-                    color="purple"
-                  />
-                  
-                  <ScoreCard
-                    value={displayData.keywordCount?.toLocaleString() || '0'}
-                    label="Total Keywords"
-                    icon={TrendingUp}
-                    description={selectedNodeData ? `In ${displayData.name}` : 'Unique keywords tracked'}
-                    color="blue"
-                  />
-                </>
-              )
-            })()}
-          </div>
-        </div>
 
-        {/* Network Visualization */}
-        {Object.keys(networkData).length > 0 ? (
+        {/* Network Visualization Container */}
+        <div className="relative">
+          {/* Tab Navigation - Top Left of Chart */}
+          <div className="absolute top-4 left-4 z-10 flex space-x-1 bg-gray-100 p-1 rounded-lg">
+            {[
+              { id: 'root', label: 'Roots', icon: Network },
+              { id: 'subroot', label: 'Subroots', icon: GitBranch },
+              { id: 'level2', label: 'Sub Roots (Level 2)', icon: Share2 }
+            ].map((tab) => (
+              <Button
+                key={tab.id}
+                variant={activeLevel === tab.id ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveLevel(tab.id as any)}
+                className={`flex items-center space-x-2 ${
+                  activeLevel === tab.id
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <tab.icon className="h-4 w-4" />
+                <span>{tab.label}</span>
+              </Button>
+            ))}
+          </div>
+
+          {/* Network Visualization */}
+          {Object.keys(networkData).length > 0 ? (
           <>
             {console.log('KeywordNetworkVisualization - Passing to KeywordNetwork:', {
               networkData,
@@ -354,6 +358,12 @@ export default function KeywordNetworkVisualization({
               selectedNodeData={selectedNodeData}
               overallMetrics={calculateOverallMetrics()}
               productImageUrl={productImageUrl}
+              minKeywordsPerRoot={minKeywordsPerRoot}
+              minKeywordsPerSubRoot={minKeywordsPerSubRoot}
+              onMinKeywordsPerRootChange={onMinKeywordsPerRootChange}
+              onMinKeywordsPerSubRootChange={onMinKeywordsPerSubRootChange}
+              searchTerm={searchTerm}
+              onSearchTermChange={setSearchTerm}
             />
           </>
         ) : (
@@ -365,6 +375,7 @@ export default function KeywordNetworkVisualization({
             </div>
           </div>
         )}
+        </div>
       </div>
 
     </div>

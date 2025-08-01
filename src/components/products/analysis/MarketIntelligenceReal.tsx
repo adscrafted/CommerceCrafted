@@ -158,50 +158,12 @@ export default function MarketIntelligenceReal({ data }: MarketIntelligenceRealP
 
                   {/* Representative Reviews */}
                   {persona.reviewExamples && persona.reviewExamples.length > 0 && (
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                      <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
-                        <MessageSquare className="h-4 w-4 mr-2 text-blue-600" />
-                        Representative Reviews from This Persona
-                      </h4>
-                      <div className="space-y-3">
+                    <div className="mt-6">
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">What They Say</h4>
+                      <div className="space-y-2">
                         {persona.reviewExamples.map((review: any, reviewIndex: number) => (
-                          <div key={reviewIndex} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center space-x-3">
-                                <div className="flex items-center space-x-0.5">
-                                  {[...Array(5)].map((_, i) => (
-                                    <Star
-                                      key={i}
-                                      className={`h-4 w-4 ${
-                                        i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                                {review.verified && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    Verified Purchase
-                                  </Badge>
-                                )}
-                              </div>
-                              {review.date && (
-                                <span className="text-xs text-gray-500">{review.date}</span>
-                              )}
-                            </div>
-                            <blockquote className="text-sm text-gray-700 italic leading-relaxed">
-                              &ldquo;{review.text}&rdquo;
-                            </blockquote>
-                            {review.helpfulVotes && review.helpfulVotes > 0 && (
-                              <div className="mt-2 text-xs text-gray-500">
-                                {review.helpfulVotes} people found this helpful
-                              </div>
-                            )}
-                          </div>
+                          <p key={reviewIndex} className="text-sm text-gray-600 italic">"{review.text}"</p>
                         ))}
-                      </div>
-                      <div className="mt-3 text-xs text-gray-500 italic">
-                        These reviews were identified as representative of this customer persona based on language patterns, 
-                        concerns expressed, and purchase motivations mentioned.
                       </div>
                     </div>
                   )}

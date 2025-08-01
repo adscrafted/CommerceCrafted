@@ -25,6 +25,7 @@ import {
   Search,
   ArrowUp,
   ArrowRight,
+  ArrowLeft,
   ChevronRight,
   Rocket
 } from 'lucide-react'
@@ -94,7 +95,6 @@ const fetchProductData = async (asin: string) => {
   }
 }
 
-// Fallback mock data removed - we'll show a proper not found message instead
 
 // Score card component
 const AnalysisScoreCard = ({ 
@@ -186,9 +186,11 @@ const AnalysisScoreCard = ({
   )
 }
 
-// Image carousel component
+// Mobile-friendly carousel showing 5 images side by side
 const ImageCarousel = ({ images, title }: { images: string[], title: string }) => {
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [currentStartIndex, setCurrentStartIndex] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, startIndex: 0 })
   
   // Filter out empty strings and ensure we have valid URLs, then proxy Amazon images
   const validImages = (images?.filter(img => img && img.trim() !== '') || [])
@@ -202,64 +204,198 @@ const ImageCarousel = ({ images, title }: { images: string[], title: string }) =
   
   if (!validImages || validImages.length === 0) {
     return (
-      <div className="w-72 h-72 relative bg-gray-200 rounded-lg flex items-center justify-center">
-        <span className="text-gray-400">No images available</span>
+      <div className="w-full">
+        <div className="flex justify-center">
+          <div className="w-40 h-40 sm:w-48 sm:h-48 relative bg-gray-200 rounded-lg flex items-center justify-center">
+            <span className="text-gray-400 text-sm">No images available</span>
+          </div>
+        </div>
       </div>
     )
   }
+
+  // Number of images to show at once based on screen size
+  const getImagesPerView = () => {
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth < 640) return 2 // mobile: 2 images
+      if (window.innerWidth < 1024) return 3 // tablet: 3 images  
+      return 5 // desktop: 5 images
+    }
+    return 5
+  }
+
+  const [imagesPerView, setImagesPerView] = useState(5)
+
+  useEffect(() => {
+    const handleResize = () => {
+      setImagesPerView(getImagesPerView())
+    }
+    
+    handleResize() // Set initial value
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  const maxStartIndex = Math.max(0, validImages.length - imagesPerView)
   
+  const nextImages = () => {
+    setCurrentStartIndex(prev => Math.min(prev + 1, maxStartIndex))
+  }
+
+  const prevImages = () => {
+    setCurrentStartIndex(prev => Math.max(prev - 1, 0))
+  }
+
+  // Drag functionality
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (validImages.length <= imagesPerView) return // No need to drag if all images are visible
+    
+    setIsDragging(true)
+    setDragStart({
+      x: e.clientX,
+      startIndex: currentStartIndex
+    })
+    e.preventDefault()
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return
+    
+    const deltaX = e.clientX - dragStart.x
+    const sensitivity = 100 // pixels needed to move one image
+    const imageMove = Math.round(-deltaX / sensitivity)
+    
+    const newIndex = Math.max(0, Math.min(maxStartIndex, dragStart.startIndex + imageMove))
+    setCurrentStartIndex(newIndex)
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  const handleMouseLeave = () => {
+    setIsDragging(false)
+  }
+
+  // Touch support for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (validImages.length <= imagesPerView) return
+    
+    setIsDragging(true)
+    setDragStart({
+      x: e.touches[0].clientX,
+      startIndex: currentStartIndex
+    })
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return
+    
+    const deltaX = e.touches[0].clientX - dragStart.x
+    const sensitivity = 80 // More sensitive on mobile
+    const imageMove = Math.round(-deltaX / sensitivity)
+    
+    const newIndex = Math.max(0, Math.min(maxStartIndex, dragStart.startIndex + imageMove))
+    setCurrentStartIndex(newIndex)
+    e.preventDefault()
+  }
+
+  const handleTouchEnd = () => {
+    setIsDragging(false)
+  }
+
+  const visibleImages = validImages.slice(currentStartIndex, currentStartIndex + imagesPerView)
+
   return (
-    <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
-      {/* Main Image - Responsive */}
-      <div className="w-full sm:w-72 h-64 sm:h-72 relative bg-white rounded-lg shadow-xl overflow-hidden">
-        <Image 
-          src={validImages[currentIndex]}
-          alt={`${title} - Image ${currentIndex + 1}`}
-          width={288}
-          height={288}
-          className="w-full h-full object-contain"
-          onError={(e) => {
-            // Use a placeholder image for supplements
-            e.currentTarget.src = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&h=600&fit=crop'
-          }}
-        />
+    <div className="w-full max-w-7xl mx-auto">
+      <div className="relative">
+        {/* Image Grid */}
+        <div 
+          className={`flex justify-center items-center space-x-4 sm:space-x-6 md:space-x-8 select-none ${
+            isDragging ? 'cursor-grabbing' : 'cursor-grab'
+          } ${validImages.length > imagesPerView ? 'cursor-grab' : 'cursor-default'}`}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {visibleImages.map((image, index) => (
+            <div
+              key={currentStartIndex + index}
+              className={`w-50 h-50 sm:w-60 sm:h-60 md:w-70 md:h-70 lg:w-80 lg:h-80 relative bg-white rounded-lg shadow-md overflow-hidden border-2 border-gray-100 hover:border-blue-300 transition-all duration-200 ${
+                isDragging ? 'pointer-events-none' : ''
+              }`}
+            >
+              <Image 
+                src={image}
+                alt={`${title} - Image ${currentStartIndex + index + 1}`}
+                width={320}
+                height={320}
+                className="w-full h-full object-contain p-1"
+                onError={(e) => {
+                  // Use a placeholder image for supplements
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop'
+                }}
+                draggable={false}
+              />
+            </div>		
+          ))}
+        </div>
+
+        {/* Navigation Arrows - Only show if we have more images than can be displayed */}
+        {validImages.length > imagesPerView && (
+          <>
+            {/* Left Arrow */}
+            <button
+              onClick={prevImages}
+              disabled={currentStartIndex === 0}
+              className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 bg-white hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed p-2 rounded-full shadow-lg transition-all duration-200 z-10 border"
+              aria-label="Show previous images"
+            >
+              <ArrowLeft className={`h-4 w-4 ${currentStartIndex === 0 ? 'text-gray-400' : 'text-gray-600'}`} />
+            </button>
+            
+            {/* Right Arrow */}
+            <button
+              onClick={nextImages}
+              disabled={currentStartIndex >= maxStartIndex}
+              className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-4 bg-white hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed p-2 rounded-full shadow-lg transition-all duration-200 z-10 border"
+              aria-label="Show next images"
+            >
+              <ArrowRight className={`h-4 w-4 ${currentStartIndex >= maxStartIndex ? 'text-gray-400' : 'text-gray-600'}`} />
+            </button>
+          </>
+        )}
       </div>
-      
-      {/* Thumbnails - Responsive Grid */}
-      {validImages.length > 1 && (
-        <div className="w-full sm:w-auto">
-          <div className={`grid gap-2 ${
-            validImages.length <= 3 ? 'grid-cols-3 sm:grid-cols-1' :
-            validImages.length <= 6 ? 'grid-cols-3 sm:grid-cols-2' :
-            validImages.length <= 9 ? 'grid-cols-3' :
-            'grid-cols-4 sm:grid-cols-3'
-          } max-w-full sm:max-w-none`}>
-            {validImages.slice(0, 12).map((image, index) => (
+
+      {/* Progress indicators */}
+      {validImages.length > imagesPerView && (
+        <div className="flex justify-center mt-4 space-x-1">
+          {Array.from({ length: Math.ceil(validImages.length / imagesPerView) }).map((_, pageIndex) => {
+            const isActive = Math.floor(currentStartIndex / imagesPerView) === pageIndex
+            return (
               <button
-                key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                  index === currentIndex 
-                    ? 'border-blue-500 shadow-md' 
-                    : 'border-gray-200 hover:border-gray-400'
+                key={pageIndex}
+                onClick={() => setCurrentStartIndex(pageIndex * imagesPerView)}
+                className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                  isActive ? 'bg-blue-600' : 'bg-gray-300'
                 }`}
-                style={{ width: '66px', height: '66px' }}
-              >
-                <Image
-                  src={image}
-                  alt={`${title} - Thumbnail ${index + 1}`}
-                  width={66}
-                  height={66}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=100&h=100&fit=crop'
-                  }}
-                />
-              </button>
-            ))}
-          </div>
+                aria-label={`Go to page ${pageIndex + 1}`}
+              />
+            )
+          })}
         </div>
       )}
+
+      {/* Image counter */}
+      <div className="text-center mt-2">
+        <span className="text-xs text-gray-500">
+          Showing {currentStartIndex + 1}-{Math.min(currentStartIndex + imagesPerView, validImages.length)} of {validImages.length}
+        </span>
+      </div>
     </div>
   )
 }
@@ -379,12 +515,12 @@ export default function ProductPage({ params }: ProductPageProps) {
                 avgSellingPrice: avgPrice,
                 monthlyProjections: {
                   revenue: totalKeywordRevenue || nicheShowcase.metrics.revenue.monthly,
-                  profit: (totalKeywordRevenue || nicheShowcase.metrics.revenue.monthly) * 0.35, // Assuming 35% margin
+                  profit: (totalKeywordRevenue || nicheShowcase.metrics.revenue.monthly) * (nicheShowcase.profitMargin || 0.30),
                   units: Math.round((totalKeywordRevenue || nicheShowcase.metrics.revenue.monthly) / avgPrice)
                 }
               },
-              mainImage: productImages[0] || fallbackProductData.mainImage,
-              images: productImages.length > 0 ? productImages : [fallbackProductData.mainImage],
+              mainImage: productImages[0],
+              images: productImages,
               totalProducts: nicheShowcase.products.length,
               // Store the full niche data
               _nicheData: nicheShowcase,
@@ -398,7 +534,9 @@ export default function ProductPage({ params }: ProductPageProps) {
         }
       }
       
-      // Original flow for individual products
+      // Try multiple approaches to find the data
+      let dataFound = false
+      
       // First try to fetch niche data
       const nicheData = await fetchNicheData(currentSlug)
       
@@ -406,34 +544,44 @@ export default function ProductPage({ params }: ProductPageProps) {
         console.log('Using niche data with real product image')
         // Transform niche data to match our product data structure
         setProductData({
-          ...fallbackProductData,
-          title: nicheData.niche.name,
+          id: nicheData.niche.id,
+          title: nicheData.niche.niche_name || nicheData.niche.name,
           mainImage: nicheData.niche.mainImage,
-          opportunityScore: Math.round(nicheData.niche.avgOpportunityScore || 87),
+          opportunityScore: Math.round(nicheData.niche.avgOpportunityScore),
           financialData: {
-            ...fallbackProductData.financialData,
-            avgSellingPrice: nicheData.niche.avgPrice || 29.99,
+            avgSellingPrice: nicheData.niche.avgPrice,
             monthlyProjections: {
-              revenue: nicheData.niche.totalRevenue || 52000
+              revenue: nicheData.niche.totalRevenue,
+              profit: nicheData.niche.totalProfit || (nicheData.niche.totalRevenue * 0.30),
+              units: Math.round(nicheData.niche.totalRevenue / nicheData.niche.avgPrice)
             }
           },
           // Store the full niche data for use in child pages
           _nicheData: nicheData
         })
-      } else {
-        // Fallback to ASIN-based fetch
+        dataFound = true
+      }
+      
+      if (!dataFound) {
+        // Try to extract ASIN from slug
         const asin = extractAsinFromSlug(currentSlug)
-        console.log('Extracted ASIN:', asin, 'from slug:', currentSlug)
-        
-        const fetchedProduct = await fetchProductData(asin)
-        
-        if (fetchedProduct) {
-          console.log('Using database product data')
-          setProductData(fetchedProduct)
-        } else {
-          console.log('No product data found')
-          setError('Product not found')
+        if (asin) {
+          console.log('Extracted ASIN:', asin, 'from slug:', currentSlug)
+          
+          const fetchedProduct = await fetchProductData(asin)
+          
+          if (fetchedProduct) {
+            console.log('Using database product data')
+            setProductData(fetchedProduct)
+            dataFound = true
+          }
         }
+      }
+      
+      if (!dataFound) {
+        console.log('No data found for slug:', currentSlug)
+        setError('Product not found')
+        setProductData(null)
       }
       
       setLoading(false)
@@ -504,7 +652,29 @@ export default function ProductPage({ params }: ProductPageProps) {
     )
   }
 
-  if (error || !productData) {
+  // Remove the error state - we'll always show something
+  // if (error || !productData) {
+  //   return (
+  //     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+  //       <div className="text-center">
+  //         <h1 className="text-2xl font-bold text-gray-900 mb-4">Product Not Found</h1>
+  //         <p className="text-gray-600 mb-6">{error || 'The requested product could not be found.'}</p>
+  //         <Link href="/database">
+  //           <Button>Browse Product Database</Button>
+  //         </Link>
+  //       </div>
+  //     </div>
+  //   )
+  // }
+
+  // Since this is now a public page, always show access (or use debug toggle)
+  const hasAccess = true // Public page - always has access
+  const nicheIdParam = searchParams.get('nicheId')
+  
+  // No membership gate needed for public pages
+  
+  // Check if we have product data
+  if (!productData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -517,22 +687,15 @@ export default function ProductPage({ params }: ProductPageProps) {
       </div>
     )
   }
-
-  // Since this is now a public page, always show access (or use debug toggle)
-  const hasAccess = true // Public page - always has access
-  const nicheIdParam = searchParams.get('nicheId')
   
-  // No membership gate needed for public pages
-  
-  // Use productData if available, otherwise fallback to mock data
-  const currentProduct = productData || fallbackProductData
+  const currentProduct = productData
 
 
   // Calculate metrics with real data
-  const totalKeywords = currentProduct._nicheData?.totalKeywords || 248
-  const avgBSR = currentProduct._nicheData?.metrics?.bsr?.avg || 15243
-  const avgRating = currentProduct._nicheData?.metrics?.rating?.avg || 4.2
-  const totalReviews = currentProduct._nicheData?.metrics?.reviews?.total || 36600
+  const totalKeywords = currentProduct._nicheData?.totalKeywords || 0
+  const avgBSR = currentProduct._nicheData?.metrics?.bsr?.avg || 0
+  const avgRating = currentProduct._nicheData?.metrics?.rating?.avg || 0
+  const totalReviews = currentProduct._nicheData?.metrics?.reviews?.total || 0
 
   const analysisCards = [
     {
@@ -545,8 +708,8 @@ export default function ProductPage({ params }: ProductPageProps) {
       metrics: [
         { label: 'Sentiment', value: `${avgRating.toFixed(1)}★` },
         { label: 'Total Reviews', value: totalReviews > 1000 ? `${(totalReviews / 1000).toFixed(1)}K` : totalReviews.toString() },
-        { label: 'Opportunities', value: '4' },
-        { label: 'Avatars', value: '3 Types' }
+        { label: 'Opportunities', value: currentProduct._nicheData?.opportunities?.length?.toString() || '0' },
+        { label: 'Avatars', value: currentProduct._nicheData?.customerAvatars?.length ? `${currentProduct._nicheData.customerAvatars.length} Types` : '0' }
       ]
     },
     {
@@ -557,10 +720,10 @@ export default function ProductPage({ params }: ProductPageProps) {
       href: `/products/${slug}/demand${nicheIdParam ? `?nicheId=${nicheIdParam}` : ''}`,
       gradient: 'bg-gradient-to-br from-blue-50 to-blue-100',
       metrics: [
-        { label: 'Market Trend', value: 'Growing' },
-        { label: 'Avg BSR', value: avgBSR.toLocaleString() },
-        { label: 'Conversion Rate', value: '12.5%' },
-        { label: 'Market Size', value: '$1.2B' }
+        { label: 'Market Trend', value: currentProduct._nicheData?.marketTrend || 'N/A' },
+        { label: 'Avg BSR', value: avgBSR > 0 ? avgBSR.toLocaleString() : 'N/A' },
+        { label: 'Conversion Rate', value: currentProduct._nicheData?.conversionRate ? `${currentProduct._nicheData.conversionRate}%` : 'N/A' },
+        { label: 'Market Size', value: currentProduct._nicheData?.marketSize || 'N/A' }
       ]
     },
     {
@@ -649,82 +812,66 @@ export default function ProductPage({ params }: ProductPageProps) {
         </Button>
       </div>
 
-      {/* Hero Section - Responsive */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-6 sm:py-8 lg:py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 items-center">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  {currentProduct.isNiche ? 'Niche Analysis' : 'Daily Amazon Opportunity'}
-                </Badge>
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  {currentProduct.date}
-                </Badge>
-              </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">{currentProduct.title}</h1>
-              
-              {/* Monthly Revenue Display */}
-              <div className="mb-6">
-                <div className="inline-flex items-center bg-white/20 backdrop-blur-sm rounded-lg px-3 sm:px-4 py-2 border border-white/30">
-                  <span className="text-xs sm:text-sm text-blue-100 mr-2">Est. Monthly Revenue:</span>
-                  <span className="text-xl sm:text-2xl font-bold text-white">
-                    ${(() => {
-                      const revenue = currentProduct.financialData.monthlyProjections.revenue;
-                      if (revenue >= 1000000) {
-                        return `${(revenue / 1000000).toFixed(1)}M`;
-                      } else if (revenue >= 1000) {
-                        return `${(revenue / 1000).toFixed(0)}K`;
-                      } else {
-                        return revenue.toFixed(0);
-                      }
-                    })()}
-                  </span>
-                </div>
-              </div>
-              
+      {/* Simplified Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          
+          {/* Centered Date and Title */}
+          <div className="text-center space-y-6 mb-12">
+            {/* Date Badge */}
+            <div className="flex justify-center">
+              <Badge variant="secondary" className="bg-gray-100 text-gray-700 border-gray-200 px-3 py-1.5 font-medium">
+                {currentProduct.date}
+              </Badge>
             </div>
             
-            {/* Product Image Carousel - Centered on Mobile */}
-            <div className="flex justify-center lg:justify-end">
-              <ImageCarousel 
-                images={(() => {
-                  // Ensure we have valid images array
-                  let imagesArray = currentProduct.images || []
-                  
-                  // If no images array, try to use mainImage
-                  if ((!imagesArray || imagesArray.length === 0) && currentProduct.mainImage) {
-                    imagesArray = [currentProduct.mainImage]
-                  }
-                  
-                  // If we have image_urls as a string, parse it
-                  if (currentProduct.image_urls && typeof currentProduct.image_urls === 'string') {
-                    try {
-                      // Try to parse as JSON first
-                      const parsed = JSON.parse(currentProduct.image_urls)
-                      imagesArray = Array.isArray(parsed) ? parsed : [parsed]
-                    } catch {
-                      // If not JSON, split by comma
-                      imagesArray = currentProduct.image_urls.split(',').map((url: string) => url.trim())
-                    }
-                  }
-                  
-                  // Ensure all images have full URLs
-                  return imagesArray.map((url: string) => {
-                    if (!url) return null
-                    if (!url.startsWith('http')) {
-                      return `https://m.media-amazon.com/images/I/${url}`
-                    }
-                    return url
-                  }).filter(Boolean)
-                })()}
-                title={currentProduct.title}
-              />
+            {/* Title */}
+            <div>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight max-w-4xl mx-auto">
+                {currentProduct.title}
+              </h1>
             </div>
           </div>
+          
+          {/* Centered Image Carousel */}
+          <div className="flex justify-center">
+            <ImageCarousel 
+              images={(() => {
+                // Ensure we have valid images array
+                let imagesArray = currentProduct.images || []
+                
+                // If no images array, try to use mainImage
+                if ((!imagesArray || imagesArray.length === 0) && currentProduct.mainImage) {
+                  imagesArray = [currentProduct.mainImage]
+                }
+                
+                // If we have image_urls as a string, parse it
+                if (currentProduct.image_urls && typeof currentProduct.image_urls === 'string') {
+                  try {
+                    // Try to parse as JSON first
+                    const parsed = JSON.parse(currentProduct.image_urls)
+                    imagesArray = Array.isArray(parsed) ? parsed : [parsed]
+                  } catch {
+                    // If not JSON, split by comma
+                    imagesArray = currentProduct.image_urls.split(',').map((url: string) => url.trim())
+                  }
+                }
+                
+                // Ensure all images have full URLs
+                return imagesArray.map((url: string) => {
+                  if (!url) return null
+                  if (!url.startsWith('http')) {
+                    return `https://m.media-amazon.com/images/I/${url}`
+                  }
+                  return url
+                }).filter(Boolean)
+              })()}
+              title={currentProduct.title}
+            />
+          </div>
+          
         </div>
       </div>
-
 
       {/* Analysis Score Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -734,7 +881,7 @@ export default function ProductPage({ params }: ProductPageProps) {
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Analysis Summary Card - Takes 2 slots */}
+          {/* Product Summary Card - Takes 2 slots */}
           <div className="md:col-span-2">
             <Card className="h-full hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-200 bg-gradient-to-br from-indigo-50 to-indigo-100">
               <CardHeader>
@@ -744,8 +891,8 @@ export default function ProductPage({ params }: ProductPageProps) {
                       <BarChart3 className="h-6 w-6 text-gray-700" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg">Analysis Summary</CardTitle>
-                      <CardDescription className="text-sm">Key insights and opportunities</CardDescription>
+                      <CardTitle className="text-lg">Product Summary</CardTitle>
+                      <CardDescription className="text-sm">Comprehensive market overview</CardDescription>
                     </div>
                   </div>
                   <div className="text-center">
@@ -757,53 +904,23 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <Progress value={currentProduct.opportunityScore} className="h-2" />
-                  <div className="grid md:grid-cols-2 gap-6 mt-4">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">Strengths</h3>
-                      <ul className="space-y-1">
-                        <li className="text-sm text-gray-700 flex items-start space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>{totalKeywords} high-value keywords identified</span>
-                        </li>
-                        <li className="text-sm text-gray-700 flex items-start space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>Average BSR of {avgBSR.toLocaleString()}</span>
-                        </li>
-                        <li className="text-sm text-gray-700 flex items-start space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>Strong profit margins (35%)</span>
-                        </li>
-                        <li className="text-sm text-gray-700 flex items-start space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>{avgRating.toFixed(1)}★ average rating</span>
-                        </li>
-                      </ul>
+                  
+                  {/* Product Summary Description */}
+                  {currentProduct.productSummary || currentProduct._nicheData?.nicheSummary ? (
+                    <div className="bg-white/70 rounded-lg p-6">
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {currentProduct.productSummary || currentProduct._nicheData?.nicheSummary}
+                      </p>
                     </div>
-                    
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">Opportunities</h3>
-                      <ul className="space-y-1">
-                        <li className="text-sm text-gray-700 flex items-start space-x-2">
-                          <ArrowRight className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                          <span>Underserved premium segment</span>
-                        </li>
-                        <li className="text-sm text-gray-700 flex items-start space-x-2">
-                          <ArrowRight className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                          <span>Weak competitor listings</span>
-                        </li>
-                        <li className="text-sm text-gray-700 flex items-start space-x-2">
-                          <ArrowRight className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                          <span>High keyword opportunities</span>
-                        </li>
-                        <li className="text-sm text-gray-700 flex items-start space-x-2">
-                          <ArrowRight className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                          <span>Expandable product line potential</span>
-                        </li>
-                      </ul>
+                  ) : (
+                    <div className="bg-white/70 rounded-lg p-6">
+                      <p className="text-sm text-gray-600 italic">
+                        Loading product summary data... This comprehensive analysis will provide insights into market opportunities, competitive landscape, and growth potential.
+                      </p>
                     </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -2,10 +2,9 @@
 // Provides real-time streaming responses for better UX
 
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { openai, AI_CONFIG, OpenAIError, calculateCost } from '@/lib/openai-client'
 import { conversationManager } from '@/lib/conversation-manager'
-import { authOptions } from '@/lib/auth'
 
 export interface StreamingAIResearchRequest {
   question: string
@@ -21,8 +20,9 @@ export interface StreamingAIResearchRequest {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
       return new Response(
         JSON.stringify({ error: 'Authentication required' }),
         { 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       }
     } else {
       researchSession = conversationManager.createSession(
-        session.user.id!,
+        authUser.id,
         sessionType,
         context?.productId
       )
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
 
             // Log the request for debugging
             console.log('Streaming AI Research Request:', {
-              userId: session.user.id,
+              userId: authUser.id,
               sessionId: researchSession.id,
               sessionType,
               tokensUsed,

@@ -46,7 +46,7 @@ export async function GET(
       })
     }
     
-    // If no stored insights exist, return an appropriate message
+    // If no stored insights exist, return empty state - no mock data
     return NextResponse.json({
       hasData: false,
       error: 'Market insights not yet generated. Please wait for niche processing to complete.',
@@ -66,3 +66,4 @@ export async function GET(
     )
   }
 }
+

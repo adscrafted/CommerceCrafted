@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { ScoreCard } from '@/components/ui/score-card'
 import { 
   BarChart3, 
   Activity,
@@ -25,12 +26,13 @@ import {
   Globe,
   Calendar,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Brain,
+  Lightbulb
 } from 'lucide-react'
 import { ResponsiveContainer, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, ReferenceLine } from 'recharts'
 import KeywordNetworkVisualization from '@/components/KeywordNetworkVisualization'
 import DemandAnalysisReal from './DemandAnalysisReal'
-import PricingAIInsights from './PricingAIInsights'
 import SeasonalityAnalysis from './SeasonalityAnalysis'
 
 interface SeasonalTrend {
@@ -139,6 +141,9 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
   const [selectedSeason, setSelectedSeason] = useState<SeasonalTrend | null>(null)
+  const [pricingAnalysis, setPricingAnalysis] = useState<any>(null)
+  const [pricingLoading, setPricingLoading] = useState(false)
+  const [pricingError, setPricingError] = useState<string | null>(null)
   
   // Initialize with all competitors selected by default
   const [selectedCompetitors, setSelectedCompetitors] = useState<string[]>(() => {
@@ -149,6 +154,7 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
   // Keyword network filter states
   const [minKeywordsPerRoot, setMinKeywordsPerRoot] = useState(5)
   const [minKeywordsPerSubRoot, setMinKeywordsPerSubRoot] = useState(3)
+  const [keywordMetrics, setKeywordMetrics] = useState<any>(null)
   
   // Helper function to toggle competitor selection
   const toggleCompetitor = (asin: string) => {
@@ -200,10 +206,69 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
     fetchAIInsights()
   }, [nicheId]) // Remove activeTab dependency so it loads immediately
 
+  // Fetch pricing analysis when component mounts
+  useEffect(() => {
+    const fetchPricingAnalysis = async () => {
+      if (!nicheId) return
+      
+      setPricingLoading(true)
+      setPricingError(null)
+      
+      try {
+        const response = await fetch(`/api/niches/${nicheId}/pricing-analysis`)
+        const result = await response.json()
+        
+        if (result.hasData && result.analysis) {
+          setPricingAnalysis(result.analysis)
+        } else {
+          setPricingError(result.error || 'Unable to load pricing analysis')
+        }
+      } catch (error) {
+        console.error('Failed to fetch pricing analysis:', error)
+        setPricingError('Failed to load pricing analysis')
+      } finally {
+        setPricingLoading(false)
+      }
+    }
+
+    fetchPricingAnalysis()
+  }, [nicheId])
+
   // Helper function to get color for competitor lines
   const getCompetitorColor = (index: number) => {
     const colors = ['#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16']
     return colors[index % colors.length]
+  }
+
+  const getThemeIcon = (type: string) => {
+    switch (type) {
+      case 'trending_up': return TrendingUp
+      case 'trending_down': return TrendingDown
+      case 'seasonal': return Calendar
+      case 'volatile': return AlertCircle
+      case 'promotional': return Target
+      default: return DollarSign
+    }
+  }
+
+  const getThemeColor = (type: string) => {
+    switch (type) {
+      case 'trending_up': return 'bg-green-50 border-green-200 text-green-800'
+      case 'trending_down': return 'bg-red-50 border-red-200 text-red-800'
+      case 'seasonal': return 'bg-blue-50 border-blue-200 text-blue-800'
+      case 'volatile': return 'bg-yellow-50 border-yellow-200 text-yellow-800'
+      case 'promotional': return 'bg-purple-50 border-purple-200 text-purple-800'
+      default: return 'bg-gray-50 border-gray-200 text-gray-800'
+    }
+  }
+
+  const getImpactBadge = (impact: string) => {
+    switch (impact) {
+      case 'high': return <Badge variant="destructive" className="text-xs">High Impact</Badge>
+      case 'medium': return <Badge variant="secondary" className="text-xs">Medium Impact</Badge>
+      case 'low': return <Badge variant="outline" className="text-xs">Low Impact</Badge>
+      default: return null
+    }
   }
 
   // Helper function to get season date ranges
@@ -619,13 +684,61 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
             </CardHeader>
             <CardContent>
               {data.keywordHierarchy ? (
-                <KeywordNetworkVisualization
-                  keywordHierarchy={data.keywordHierarchy}
-                  primaryKeyword={data.title || 'Product'}
-                  minKeywordsPerRoot={minKeywordsPerRoot}
-                  minKeywordsPerSubRoot={minKeywordsPerSubRoot}
-                  onMinKeywordsPerRootChange={setMinKeywordsPerRoot}
-                  onMinKeywordsPerSubRootChange={setMinKeywordsPerSubRoot}
+                <>
+                  {/* Scorecards - Below description */}
+                  {keywordMetrics && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      {(() => {
+                        const displayData = keywordMetrics.displayData
+                        const revenueValue = displayData.totalRevenue >= 1000000 
+                          ? '$' + (displayData.totalRevenue / 1000000).toFixed(2) + 'M'
+                          : displayData.totalRevenue >= 1000
+                          ? '$' + (displayData.totalRevenue / 1000).toFixed(0) + 'K'
+                          : '$' + (displayData.totalRevenue?.toFixed(0) || '0')
+                        
+                        const rootKeywordsValue = keywordMetrics.selectedNodeData && keywordMetrics.selectedNodeData.type === 'root' 
+                          ? '1' 
+                          : displayData.totalRootKeywords?.toLocaleString() || Object.keys(data.keywordHierarchy || {}).length.toLocaleString()
+                        
+                        return (
+                          <>
+                            <ScoreCard
+                              value={revenueValue}
+                              label="Monthly Revenue"
+                              icon={DollarSign}
+                              description={keywordMetrics.selectedNodeData ? `For ${displayData.name}` : 'Across all keyword groups'}
+                              color="green"
+                            />
+                            
+                            <ScoreCard
+                              value={rootKeywordsValue}
+                              label="Total Root Keywords"
+                              icon={Hash}
+                              description={keywordMetrics.selectedNodeData ? 'Selected root keyword' : 'Primary keyword categories'}
+                              color="purple"
+                            />
+                            
+                            <ScoreCard
+                              value={displayData.keywordCount?.toLocaleString() || '0'}
+                              label="Total Keywords"
+                              icon={TrendingUp}
+                              description={keywordMetrics.selectedNodeData ? `In ${displayData.name}` : 'Unique keywords tracked'}
+                              color="blue"
+                            />
+                          </>
+                        )
+                      })()}
+                    </div>
+                  )}
+                  
+                  <KeywordNetworkVisualization
+                    keywordHierarchy={data.keywordHierarchy}
+                    primaryKeyword={data.title || 'Product'}
+                    minKeywordsPerRoot={minKeywordsPerRoot}
+                    minKeywordsPerSubRoot={minKeywordsPerSubRoot}
+                    onMinKeywordsPerRootChange={setMinKeywordsPerRoot}
+                    onMinKeywordsPerSubRootChange={setMinKeywordsPerSubRoot}
+                    onMetricsCalculated={setKeywordMetrics}
                   productImageUrl={(() => {
                     // Get the main product image from nicheProducts data
                     if (data.nicheProducts?.length > 0) {
@@ -654,6 +767,7 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                     return undefined
                   })()}
                 />
+                </>
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <Activity className="h-8 w-8 mx-auto mb-2 text-gray-400" />
@@ -669,8 +783,6 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
       {/* Pricing Trends Tab */}
       {activeTab === 'pricing' && (
         <div className="space-y-6">
-          {/* AI-Powered Pricing Insights */}
-          <PricingAIInsights nicheId={nicheId} />
 
           {/* Combined Market & Competitor Price Tracking */}
           <Card>
@@ -731,6 +843,59 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                     <div className="text-sm text-gray-600">YoY Change</div>
                   </div>
                 </div>
+
+                {/* Pricing Themes & Patterns */}
+                {pricingAnalysis?.themes && pricingAnalysis.themes.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                      <Lightbulb className="h-4 w-4 mr-2 text-purple-600" />
+                      Pricing Themes & Patterns
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {pricingAnalysis.themes.map((theme: any, index: number) => {
+                        const Icon = getThemeIcon(theme.type)
+                        return (
+                          <div
+                            key={index}
+                            className={`p-4 rounded-lg border-2 ${getThemeColor(theme.type)}`}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center space-x-2">
+                                <Icon className="h-4 w-4" />
+                                <span className="font-medium">{theme.name}</span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                {getImpactBadge(theme.impact)}
+                                <Badge variant="outline" className="text-xs">
+                                  {theme.confidence}% confidence
+                                </Badge>
+                              </div>
+                            </div>
+                            <p className="text-sm mb-2">{theme.description}</p>
+                            <div className="text-xs opacity-75 mb-2">
+                              <strong>Timeframe:</strong> {theme.timeframe}
+                            </div>
+                            {theme.evidence.length > 0 && (
+                              <div className="text-xs opacity-75 mb-2">
+                                <strong>Evidence:</strong> {theme.evidence.join(', ')}
+                              </div>
+                            )}
+                            {theme.actionable_insights.length > 0 && (
+                              <div className="text-xs">
+                                <strong>Actions:</strong>
+                                <ul className="list-disc list-inside ml-2 mt-1">
+                                  {theme.actionable_insights.map((insight: string, i: number) => (
+                                    <li key={i}>{insight}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Combined Price Trend Chart */}
                 <div>
@@ -985,12 +1150,6 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
       {/* Seasonality Tab */}
       {activeTab === 'seasonality' && (
         <div className="space-y-6">
-          {/* Seasonality Analysis */}
-          <SeasonalityAnalysis 
-            nicheId={nicheId} 
-            onSeasonSelect={setSelectedSeason}
-          />
-
           {/* Combined Seasonality & Competitor Sales Rank Tracking */}
           <Card>
             <CardHeader>
@@ -1049,6 +1208,20 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                       })()}
                     </div>
                     <div className="text-sm text-gray-600">Seasonal Variance</div>
+                  </div>
+                </div>
+
+                {/* Seasonal Trends & Patterns */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                    <Sparkles className="h-4 w-4 mr-2 text-indigo-600" />
+                    Seasonal Trends & Patterns
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <SeasonalityAnalysis 
+                      nicheId={nicheId} 
+                      onSeasonSelect={setSelectedSeason}
+                    />
                   </div>
                 </div>
 

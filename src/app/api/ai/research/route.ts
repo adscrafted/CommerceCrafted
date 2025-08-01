@@ -2,10 +2,9 @@
 // Real OpenAI integration for CommerceCrafted research agent
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { openai, AI_CONFIG, OpenAIError, calculateCost } from '@/lib/openai-client'
 import { aiLogger, createRequestLog, logAIError } from '@/lib/ai-logger'
-import { authOptions } from '@/lib/auth'
 
 export interface AIResearchRequest {
   question: string
@@ -43,10 +42,19 @@ export interface AIResearchResponse {
 
 // POST /api/ai/research
 export async function POST(request: NextRequest) {
+  const authUser: any = null;
+  let startTime: number | undefined;
+  let model: string = AI_CONFIG.models.standard;
+  let sessionType: string = 'product_validation';
+  let context: any;
+  let question: string = '';
+  let userTier: string = 'free';
+  
   try {
     // Authenticate user
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -55,7 +63,9 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body: AIResearchRequest = await request.json()
-    const { question, sessionType = 'product_validation', context } = body
+    question = body.question
+    sessionType = body.sessionType || 'product_validation'
+    context = body.context
 
     if (!question?.trim()) {
       return NextResponse.json(
@@ -65,7 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user tier from context or default to free
-    const userTier = context?.userTier || 'free'
+    userTier = context?.userTier || 'free'
     
     // Check usage limits for the user's tier
     const tierLimits = AI_CONFIG.limits.tiers[userTier]
@@ -80,7 +90,7 @@ export async function POST(request: NextRequest) {
     // For now, we'll proceed with the request
 
     // Determine model based on user tier
-    const model = userTier === 'free' ? AI_CONFIG.models.standard : AI_CONFIG.models.premium
+    model = userTier === 'free' ? AI_CONFIG.models.standard : AI_CONFIG.models.premium
     const maxTokens = tierLimits.maxTokensPerQuery
 
     // Get system prompt for session type
@@ -102,7 +112,7 @@ export async function POST(request: NextRequest) {
     messages.push({ role: 'user', content: question })
 
     // Track start time for performance monitoring
-    const startTime = Date.now()
+    startTime = Date.now()
 
     // Call OpenAI API
     const completion = await openai.chat.completions.create({
@@ -176,7 +186,7 @@ export async function POST(request: NextRequest) {
 
     // Log the successful request
     aiLogger.logRequest(createRequestLog(
-      session.user.id!,
+      authUser.id,
       context?.sessionId,
       sessionType,
       question,
@@ -190,7 +200,7 @@ export async function POST(request: NextRequest) {
 
     // Log usage event
     aiLogger.logUsage({
-      userId: session.user.id!,
+      userId: authUser.id,
       userTier,
       action: 'query',
       metadata: {
@@ -218,7 +228,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // Log the error with context
     logAIError(error instanceof Error ? error : new Error(String(error)), {
-      userId: session?.user?.id,
+      userId: authUser?.id,
       sessionId: context?.sessionId,
       operation: 'ai_research_query',
       metadata: {
@@ -229,9 +239,9 @@ export async function POST(request: NextRequest) {
     })
 
     // Log failed request
-    if (session?.user?.id) {
+    if (authUser?.id) {
       aiLogger.logRequest(createRequestLog(
-        session.user.id,
+        authUser.id,
         context?.sessionId,
         sessionType,
         question,

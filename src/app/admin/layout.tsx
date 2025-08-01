@@ -27,17 +27,24 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { user, isLoading, isAuthenticated } = useAuthState()
+  const { user, loading, isAuthenticated } = useAuthState()
   const { signOut } = useAuthActions()
   const router = useRouter()
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   React.useEffect(() => {
-    console.log('Admin layout auth check:', { isLoading, isAuthenticated, userRole: user?.role })
+    console.log('Admin layout auth check:', { 
+      loading, 
+      isAuthenticated, 
+      userRole: user?.role,
+      userEmail: user?.email,
+      userId: user?.id,
+      pathname
+    })
 
     // Wait for auth to fully load before making decisions
-    if (isLoading === undefined || isLoading === true) {
+    if (loading) {
       console.log('Admin layout: Still loading, waiting...')
       return
     }
@@ -50,22 +57,28 @@ export default function AdminLayout({
 
     if (!isAuthenticated) {
       console.log('Admin layout: Not authenticated, redirecting to signin')
-      router.push('/auth/signin')
+      // Only redirect if not already on signin page
+      if (pathname !== '/auth/signin') {
+        router.push('/auth/signin')
+      }
       return
     }
 
     if (user?.role !== 'ADMIN') {
       console.log('Admin layout: Not admin role, redirecting to home')
-      router.push('/')
+      // Only redirect if not already on home page
+      if (pathname !== '/') {
+        router.push('/')
+      }
       return
     }
     
     console.log('Admin layout: Auth check passed')
-  }, [user, isLoading, isAuthenticated, router])
+  }, [user, loading, isAuthenticated, router, pathname])
 
   // Skip loading and auth checks in development
   if (process.env.NODE_ENV !== 'development') {
-    if (isLoading) {
+    if (loading) {
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -87,7 +100,7 @@ export default function AdminLayout({
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
               {/* Mobile Menu Button */}
@@ -208,9 +221,9 @@ export default function AdminLayout({
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 bg-gray-50">
         {children}
-      </div>
+      </main>
     </div>
   )
 }

@@ -8,7 +8,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import DemandAnalysis from '@/components/products/analysis/DemandAnalysis'
 import { MembershipGate } from '@/components/MembershipGate'
-import { getNicheBySlug } from '@/lib/mockNicheData'
 import { NicheNavigation } from '@/components/niches/NicheNavigation'
 
 interface DemandPageProps {
@@ -20,14 +19,26 @@ export default function NicheDemandPage({ params }: DemandPageProps) {
   const [loading, setLoading] = useState(true)
   const [slug, setSlug] = useState<string>('')
   const [nicheData, setNicheData] = useState<any>(null)
+  const [demandData, setDemandData] = useState<any>(null)
 
   useEffect(() => {
     const loadData = async () => {
       const resolvedParams = await params
       setSlug(resolvedParams.slug)
-      const data = getNicheBySlug(resolvedParams.slug)
-      setNicheData(data)
-      setTimeout(() => setLoading(false), 500)
+      
+      try {
+        // Fetch real data from API
+        const response = await fetch(`/api/niches/${resolvedParams.slug}/demand`)
+        if (!response.ok) throw new Error('Failed to fetch demand data')
+        
+        const data = await response.json()
+        setNicheData(data.niche)
+        setDemandData(data)
+      } catch (error) {
+        console.error('Error loading demand data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     loadData()
@@ -42,12 +53,12 @@ export default function NicheDemandPage({ params }: DemandPageProps) {
   }
 
   if (status === 'unauthenticated' || !session) {
-    return <MembershipGate productTitle={nicheData.nicheName} productImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=600&fit=crop" />
+    return <MembershipGate productTitle={nicheData?.niche_name || 'Niche Analysis'} productImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=600&fit=crop" />
   }
 
   const userTier = session.user?.subscriptionTier || 'free'
   if (userTier === 'free') {
-    return <MembershipGate productTitle={nicheData.nicheName} productImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=600&fit=crop" />
+    return <MembershipGate productTitle={nicheData?.niche_name || 'Niche Analysis'} productImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=600&fit=crop" />
   }
 
   const getScoreColor = (score: number) => {
@@ -64,51 +75,25 @@ export default function NicheDemandPage({ params }: DemandPageProps) {
     return 'Poor'
   }
 
-  // Transform niche data to match the component's expected format
+  // Transform real data to match the component's expected format
   const transformedData = {
-    ...nicheData,
-    title: nicheData.nicheName,
+    title: nicheData.niche_name || nicheData.name,
+    nicheName: nicheData.niche_name || nicheData.name,
+    scores: {
+      demand: demandData?.demandAnalysis?.demand_score || 85
+    },
     demandData: {
-      ...nicheData.demandData,
-      marketSize: nicheData.marketOverview.nicheMarketSize,
-      marketGrowth: nicheData.marketOverview.marketGrowth,
-      googleTrends: Object.entries(nicheData.demandData.seasonality).map(([month, value]) => ({
-        month: month.charAt(0).toUpperCase() + month.slice(1),
-        value
-      })),
-      customerAvatars: nicheData.intelligenceData.customerAvatars.map((avatar: any) => ({
-        name: avatar.name,
-        age: `${avatar.percentage}% of market`,
-        gender: 'Mixed',
-        income: `Avg spend: $${avatar.avgSpend}`,
-        location: 'United States',
-        occupation: avatar.name,
-        lifestyle: avatar.keyNeeds.join(', '),
-        pain: avatar.keyNeeds[0],
-        deepPainPoints: avatar.keyNeeds,
-        motivation: 'Find quality products that meet specific needs',
-        goals: avatar.preferredFeatures,
-        shoppingBehavior: {
-          researchStyle: 'Reads detailed reviews',
-          decisionFactors: avatar.preferredFeatures,
-          pricePoint: `$${(avatar.avgSpend * 0.8).toFixed(2)}-$${(avatar.avgSpend * 1.2).toFixed(2)}`,
-          purchaseTime: 'Various',
-          brandLoyalty: 'Medium'
-        },
-        psychographics: {
-          values: ['Quality', 'Innovation', 'Value'],
-          interests: avatar.preferredFeatures,
-          personality: 'Practical and research-oriented',
-          mediaConsumption: ['Amazon reviews', 'YouTube', 'Forums']
-        },
-        buyingJourney: {
-          awareness: 'Searches for specific features',
-          consideration: 'Compares multiple products',
-          decision: 'Buys based on reviews and features',
-          retention: 'Likely to repurchase if satisfied'
-        }
-      }))
-    }
+      marketSize: demandData?.demandAnalysis?.market_size || 0,
+      marketGrowth: demandData?.demandAnalysis?.growth_rate || 0,
+      searchVolume: demandData?.demandAnalysis?.search_volume || 0,
+      trendScore: demandData?.demandAnalysis?.trend_score || 0,
+      seasonality: demandData?.demandAnalysis?.seasonality_data || {},
+      googleTrends: demandData?.demandAnalysis?.search_trends || [],
+      socialTrends: demandData?.demandAnalysis?.social_trends || [],
+      customerAvatars: demandData?.demandAnalysis?.customer_segments || [],
+      ...demandData?.demandAnalysis
+    },
+    hasData: demandData?.hasData || false
   }
 
   return (
@@ -133,11 +118,11 @@ export default function NicheDemandPage({ params }: DemandPageProps) {
             <Card className="border-2 border-blue-200">
               <CardContent className="p-4">
                 <div className="text-center w-32 h-20 flex flex-col items-center justify-center">
-                  <div className={`text-3xl font-bold ${getScoreColor(nicheData.scores.demand)}`}>
-                    {nicheData.scores.demand}
+                  <div className={`text-3xl font-bold ${getScoreColor(transformedData.scores.demand)}`}>
+                    {transformedData.scores.demand}
                   </div>
-                  <div className="text-xs text-gray-600 mt-1">{getScoreLabel(nicheData.scores.demand)}</div>
-                  <Progress value={nicheData.scores.demand} className="h-2 mt-2 w-full" />
+                  <div className="text-xs text-gray-600 mt-1">{getScoreLabel(transformedData.scores.demand)}</div>
+                  <Progress value={transformedData.scores.demand} className="h-2 mt-2 w-full" />
                 </div>
               </CardContent>
             </Card>
@@ -146,13 +131,13 @@ export default function NicheDemandPage({ params }: DemandPageProps) {
       </div>
 
       {/* Navigation */}
-      <NicheNavigation nicheSlug={slug} nicheName={nicheData.nicheName} />
+      <NicheNavigation nicheSlug={slug} nicheName={transformedData.nicheName} />
 
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <nav className="flex text-sm text-gray-500">
           <Link href={`/niches/${slug}`} className="hover:text-blue-600">
-            {nicheData.nicheName}
+            {transformedData.nicheName}
           </Link>
           <span className="mx-2">/</span>
           <span className="text-gray-900">Demand Analysis</span>
@@ -161,7 +146,7 @@ export default function NicheDemandPage({ params }: DemandPageProps) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <DemandAnalysis data={transformedData} />
+        <DemandAnalysis data={transformedData} nicheId={nicheData?.id} />
       </div>
     </div>
   )

@@ -73,6 +73,7 @@ interface ProductData {
   status?: string
   monthly_orders?: number
   fba_fees?: any
+  keyword_count?: number
 }
 
 interface KeywordData {
@@ -152,10 +153,29 @@ export default function NicheEditPage() {
       .select('*')
       .in('product_id', asinList)
       .order('review_date', { ascending: false })
-      .limit(500) // Load more reviews
+      .limit(1000) // Load more reviews to account for duplicates
     
     if (!reviewError && reviewData) {
-      setReviews(reviewData)
+      // Deduplicate reviews based on unique combination of fields
+      console.log(`[Reviews] Loaded ${reviewData.length} reviews from database`)
+      
+      const uniqueReviews = reviewData.reduce((acc, review) => {
+        // Create a unique key based on product_id, reviewer_name, review_date, and content
+        const uniqueKey = `${review.product_id}_${review.reviewer_name}_${review.review_date}_${review.title}_${review.content?.substring(0, 100)}`
+        
+        // If we haven't seen this review yet, add it
+        if (!acc.uniqueKeys.has(uniqueKey)) {
+          acc.uniqueKeys.add(uniqueKey)
+          acc.reviews.push(review)
+        }
+        
+        return acc
+      }, { uniqueKeys: new Set(), reviews: [] }).reviews
+      
+      console.log(`[Reviews] After deduplication: ${uniqueReviews.length} unique reviews`)
+      
+      // Limit to 500 unique reviews
+      setReviews(uniqueReviews.slice(0, 500))
       setReviewsLoaded(true)
     }
   }
@@ -184,7 +204,22 @@ export default function NicheEditPage() {
         .order('asin')
       
       if (!productError && productData) {
-        setProducts(productData)
+        // Get keyword count for each product
+        const productsWithCounts = await Promise.all(
+          productData.map(async (product) => {
+            const { count } = await supabase
+              .from('product_keywords')
+              .select('*', { count: 'exact', head: true })
+              .eq('product_id', product.asin)
+            
+            return {
+              ...product,
+              keyword_count: count || 0
+            }
+          })
+        )
+        
+        setProducts(productsWithCounts)
         
         // Get total keyword count first
         const { count: keywordCount } = await supabase
@@ -330,7 +365,7 @@ export default function NicheEditPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -454,29 +489,6 @@ export default function NicheEditPage() {
                   onChange={(e) => setNiche({ ...niche, category: e.target.value })}
                 />
               </div>
-            </div>
-            
-            
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={niche.description || ''}
-                onChange={(e) => setNiche({ ...niche, description: e.target.value })}
-                placeholder="Add a description for this niche..."
-                rows={3}
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="notes">Internal Notes</Label>
-              <Textarea
-                id="notes"
-                value={niche.notes || ''}
-                onChange={(e) => setNiche({ ...niche, notes: e.target.value })}
-                placeholder="Add internal notes..."
-                rows={3}
-              />
             </div>
 
             <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -702,7 +714,7 @@ export default function NicheEditPage() {
                             </TableCell>
                             <TableCell className="text-center">{product.brand || '-'}</TableCell>
                             <TableCell className="text-center">
-                              <Badge variant="outline">{productKeywords.length}</Badge>
+                              <Badge variant="outline">{product.keyword_count || 0}</Badge>
                             </TableCell>
                             <TableCell className="text-center">
                               <div className="flex items-center justify-center gap-1">
@@ -743,80 +755,12 @@ export default function NicheEditPage() {
               
               {/* Keywords Tab */}
               <TabsContent value="keywords" className="p-6 mt-0">
-                {/* Keyword Metrics Scorecards */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-                  <Card className="border-0 shadow-sm">
-                    <CardHeader className="pb-2 text-center">
-                      <CardDescription>Unique Keywords</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                      <p className="text-2xl font-bold">{formatNumber(getUniqueKeywords().length)}</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="border-0 shadow-sm">
-                    <CardHeader className="pb-2 text-center">
-                      <CardDescription>Total Entries</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                      <p className="text-2xl font-bold">{formatNumber(keywords.length)}</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="border-0 shadow-sm">
-                    <CardHeader className="pb-2 text-center">
-                      <CardDescription>Keywords with Click Data</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                      <p className="text-2xl font-bold">
-                        {formatNumber(keywords.filter(k => k.estimated_clicks && k.estimated_clicks > 0).length)}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {keywords.length > 0 
-                          ? `${((keywords.filter(k => k.estimated_clicks && k.estimated_clicks > 0).length / keywords.length) * 100).toFixed(1)}%`
-                          : '0%'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="border-0 shadow-sm">
-                    <CardHeader className="pb-2 text-center">
-                      <CardDescription>Keywords with Order Data</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                      <p className="text-2xl font-bold">
-                        {formatNumber(keywords.filter(k => k.estimated_orders && k.estimated_orders > 0).length)}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {keywords.length > 0 
-                          ? `${((keywords.filter(k => k.estimated_orders && k.estimated_orders > 0).length / keywords.length) * 100).toFixed(1)}%`
-                          : '0%'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="border-0 shadow-sm">
-                    <CardHeader className="pb-2 text-center">
-                      <CardDescription>Avg Bid Price</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                      <p className="text-2xl font-bold">
-                        {keywords.length > 0 
-                          ? formatCurrency(keywords.reduce((sum, k) => sum + (k.suggested_bid || 0), 0) / keywords.length / 100)
-                          : '$0.00'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-
                 <div className="space-y-4 mb-4">
                   <div className="flex justify-between items-center">
                     <div>
                       <h3 className="text-lg font-semibold">All Keywords</h3>
                       <p className="text-sm text-gray-600">
-                        {keywords.length < totalKeywordCount 
-                          ? `Showing ${formatNumber(keywords.length)} of ${formatNumber(totalKeywordCount)} keywords`
-                          : `Total ${formatNumber(keywords.length)} keywords`}
+                        {formatNumber(getUniqueKeywords().length)} unique keywords ({formatNumber(totalKeywordCount)} total entries)
                       </p>
                     </div>
                     <Button
@@ -868,12 +812,22 @@ export default function NicheEditPage() {
                                 <span className="block">ASIN</span>
                                 <span className="block">Count</span>
                                 {asinFilter.length > 0 && <span className="ml-1 text-xs">({asinFilter.length} selected)</span>}
+                                {keywordSort?.field === 'asin_count' && (
+                                  keywordSort.order === 'asc' ? ' ↑' : ' ↓'
+                                )}
                                 <ChevronDown className="ml-1 h-3 w-3" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-56">
-                              <DropdownMenuLabel>Filter by ASIN</DropdownMenuLabel>
+                              <DropdownMenuLabel>Sort</DropdownMenuLabel>
+                              <DropdownMenuItem onClick={() => setKeywordSort({field: 'asin_count', order: 'asc'})}>
+                                Low to High
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setKeywordSort({field: 'asin_count', order: 'desc'})}>
+                                High to Low
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
+                              <DropdownMenuLabel>Filter by ASIN</DropdownMenuLabel>
                               <DropdownMenuItem onClick={() => setAsinFilter([])}>
                                 All ASINs
                               </DropdownMenuItem>
@@ -892,30 +846,6 @@ export default function NicheEditPage() {
                                 >
                                   {asin}
                                 </DropdownMenuCheckboxItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableHead>
-                        <TableHead className="text-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-auto p-1 font-medium text-xs w-full whitespace-normal">
-                                <span className="block">Match</span>
-                                <span className="block">Type</span>
-                                {matchTypeFilter && <span className="ml-1 text-xs">({matchTypeFilter})</span>}
-                                <ChevronDown className="ml-1 h-3 w-3" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                              <DropdownMenuLabel>Filter by Match Type</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => setMatchTypeFilter('')}>
-                                All Types
-                              </DropdownMenuItem>
-                              {[...new Set(keywords.map(k => k.match_type?.toUpperCase() || 'BROAD'))].sort().map(type => (
-                                <DropdownMenuItem key={type} onClick={() => setMatchTypeFilter(type)}>
-                                  {type}
-                                </DropdownMenuItem>
                               ))}
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1045,7 +975,7 @@ export default function NicheEditPage() {
                     <TableBody>
                       {(() => {
                         // Get unique keywords
-                        let uniqueKeywords = getUniqueKeywords()
+                        const uniqueKeywords = getUniqueKeywords()
                         
                         // Filter unique keywords
                         let filteredKeywords = uniqueKeywords.filter(k => {
@@ -1059,8 +989,7 @@ export default function NicheEditPage() {
                           }
                           
                           // Match type filter
-                          if (matchTypeFilter && !k.matchTypes.has(matchTypeFilter)) return false
-                          
+                                
                           // Bid filter (using max bid)
                           const bidInDollars = k.maxBid / 100
                           if (bidFilter.min !== undefined && bidInDollars < bidFilter.min) return false
@@ -1098,6 +1027,10 @@ export default function NicheEditPage() {
                               case 'estimated_orders':
                                 aVal = a.maxOrders
                                 bVal = b.maxOrders
+                                break
+                              case 'asin_count':
+                                aVal = a.asins.length
+                                bVal = b.asins.length
                                 break
                               default:
                                 aVal = a.asins.length
@@ -1137,11 +1070,6 @@ export default function NicheEditPage() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-center">
-                              <Badge variant="outline" className="text-xs">
-                                {Array.from(keyword.matchTypes).join(', ')}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
                               {keyword.maxBid ? formatCurrency(keyword.maxBid / 100) : '-'}
                             </TableCell>
                             <TableCell className="text-center">
@@ -1165,7 +1093,6 @@ export default function NicheEditPage() {
                   const filteredKeywords = uniqueKeywords.filter(k => {
                     if (keywordSearch && !k.keyword.toLowerCase().includes(keywordSearch.toLowerCase())) return false
                     if (asinFilter.length > 0 && !k.asins.some(asin => asinFilter.includes(asin))) return false
-                    if (matchTypeFilter && !k.matchTypes.has(matchTypeFilter)) return false
                     const bidInDollars = k.maxBid / 100
                     if (bidFilter.min !== undefined && bidInDollars < bidFilter.min) return false
                     if (bidFilter.max !== undefined && bidInDollars > bidFilter.max) return false

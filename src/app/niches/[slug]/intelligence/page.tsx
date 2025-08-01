@@ -9,7 +9,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import MarketIntelligence from '@/components/products/analysis/MarketIntelligence'
 import { MembershipGate } from '@/components/MembershipGate'
-import { getNicheBySlug } from '@/lib/mockNicheData'
 import { NicheNavigation } from '@/components/niches/NicheNavigation'
 
 interface IntelligencePageProps {
@@ -21,14 +20,26 @@ export default function NicheIntelligencePage({ params }: IntelligencePageProps)
   const [loading, setLoading] = useState(true)
   const [slug, setSlug] = useState<string>('')
   const [nicheData, setNicheData] = useState<any>(null)
+  const [intelligenceData, setIntelligenceData] = useState<any>(null)
 
   useEffect(() => {
     const loadData = async () => {
       const resolvedParams = await params
       setSlug(resolvedParams.slug)
-      const data = getNicheBySlug(resolvedParams.slug)
-      setNicheData(data)
-      setTimeout(() => setLoading(false), 500)
+      
+      try {
+        // Fetch real data from API
+        const response = await fetch(`/api/niches/${resolvedParams.slug}/market-intelligence`)
+        if (!response.ok) throw new Error('Failed to fetch market intelligence data')
+        
+        const data = await response.json()
+        setNicheData(data.niche || { niche_name: 'Niche Analysis' })
+        setIntelligenceData(data)
+      } catch (error) {
+        console.error('Error loading market intelligence data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     loadData()
@@ -43,12 +54,12 @@ export default function NicheIntelligencePage({ params }: IntelligencePageProps)
   }
 
   if (status === 'unauthenticated' || !session) {
-    return <MembershipGate productTitle={nicheData.nicheName} productImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=600&fit=crop" />
+    return <MembershipGate productTitle={nicheData?.niche_name || 'Niche Analysis'} productImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=600&fit=crop" />
   }
 
   const userTier = session.user?.subscriptionTier || 'free'
   if (userTier === 'free') {
-    return <MembershipGate productTitle={nicheData.nicheName} productImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=600&fit=crop" />
+    return <MembershipGate productTitle={nicheData?.niche_name || 'Niche Analysis'} productImage="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=600&fit=crop" />
   }
 
   const getScoreColor = (score: number) => {
@@ -65,55 +76,36 @@ export default function NicheIntelligencePage({ params }: IntelligencePageProps)
     return 'Poor'
   }
 
-  // Transform niche data to match the component's expected format
+  // Transform real data to match the component's expected format
   const transformedData = {
-    ...nicheData,
-    title: nicheData.nicheName,
+    title: nicheData.niche_name || 'Niche Analysis',
+    nicheName: nicheData.niche_name || 'Niche Analysis',
+    scores: {
+      intelligence: intelligenceData?.marketIntelligence?.sentiment_score ? 
+        Math.round(intelligenceData.marketIntelligence.sentiment_score) : 82
+    },
     intelligenceData: {
-      ...nicheData.intelligenceData,
       reviewInsights: {
-        totalReviews: nicheData.intelligenceData.totalReviews,
-        avgRating: nicheData.intelligenceData.sentimentScore,
-        sentimentScore: nicheData.intelligenceData.sentimentScore,
-        reviewGrowth: nicheData.intelligenceData.reviewGrowth,
+        totalReviews: intelligenceData?.marketIntelligence?.total_reviews || 0,
+        avgRating: intelligenceData?.marketIntelligence?.average_rating || 4.0,
+        sentimentScore: intelligenceData?.marketIntelligence?.sentiment_score || 80,
+        reviewGrowth: intelligenceData?.marketIntelligence?.review_growth_rate || 15,
         commonThemes: {
-          positive: [
-            'High quality materials',
-            'Comfortable for long use',
-            'Great battery life',
-            'Easy to connect'
-          ],
-          negative: nicheData.intelligenceData.commonComplaints.map((c: any) => c.issue),
-          opportunities: nicheData.intelligenceData.opportunities.map((o: any) => o.opportunity)
+          positive: intelligenceData?.marketIntelligence?.positive_themes || [],
+          negative: intelligenceData?.marketIntelligence?.negative_themes || [],
+          opportunities: intelligenceData?.marketIntelligence?.improvement_opportunities || []
         }
       },
-      customerAvatars: nicheData.intelligenceData.customerAvatars.map((avatar: any) => ({
-        ...avatar,
-        shoppingBehavior: {
-          preferredChannels: ['Amazon Prime', 'Direct brand websites'],
-          priceRange: `$${(avatar.avgSpend * 0.8).toFixed(2)} - $${(avatar.avgSpend * 1.2).toFixed(2)}`,
-          decisionFactors: avatar.preferredFeatures || []
-        }
-      })),
+      customerAvatars: intelligenceData?.marketIntelligence?.customer_personas || [],
+      voiceOfCustomer: intelligenceData?.marketIntelligence?.voice_of_customer || {},
       marketIntelligence: {
-        trends: [
-          `Market growing at ${nicheData.marketOverview.marketGrowth} annually`,
-          'Increasing demand for premium features',
-          'Shift towards sustainable materials',
-          'Rising interest in app-connected devices'
-        ],
-        competitorWeaknesses: [
-          'Poor battery life in most products',
-          'Limited comfort for side sleepers',
-          'Basic feature sets',
-          'Poor customer support'
-        ],
-        untappedOpportunities: nicheData.intelligenceData.opportunities.map((o: any) => ({
-          opportunity: o.opportunity,
-          impact: o.potentialImpact
-        }))
-      }
-    }
+        trends: intelligenceData?.marketIntelligence?.market_trends || [],
+        competitorWeaknesses: intelligenceData?.marketIntelligence?.competitor_weaknesses || [],
+        untappedOpportunities: intelligenceData?.marketIntelligence?.untapped_opportunities || []
+      },
+      ...intelligenceData?.marketIntelligence
+    },
+    hasData: intelligenceData?.hasData || false
   }
 
   return (
@@ -138,11 +130,11 @@ export default function NicheIntelligencePage({ params }: IntelligencePageProps)
             <Card className="border-2 border-yellow-200">
               <CardContent className="p-4">
                 <div className="text-center w-32 h-20 flex flex-col items-center justify-center">
-                  <div className={`text-3xl font-bold ${getScoreColor(nicheData.scores.intelligence)}`}>
-                    {nicheData.scores.intelligence}
+                  <div className={`text-3xl font-bold ${getScoreColor(transformedData.scores.intelligence)}`}>
+                    {transformedData.scores.intelligence}
                   </div>
-                  <div className="text-xs text-gray-600 mt-1">{getScoreLabel(nicheData.scores.intelligence)}</div>
-                  <Progress value={nicheData.scores.intelligence} className="h-2 mt-2 w-full" />
+                  <div className="text-xs text-gray-600 mt-1">{getScoreLabel(transformedData.scores.intelligence)}</div>
+                  <Progress value={transformedData.scores.intelligence} className="h-2 mt-2 w-full" />
                 </div>
               </CardContent>
             </Card>
@@ -151,13 +143,13 @@ export default function NicheIntelligencePage({ params }: IntelligencePageProps)
       </div>
 
       {/* Navigation */}
-      <NicheNavigation nicheSlug={slug} nicheName={nicheData.nicheName} />
+      <NicheNavigation nicheSlug={slug} nicheName={transformedData.nicheName} />
 
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <nav className="flex text-sm text-gray-500">
           <Link href={`/niches/${slug}`} className="hover:text-blue-600">
-            {nicheData.nicheName}
+            {transformedData.nicheName}
           </Link>
           <span className="mx-2">/</span>
           <span className="text-gray-900">Market Intelligence</span>

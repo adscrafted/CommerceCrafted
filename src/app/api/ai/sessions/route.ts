@@ -2,16 +2,16 @@
 // Handles conversation memory and session persistence
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { conversationManager } from '@/lib/conversation-manager'
-import { authOptions } from '@/lib/auth'
 
 // GET /api/ai/sessions - Get user's research sessions
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Check if user owns the session
-      if (researchSession.userId !== session.user.id) {
+      if (researchSession.userId !== authUser.id) {
         return NextResponse.json(
           { error: 'Access denied' },
           { status: 403 }
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(response)
     } else {
       // Get all sessions for user
-      const userSessions = conversationManager.getUserSessions(session.user.id!)
+      const userSessions = conversationManager.getUserSessions(authUser.id)
       
       // Sort by most recent first
       const sortedSessions = userSessions.sort((a, b) => 
@@ -83,8 +83,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     // Create new session
     const newSession = conversationManager.createSession(
-      session.user.id!,
+      authUser.id,
       sessionType,
       productId
     )
@@ -129,8 +130,9 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Authenticate user
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -157,7 +159,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    if (researchSession.userId !== session.user.id) {
+    if (researchSession.userId !== authUser.id) {
       return NextResponse.json(
         { error: 'Access denied' },
         { status: 403 }
@@ -191,8 +193,9 @@ export async function DELETE(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Authenticate user
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -223,7 +226,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    if (researchSession.userId !== session.user.id) {
+    if (researchSession.userId !== authUser.id) {
       return NextResponse.json(
         { error: 'Access denied' },
         { status: 403 }

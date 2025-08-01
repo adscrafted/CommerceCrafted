@@ -20,6 +20,13 @@ export async function GET(
       return NextResponse.json({ error: 'Niche not found' }, { status: 404 })
     }
     
+    // Get niche overall analysis for the summary
+    const { data: overallAnalysis } = await supabase
+      .from('niches_overall_analysis')
+      .select('niche_summary, category, subcategory, market_analysis')
+      .eq('niche_id', id)
+      .single()
+    
     // Get products for this niche
     const asinList = niche.asins.split(',').map((a: string) => a.trim())
     
@@ -33,7 +40,8 @@ export async function GET(
       id: niche.id,
       title: niche.niche_name,
       subtitle: niche.category,
-      category: niche.category,
+      category: overallAnalysis?.category || niche.category,
+      nicheSummary: overallAnalysis?.niche_summary || '',
       asin: asinList[0], // Use first ASIN as primary
       asins: asinList,
       products: (products || []).map((p: any) => ({

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { getServerSupabase } from '@/lib/supabase-server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 // GET report status
 export async function GET(
@@ -10,8 +8,9 @@ export async function GET(
 ) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -21,9 +20,12 @@ export async function GET(
     const { reportId } = params
 
     // Get report from database
-    // TODO: Convert to Supabase with proper joins
-    // const { data: report } = await supabase.from('amazon_reports').select('*, report_data:amazon_report_data(record_count, created_at)').eq('id', reportId).eq('user_id', session.user.id).single()
-    const report = null
+    const { data: report } = await supabase
+      .from('amazon_reports')
+      .select('*, report_data:amazon_report_data(record_count, created_at)')
+      .eq('id', reportId)
+      .eq('user_id', authUser.id)
+      .single()
 
     if (!report) {
       return NextResponse.json(
@@ -34,18 +36,18 @@ export async function GET(
 
     // Format response
     const response = {
-      id: report.id,
-      type: report.type,
-      status: report.status,
-      startDate: report.startDate,
-      endDate: report.endDate,
-      marketplaceId: report.marketplaceId,
-      createdAt: report.createdAt,
-      completedAt: report.completedAt,
-      error: report.error,
-      retryCount: report.retryCount,
-      recordCount: report.reportData?.recordCount,
-      dataAvailable: !!report.reportData
+      id: report?.id,
+      type: report?.type,
+      status: report?.status,
+      startDate: report?.start_date,
+      endDate: report?.end_date,
+      marketplaceId: report?.marketplace_id,
+      createdAt: report?.created_at,
+      completedAt: report?.completed_at,
+      error: report?.error,
+      retryCount: report?.retry_count,
+      recordCount: report?.report_data?.record_count,
+      dataAvailable: !!report?.report_data
     }
 
     return NextResponse.json(response)
