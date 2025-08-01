@@ -24,11 +24,33 @@ import {
   Users,
   Globe,
   Calendar,
-  CheckCircle
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react'
-import { ResponsiveContainer, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from 'recharts'
+import { ResponsiveContainer, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, ReferenceLine } from 'recharts'
 import KeywordNetworkVisualization from '@/components/KeywordNetworkVisualization'
 import DemandAnalysisReal from './DemandAnalysisReal'
+import PricingAIInsights from './PricingAIInsights'
+import SeasonalityAnalysis from './SeasonalityAnalysis'
+
+interface SeasonalTrend {
+  season: 'spring' | 'summer' | 'fall' | 'winter' | 'holiday' | 'back_to_school'
+  months: string[]
+  pattern: 'peak' | 'valley' | 'gradual_increase' | 'gradual_decrease' | 'stable' | 'volatile'
+  strength: number
+  confidence: number
+  description: string
+  drivers: string[]
+  impact: 'high' | 'medium' | 'low'
+  opportunity_score: number
+  risk_factors: string[]
+  actionable_insights: string[]
+  weekly_analysis?: {
+    pickup_week?: string
+    peak_week?: string
+    fall_week?: string
+  }
+}
 
 interface DemandAnalysisProps {
   data: {
@@ -116,12 +138,17 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
   const [aiInsights, setAiInsights] = useState<any>(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
+  const [selectedSeason, setSelectedSeason] = useState<SeasonalTrend | null>(null)
   
   // Initialize with all competitors selected by default
   const [selectedCompetitors, setSelectedCompetitors] = useState<string[]>(() => {
     return data.nicheProducts?.map((product: any) => product.asin) || []
   })
   const [viewMode, setViewMode] = useState<'aggregated' | 'individual'>('aggregated')
+  
+  // Keyword network filter states
+  const [minKeywordsPerRoot, setMinKeywordsPerRoot] = useState(5)
+  const [minKeywordsPerSubRoot, setMinKeywordsPerSubRoot] = useState(3)
   
   // Helper function to toggle competitor selection
   const toggleCompetitor = (asin: string) => {
@@ -178,6 +205,56 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
     const colors = ['#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16']
     return colors[index % colors.length]
   }
+
+  // Helper function to get season date ranges
+  const getSeasonDateRanges = (season: string) => {
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth()
+    
+    // Helper to get the most recent occurrence of a season
+    const getRecentSeasonDates = (monthStart: number, dayStart: number, monthEnd: number, dayEnd: number) => {
+      let startYear = currentYear
+      let endYear = currentYear
+      
+      // If the season start is after current month, use previous year
+      if (monthStart > currentMonth || (monthStart === currentMonth && dayStart > now.getDate())) {
+        startYear -= 1
+      }
+      
+      // Adjust end year if needed
+      if (monthEnd < monthStart) {
+        endYear = startYear + 1
+      } else if (monthEnd > currentMonth || (monthEnd === currentMonth && dayEnd > now.getDate())) {
+        if (monthStart <= currentMonth) {
+          endYear = startYear
+        } else {
+          endYear = startYear + 1
+        }
+      }
+      
+      return { start: new Date(startYear, monthStart, dayStart), end: new Date(endYear, monthEnd, dayEnd) }
+    }
+    
+    switch (season) {
+      case 'spring':
+        return [getRecentSeasonDates(2, 20, 5, 20)] // Mar 20 - Jun 20
+      case 'summer':
+        return [getRecentSeasonDates(5, 21, 8, 21)] // Jun 21 - Sep 21
+      case 'fall':
+        return [getRecentSeasonDates(8, 22, 11, 20)] // Sep 22 - Dec 20
+      case 'winter':
+        // Winter spans across years, so handle specially
+        const winterCurrent = getRecentSeasonDates(11, 21, 2, 19) // Dec 21 - Mar 19
+        return [winterCurrent]
+      case 'holiday':
+        return [getRecentSeasonDates(10, 1, 11, 31)] // Nov 1 - Dec 31
+      case 'back_to_school':
+        return [getRecentSeasonDates(6, 15, 8, 15)] // Jul 15 - Sep 15
+      default:
+        return []
+    }
+  }
   
   return (
     <div className="space-y-6">
@@ -187,8 +264,7 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
           { id: 'market', label: 'Market Analysis', icon: BarChart3 },
           { id: 'network', label: 'Keyword Network', icon: Activity },
           { id: 'pricing', label: 'Pricing Trends', icon: DollarSign },
-          { id: 'seasonality', label: 'Seasonality', icon: Calendar },
-          { id: 'social', label: 'Social Signals', icon: Users }
+          { id: 'seasonality', label: 'Seasonality', icon: Calendar }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -209,19 +285,19 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
       {activeTab === 'market' && (
         <div className="space-y-6">
 
-          {/* AI Market Insights */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Sparkles className="h-5 w-5 text-purple-600" />
-                <span>Market Insights</span>
-              </CardTitle>
-              <CardDescription>
-                Amazon marketplace dynamics and selling opportunities
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {aiLoading ? (
+{/* AI Market Insights - Loading/Error States */}
+          {aiLoading && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Sparkles className="h-5 w-5 text-purple-600" />
+                  <span>Market Insights</span>
+                </CardTitle>
+                <CardDescription>
+                  Amazon marketplace dynamics and selling opportunities
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-4">
                   <div className="animate-pulse">
                     <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
@@ -231,7 +307,22 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
                   </div>
                 </div>
-              ) : aiError ? (
+              </CardContent>
+            </Card>
+          )}
+
+          {aiError && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Sparkles className="h-5 w-5 text-purple-600" />
+                  <span>Market Insights</span>
+                </CardTitle>
+                <CardDescription>
+                  Amazon marketplace dynamics and selling opportunities
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <div className="p-4 bg-yellow-50 rounded-lg">
                   <div className="flex items-center space-x-2 mb-2">
                     <div className="w-4 h-4 bg-yellow-400 rounded-full"></div>
@@ -242,191 +333,268 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                     Market insights are generated during niche processing and will appear here once complete.
                   </p>
                 </div>
-              ) : aiInsights ? (
-                <div className="space-y-6">
-                  {/* Market Phase & Maturity */}
-                  <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-3">Market Status</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-xs text-gray-600">Current Phase</span>
-                        <p className="text-sm font-semibold text-gray-900 capitalize">{aiInsights.marketTrends?.currentPhase}</p>
-                      </div>
-                      <div>
-                        <span className="text-xs text-gray-600">Market Maturity</span>
-                        <p className="text-sm font-semibold text-gray-900 capitalize">{aiInsights.marketTrends?.marketMaturity}</p>
-                      </div>
-                    </div>
-                    {aiInsights.marketTrends?.growthIndicators && (
-                      <div className="mt-3">
-                        <span className="text-xs text-gray-600">Growth Indicators</span>
-                        <ul className="mt-1 space-y-1">
-                          {aiInsights.marketTrends.growthIndicators.map((indicator: string, idx: number) => (
-                            <li key={idx} className="text-sm text-gray-700 flex items-start">
-                              <span className="text-purple-600 mr-2">•</span>
-                              {indicator}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
+              </CardContent>
+            </Card>
+          )}
 
-                  {/* Industry Insights */}
-                  {aiInsights.industryInsights && aiInsights.industryInsights.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Industry Trends</h4>
-                      <div className="space-y-3">
-                        {aiInsights.industryInsights.map((insight: any, idx: number) => (
-                          <div key={idx} className={`p-3 rounded-lg border ${
-                            insight.impact === 'high' ? 'border-red-200 bg-red-50' :
-                            insight.impact === 'medium' ? 'border-yellow-200 bg-yellow-50' :
-                            'border-blue-200 bg-blue-50'
-                          }`}>
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900">{insight.title}</p>
-                                <p className="text-xs text-gray-600 mt-1">{insight.description}</p>
-                              </div>
-                              <div className="flex gap-2 ml-3">
-                                <Badge variant="outline" className="text-xs">
-                                  {insight.impact} impact
-                                </Badge>
-                                <Badge variant="outline" className="text-xs">
-                                  {insight.timeframe}
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Demand Patterns */}
-                  {aiInsights.demandPatterns && (
-                    <div className="p-4 bg-blue-50 rounded-lg">
-                      <h4 className="font-medium text-gray-900 mb-2">Demand Analysis</h4>
-                      <div className="grid grid-cols-2 gap-4 mb-3">
-                        <div>
-                          <span className="text-xs text-gray-600">Volume Trend</span>
-                          <p className="text-sm font-semibold text-gray-900 capitalize">{aiInsights.demandPatterns.volumeTrend}</p>
-                        </div>
-                        <div>
-                          <span className="text-xs text-gray-600">Seasonal Factors</span>
-                          <p className="text-sm text-gray-700">{aiInsights.demandPatterns.seasonalFactors?.join(', ') || 'None identified'}</p>
-                        </div>
-                      </div>
-                      {aiInsights.demandPatterns.demandDrivers && (
-                        <div>
-                          <span className="text-xs text-gray-600">Key Demand Drivers</span>
-                          <ul className="mt-1 space-y-1">
-                            {aiInsights.demandPatterns.demandDrivers.map((driver: string, idx: number) => (
-                              <li key={idx} className="text-sm text-gray-700 flex items-start">
-                                <span className="text-blue-600 mr-2">→</span>
-                                {driver}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Market Opportunities */}
-                  {aiInsights.marketOpportunities && aiInsights.marketOpportunities.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Market Opportunities</h4>
-                      <div className="space-y-2">
-                        {aiInsights.marketOpportunities.map((opp: any, idx: number) => (
-                          <div key={idx} className="flex items-start space-x-2">
-                            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                              <span className="text-xs font-bold text-green-600">{idx + 1}</span>
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">{opp.opportunity}</p>
-                              <p className="text-xs text-gray-600">{opp.rationale}</p>
-                              <Badge variant="outline" className="text-xs mt-1">
-                                {opp.difficulty} difficulty
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Risk Factors */}
-                  {aiInsights.riskFactors && aiInsights.riskFactors.length > 0 && (
-                    <div className="p-4 bg-yellow-50 rounded-lg">
-                      <h4 className="font-medium text-gray-900 mb-2">Risk Factors</h4>
-                      <div className="space-y-2">
-                        {aiInsights.riskFactors.map((risk: any, idx: number) => (
-                          <div key={idx} className="space-y-1">
-                            <div className="flex items-start">
-                              <span className={`mr-2 ${
-                                risk.likelihood === 'high' ? 'text-red-600' :
-                                risk.likelihood === 'medium' ? 'text-yellow-600' :
-                                'text-blue-600'
-                              }`}>⚠</span>
-                              <div className="flex-1">
-                                <span className="text-sm text-gray-700">{risk.risk}</span>
-                                <Badge variant="outline" className="text-xs ml-2">
-                                  {risk.likelihood} likelihood
-                                </Badge>
-                              </div>
-                            </div>
-                            {risk.mitigation && (
-                              <p className="text-xs text-gray-600 ml-6">Mitigation: {risk.mitigation}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Future Outlook */}
-                  {aiInsights.futureOutlook && (
-                    <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
-                      <h4 className="font-medium text-gray-900 mb-2">Future Outlook</h4>
-                      <p className="text-sm text-gray-700 mb-3">{aiInsights.futureOutlook.projection}</p>
-                      {aiInsights.futureOutlook.keyFactors && (
-                        <div className="mb-3">
-                          <span className="text-xs text-gray-600">Key Factors to Watch</span>
-                          <ul className="mt-1 space-y-1">
-                            {aiInsights.futureOutlook.keyFactors.map((factor: string, idx: number) => (
-                              <li key={idx} className="text-sm text-gray-700 flex items-start">
-                                <span className="text-indigo-600 mr-2">•</span>
-                                {factor}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {aiInsights.futureOutlook.recommendation && (
-                        <div className="mt-3 p-3 bg-white bg-opacity-70 rounded">
-                          <span className="text-xs text-gray-600">Strategic Recommendation</span>
-                          <p className="text-sm text-gray-900 font-medium mt-1">{aiInsights.futureOutlook.recommendation}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : !nicheId ? (
+          {!nicheId && !aiLoading && !aiError && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Sparkles className="h-5 w-5 text-purple-600" />
+                  <span>Market Insights</span>
+                </CardTitle>
+                <CardDescription>
+                  Amazon marketplace dynamics and selling opportunities
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <div className="p-4 bg-gray-50 rounded-lg text-center">
                   <p className="text-sm text-gray-600">
                     AI market analysis requires niche data. Create or select a niche to see insights.
                   </p>
                 </div>
-              ) : (
-                <div className="p-4 bg-gray-50 rounded-lg text-center">
-                  <p className="text-sm text-gray-600">
-                    Loading market insights...
-                  </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Market Status & Phase */}
+          {aiInsights?.marketTrends && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <TrendingUp className="h-5 w-5 text-purple-600" />
+                  <span>Market Status</span>
+                </CardTitle>
+                <CardDescription>
+                  Current market phase and maturity indicators
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-6 mb-4">
+                  <div>
+                    <span className="text-sm text-gray-600">Current Phase</span>
+                    <p className="text-lg font-semibold text-gray-900 capitalize">{aiInsights.marketTrends.currentPhase}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Market Maturity</span>
+                    <p className="text-lg font-semibold text-gray-900 capitalize">{aiInsights.marketTrends.marketMaturity}</p>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                {aiInsights.marketTrends.growthIndicators && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Growth Indicators</h4>
+                    <ul className="space-y-2">
+                      {aiInsights.marketTrends.growthIndicators.map((indicator: string, idx: number) => (
+                        <li key={idx} className="text-sm text-gray-700 flex items-start">
+                          <CheckCircle className="h-4 w-4 text-purple-600 mr-2 mt-0.5 flex-shrink-0" />
+                          {indicator}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Industry Trends */}
+          {aiInsights?.industryInsights && aiInsights.industryInsights.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Activity className="h-5 w-5 text-blue-600" />
+                  <span>Industry Trends</span>
+                </CardTitle>
+                <CardDescription>
+                  Key market developments and their impact
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {aiInsights.industryInsights.map((insight: any, idx: number) => (
+                    <div key={idx} className={`border-l-4 pl-4 ${
+                      insight.impact === 'high' ? 'border-red-500' :
+                      insight.impact === 'medium' ? 'border-yellow-500' :
+                      'border-blue-500'
+                    }`}>
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-medium text-gray-900">{insight.title}</h4>
+                        <div className="flex gap-2 ml-3">
+                          <Badge variant="outline" className="text-xs">
+                            {insight.impact} impact
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {insight.timeframe}
+                          </Badge>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600">{insight.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Demand Patterns */}
+          {aiInsights?.demandPatterns && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                  <span>Demand Analysis</span>
+                </CardTitle>
+                <CardDescription>
+                  Market demand patterns and driving factors
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-6 mb-4">
+                  <div>
+                    <span className="text-sm text-gray-600">Volume Trend</span>
+                    <p className="text-lg font-semibold text-gray-900 capitalize">{aiInsights.demandPatterns.volumeTrend}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Seasonal Factors</span>
+                    <p className="text-sm text-gray-700">{aiInsights.demandPatterns.seasonalFactors?.join(', ') || 'None identified'}</p>
+                  </div>
+                </div>
+                {aiInsights.demandPatterns.demandDrivers && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Key Demand Drivers</h4>
+                    <ul className="space-y-2">
+                      {aiInsights.demandPatterns.demandDrivers.map((driver: string, idx: number) => (
+                        <li key={idx} className="text-sm text-gray-700 flex items-start">
+                          <TrendingUp className="h-4 w-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                          {driver}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Market Opportunities */}
+          {aiInsights?.marketOpportunities && aiInsights.marketOpportunities.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Target className="h-5 w-5 text-green-600" />
+                  <span>Market Opportunities</span>
+                </CardTitle>
+                <CardDescription>
+                  Identified growth opportunities and strategic openings
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {aiInsights.marketOpportunities.map((opp: any, idx: number) => (
+                    <div key={idx} className="border-l-4 border-green-500 pl-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-start space-x-2">
+                          <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs font-bold text-green-600">{idx + 1}</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900">{opp.opportunity}</h4>
+                            <p className="text-sm text-gray-600 mt-1">{opp.rationale}</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {opp.difficulty} difficulty
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Risk Factors */}
+          {aiInsights?.riskFactors && aiInsights.riskFactors.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <AlertCircle className="h-5 w-5 text-yellow-600" />
+                  <span>Risk Factors</span>
+                </CardTitle>
+                <CardDescription>
+                  Potential challenges and mitigation strategies
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {aiInsights.riskFactors.map((risk: any, idx: number) => (
+                    <div key={idx} className={`border-l-4 pl-4 ${
+                      risk.likelihood === 'high' ? 'border-red-500' :
+                      risk.likelihood === 'medium' ? 'border-yellow-500' :
+                      'border-blue-500'
+                    }`}>
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-medium text-gray-900">{risk.risk}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {risk.likelihood} likelihood
+                        </Badge>
+                      </div>
+                      {risk.mitigation && (
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">Mitigation:</span> {risk.mitigation}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Future Outlook */}
+          {aiInsights?.futureOutlook && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Globe className="h-5 w-5 text-indigo-600" />
+                  <span>Future Outlook</span>
+                </CardTitle>
+                <CardDescription>
+                  Market projections and strategic recommendations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Market Projection</h4>
+                    <p className="text-sm text-gray-700">{aiInsights.futureOutlook.projection}</p>
+                  </div>
+                  
+                  {aiInsights.futureOutlook.keyFactors && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Key Factors to Watch</h4>
+                      <ul className="space-y-2">
+                        {aiInsights.futureOutlook.keyFactors.map((factor: string, idx: number) => (
+                          <li key={idx} className="text-sm text-gray-700 flex items-start">
+                            <Eye className="h-4 w-4 text-indigo-600 mr-2 mt-0.5 flex-shrink-0" />
+                            {factor}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {aiInsights.futureOutlook.recommendation && (
+                    <div className="p-4 bg-indigo-50 rounded-lg">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Strategic Recommendation</h4>
+                      <p className="text-sm text-gray-900 font-medium">{aiInsights.futureOutlook.recommendation}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Competitor Market Age Analysis */}
           {nicheData?.products && nicheData.products.length > 0 && (
@@ -443,7 +611,7 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Activity className="h-5 w-5 text-purple-600" />
-                <span>Keyword Market Network</span>
+                <span>Keyword Network</span>
               </CardTitle>
               <CardDescription>
                 Visual representation of keyword relationships and market size
@@ -454,8 +622,10 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                 <KeywordNetworkVisualization
                   keywordHierarchy={data.keywordHierarchy}
                   primaryKeyword={data.title || 'Product'}
-                  minKeywordsPerRoot={5}
-                  minKeywordsPerSubRoot={3}
+                  minKeywordsPerRoot={minKeywordsPerRoot}
+                  minKeywordsPerSubRoot={minKeywordsPerSubRoot}
+                  onMinKeywordsPerRootChange={setMinKeywordsPerRoot}
+                  onMinKeywordsPerSubRootChange={setMinKeywordsPerSubRoot}
                   productImageUrl={(() => {
                     // Get the main product image from nicheProducts data
                     if (data.nicheProducts?.length > 0) {
@@ -499,6 +669,9 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
       {/* Pricing Trends Tab */}
       {activeTab === 'pricing' && (
         <div className="space-y-6">
+          {/* AI-Powered Pricing Insights */}
+          <PricingAIInsights nicheId={nicheId} />
+
           {/* Combined Market & Competitor Price Tracking */}
           <Card>
             <CardHeader>
@@ -534,8 +707,8 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                     </div>
                     <div className="text-sm text-gray-600">All-Time Low</div>
                   </div>
-                  <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
-                    <div className="text-2xl font-bold text-purple-600">
+                  <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="text-2xl font-bold text-gray-700">
                       ${data.priceHistory?.length > 0 
                         ? Math.max(...data.priceHistory.map((d: any) => d.price)).toFixed(2)
                         : '29.99'}
@@ -812,6 +985,12 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
       {/* Seasonality Tab */}
       {activeTab === 'seasonality' && (
         <div className="space-y-6">
+          {/* Seasonality Analysis */}
+          <SeasonalityAnalysis 
+            nicheId={nicheId} 
+            onSeasonSelect={setSelectedSeason}
+          />
+
           {/* Combined Seasonality & Competitor Sales Rank Tracking */}
           <Card>
             <CardHeader>
@@ -855,8 +1034,8 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                     </div>
                     <div className="text-sm text-gray-600">Worst Rank (Low)</div>
                   </div>
-                  <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
-                    <div className="text-2xl font-bold text-purple-600">
+                  <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="text-2xl font-bold text-gray-700">
                       {(() => {
                         // Calculate seasonal variance
                         if (data.salesRankHistory?.length > 1) {
@@ -880,6 +1059,11 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                       ? `Sales Rank History: ${selectedCompetitors.length} Selected Competitor${selectedCompetitors.length > 1 ? 's' : ''} (${viewMode})`
                       : 'Historical Sales Rank Trends'
                     }
+                    {selectedSeason && (
+                      <span className="ml-2 text-xs font-normal text-indigo-600">
+                        - Showing {selectedSeason.season.replace('_', ' ')} season dates
+                      </span>
+                    )}
                   </h4>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1009,6 +1193,101 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
                             name="Market Average"
                           />
                         )}
+                        {/* Seasonal Reference Lines */}
+                        {(() => {
+                          // If a season is selected, show its date ranges
+                          if (selectedSeason) {
+                            const dateRanges = getSeasonDateRanges(selectedSeason.season)
+                            const seasonColors = {
+                              spring: '#10B981',
+                              summer: '#F59E0B', 
+                              fall: '#EF4444',
+                              winter: '#3B82F6',
+                              holiday: '#8B5CF6',
+                              back_to_school: '#EC4899'
+                            }
+                            const color = seasonColors[selectedSeason.season] || '#6B7280'
+                            
+                            return dateRanges.map((range, idx) => (
+                              <React.Fragment key={`season-range-${idx}`}>
+                                {/* Start date marker */}
+                                <ReferenceLine
+                                  x={range.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                  stroke={color}
+                                  strokeDasharray="4 4"
+                                  strokeWidth={2}
+                                  opacity={0.8}
+                                  label={{
+                                    value: `${selectedSeason.season.replace('_', ' ')} Start`,
+                                    angle: -90,
+                                    textAnchor: 'middle',
+                                    style: {
+                                      fontSize: '11px',
+                                      fill: color,
+                                      fontWeight: 600
+                                    },
+                                    offset: 10
+                                  }}
+                                />
+                                {/* End date marker */}
+                                <ReferenceLine
+                                  x={range.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                  stroke={color}
+                                  strokeDasharray="4 4"
+                                  strokeWidth={2}
+                                  opacity={0.8}
+                                  label={{
+                                    value: `${selectedSeason.season.replace('_', ' ')} End`,
+                                    angle: -90,
+                                    textAnchor: 'middle',
+                                    style: {
+                                      fontSize: '11px',
+                                      fill: color,
+                                      fontWeight: 600
+                                    },
+                                    offset: 10
+                                  }}
+                                />
+                              </React.Fragment>
+                            ))
+                          }
+                          
+                          // Otherwise show default seasonal markers
+                          const currentYear = new Date().getFullYear()
+                          const seasonalMarkers = [
+                            { month: 2, day: 20, season: 'Spring', color: '#10B981' }, // March 20 (Spring Equinox)
+                            { month: 5, day: 21, season: 'Summer', color: '#F59E0B' }, // June 21 (Summer Solstice)
+                            { month: 8, day: 22, season: 'Fall', color: '#EF4444' },   // September 22 (Fall Equinox)
+                            { month: 11, day: 21, season: 'Winter', color: '#3B82F6' }, // December 21 (Winter Solstice)
+                          ]
+                          
+                          return seasonalMarkers.map((marker, index) => {
+                            const seasonDate = new Date(currentYear, marker.month, marker.day)
+                            const seasonDateStr = seasonDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                            
+                            return (
+                              <ReferenceLine
+                                key={`season-${index}`}
+                                x={seasonDateStr}
+                                stroke={marker.color}
+                                strokeDasharray="2 2"
+                                strokeWidth={1.5}
+                                opacity={0.6}
+                                label={{
+                                  value: marker.season,
+                                  angle: -90,
+                                  textAnchor: 'middle',
+                                  style: {
+                                    fontSize: '10px',
+                                    fill: marker.color,
+                                    fontWeight: 500
+                                  },
+                                  offset: 10
+                                }}
+                              />
+                            )
+                          })
+                        })()}
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -1152,271 +1431,6 @@ export default function DemandAnalysis({ data, nicheId, nicheData }: DemandAnaly
         </div>
       )}
 
-      {/* Social Signals Tab */}
-      {activeTab === 'social' && (
-        <div className="space-y-6">
-          {!data.demandData?.socialSignals ? (
-            /* No Social Data Available */
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Users className="h-5 w-5 text-gray-400" />
-                  <span>Social Signals</span>
-                </CardTitle>
-                <CardDescription>
-                  Social media analytics and engagement data
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-gray-500">
-                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Social Signals Not Available</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Social media data is not currently available for this niche.
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Social signals data will be displayed here when available, including:
-                  </p>
-                  <div className="mt-3 text-xs text-gray-500 space-y-1">
-                    <div>📱 TikTok posts and engagement</div>
-                    <div>📸 Instagram content analysis</div>
-                    <div>📺 YouTube video performance</div>
-                    <div>💬 Reddit discussions and sentiment</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {/* TikTok */}
-              <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <div className="text-2xl">📱</div>
-                <span>TikTok</span>
-                {data.reviewAnalysisData?.socialMediaInsights?.platforms?.[0]?.trending && (
-                  <Badge variant="destructive" className="ml-2">Trending</Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
-                {data.demandData?.socialSignals?.tiktok?.posts?.toLocaleString() || 'N/A'} posts • {data.demandData?.socialSignals?.tiktok?.views ? (data.demandData.socialSignals.tiktok.views / 1000000).toFixed(1) : 'N/A'}M views • {data.demandData?.socialSignals?.tiktok?.engagement || 'N/A'} engagement
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Top Content Types</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-pink-50 rounded-lg">
-                      <span className="text-sm font-medium">Sleep routine videos</span>
-                      <span className="text-sm text-gray-600">1.2M views</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-pink-50 rounded-lg">
-                      <span className="text-sm font-medium">ASMR sleep content</span>
-                      <span className="text-sm text-gray-600">890K views</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-pink-50 rounded-lg">
-                      <span className="text-sm font-medium">Travel sleep hacks</span>
-                      <span className="text-sm text-gray-600">670K views</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Popular Hashtags</h4>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline">#sleepmaskhack</Badge>
-                    <Badge variant="outline">#bluetoothsleepphone</Badge>
-                    <Badge variant="outline">#sleepbetter</Badge>
-                  </div>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600 italic">
-                    "This sleep mask changed my life! No more tangled earbuds while trying to sleep 😴"
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">- Example user comment</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Instagram */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <div className="text-2xl">📸</div>
-                <span>Instagram</span>
-              </CardTitle>
-              <CardDescription>
-                {data.demandData?.socialSignals?.instagram?.posts?.toLocaleString() || 'N/A'} posts • {data.demandData?.socialSignals?.instagram?.engagement || 'N/A'} engagement • Medium influencer reach
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Content Categories</h4>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="text-center p-3 bg-purple-50 rounded-lg">
-                      <div className="text-sm font-medium">Lifestyle posts</div>
-                      <div className="text-xs text-gray-600 mt-1">38%</div>
-                    </div>
-                    <div className="text-center p-3 bg-purple-50 rounded-lg">
-                      <div className="text-sm font-medium">Travel photos</div>
-                      <div className="text-xs text-gray-600 mt-1">32%</div>
-                    </div>
-                    <div className="text-center p-3 bg-purple-50 rounded-lg">
-                      <div className="text-sm font-medium">Wellness content</div>
-                      <div className="text-xs text-gray-600 mt-1">30%</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">@wellness.journey:</span> "My nighttime routine essential! Perfect for meditation and blocking out my partner's snoring 🎧💤 #sleepwellness #bluetoothsleep"
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">2.3K likes • 145 comments</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* YouTube */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <div className="text-2xl">📺</div>
-                <span>YouTube</span>
-              </CardTitle>
-              <CardDescription>
-                {data.demandData?.socialSignals?.youtube?.videos || 'N/A'} videos • {data.demandData?.socialSignals?.youtube?.avgViews?.toLocaleString() || 'N/A'} average views
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Video Categories</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                      <span className="text-sm font-medium">Product Reviews</span>
-                      <span className="text-sm text-gray-600">45% of videos</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                      <span className="text-sm font-medium">Sleep Music Channels</span>
-                      <span className="text-sm text-gray-600">30% of videos</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                      <span className="text-sm font-medium">Unboxing Videos</span>
-                      <span className="text-sm text-gray-600">25% of videos</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium text-gray-900">
-                    "Bluetooth Sleep Mask Review - 6 Months Later!"
-                  </p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    "I've been using this for half a year now, and here's my honest opinion..."
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">85K views • Tech Sleep Reviews</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Reddit */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <div className="text-2xl">💬</div>
-                <span>Reddit</span>
-              </CardTitle>
-              <CardDescription>
-                {data.demandData?.socialSignals?.reddit?.discussions || 'N/A'} discussions • {data.demandData?.socialSignals?.reddit?.sentiment || 'N/A'} sentiment
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Top Subreddits</h4>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary">/r/sleep</Badge>
-                    <Badge variant="secondary">/r/BuyItForLife</Badge>
-                    <Badge variant="secondary">/r/insomnia</Badge>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Common Discussion Topics</h4>
-                  <ul className="space-y-2">
-                    <li className="flex items-start">
-                      <span className="text-orange-500 mr-2">•</span>
-                      <span className="text-sm text-gray-700">Durability questions and long-term reviews</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-orange-500 mr-2">•</span>
-                      <span className="text-sm text-gray-700">Comparisons with regular headphones for sleep</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-orange-500 mr-2">•</span>
-                      <span className="text-sm text-gray-700">Use cases for meditation and relaxation</span>
-                    </li>
-                  </ul>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium text-gray-900">
-                    "[Question] Anyone tried bluetooth sleep masks for side sleeping?"
-                  </p>
-                  <p className="text-sm text-gray-600 mt-2">
-                    "I'm a side sleeper and regular earbuds hurt. Looking for recommendations..."
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">r/sleep • 234 upvotes • 45 comments</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Emerging Trends */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Sparkles className="h-5 w-5 text-purple-600" />
-                <span>Emerging Social Trends</span>
-              </CardTitle>
-              <CardDescription>
-                Growing trends and opportunities in social media
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h5 className="font-medium text-gray-900">Sleep Tourism</h5>
-                    <Badge variant="outline" className="text-green-600">+145% growth</Badge>
-                  </div>
-                  <p className="text-sm text-gray-600">Hotels and resorts offering sleep-focused packages</p>
-                  <p className="text-xs text-blue-600 mt-2">Opportunity: Partner with luxury hotels for branded amenities</p>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h5 className="font-medium text-gray-900">Biohacking Sleep</h5>
-                    <Badge variant="outline" className="text-green-600">+89% growth</Badge>
-                  </div>
-                  <p className="text-sm text-gray-600">Optimizing sleep with technology and data</p>
-                  <p className="text-xs text-blue-600 mt-2">Opportunity: Add sleep tracking features and app integration</p>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h5 className="font-medium text-gray-900">Mindful Mornings</h5>
-                    <Badge variant="outline" className="text-green-600">+67% growth</Badge>
-                  </div>
-                  <p className="text-sm text-gray-600">Morning meditation and gratitude practices</p>
-                  <p className="text-xs text-blue-600 mt-2">Opportunity: Create morning meditation content library</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-            </>
-          )}
-        </div>
-      )}
     </div>
   )
 }

@@ -557,7 +557,7 @@ const KeywordProfitAnalysis = ({
 
   const { profitable, unprofitable } = processKeywords()
 
-  const ProfitTable = ({ items, isProfitable }: { items: any[], isProfitable: boolean }) => {
+  const ProfitTable = ({ items, isProfitable }: { items: any[], isProfitable: boolean | null }) => {
     const [expandedRoots, setExpandedRoots] = useState<Set<string>>(new Set())
     const [expandedSubroots, setExpandedSubroots] = useState<Set<string>>(new Set())
 
@@ -594,6 +594,7 @@ const KeywordProfitAnalysis = ({
           <thead className="bg-gray-50">
             <tr>
               <th className="text-left py-3 px-4 font-medium text-gray-900 min-w-[200px]">Keyword Group</th>
+              <th className="text-center py-3 px-3 font-medium text-gray-900">Status</th>
               <th className="text-center py-3 px-3 font-medium text-gray-900"># Keywords</th>
               <th className="text-center py-3 px-3 font-medium text-gray-900">Monthly Revenue</th>
               <th className="text-center py-3 px-3 font-medium text-gray-900">CPC</th>
@@ -608,7 +609,7 @@ const KeywordProfitAnalysis = ({
               <React.Fragment key={index}>
                 {/* Root Level */}
                 <tr 
-                  className={`border-b ${isProfitable ? 'bg-green-50' : 'bg-red-50'} hover:bg-opacity-80 cursor-pointer`}
+                  className={`border-b ${item.netProfit > 0 ? 'bg-green-50' : 'bg-red-50'} hover:bg-opacity-80 cursor-pointer`}
                   onClick={() => toggleRoot(item.name)}
                 >
                   <td className="py-3 px-4">
@@ -624,6 +625,17 @@ const KeywordProfitAnalysis = ({
                       )}
                       <span className="font-medium text-gray-900 text-sm">{item.name}</span>
                     </div>
+                  </td>
+                  <td className="py-3 px-3 text-center text-sm">
+                    {item.netProfit > 0 ? (
+                      <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
+                        Profitable
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-300">
+                        Unprofitable
+                      </Badge>
+                    )}
                   </td>
                   <td className="py-3 px-3 text-center text-sm">{item.keywordCount.toLocaleString('en-US')}</td>
                   <td className="py-3 px-3 text-center text-sm">
@@ -689,6 +701,17 @@ const KeywordProfitAnalysis = ({
                           <span className="text-sm text-gray-700">↳ {subroot.name}</span>
                         </div>
                       </td>
+                      <td className="py-2 px-3 text-center text-sm">
+                        {subroot.netProfit > 0 ? (
+                          <Badge variant="default" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                            Profitable
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive" className="bg-red-50 text-red-700 border-red-200 text-xs">
+                            Unprofitable
+                          </Badge>
+                        )}
+                      </td>
                       <td className="py-2 px-3 text-center text-sm">{subroot.keywordCount.toLocaleString('en-US')}</td>
                       <td className="py-2 px-3 text-center text-sm">
                         ${subroot.revenue >= 1000 
@@ -734,6 +757,13 @@ const KeywordProfitAnalysis = ({
                       <tr key={`${index}-${subIndex}-${keywordIndex}`} className="border-b bg-gray-50 hover:bg-gray-100">
                         <td className="py-2 px-4 pl-16">
                           <span className="text-xs text-gray-600">⤷ {keyword.name}</span>
+                        </td>
+                        <td className="py-2 px-3 text-center text-xs">
+                          {keyword.netProfit > 0 ? (
+                            <span className="text-green-600">•</span>
+                          ) : (
+                            <span className="text-red-600">•</span>
+                          )}
                         </td>
                         <td className="py-2 px-3 text-center text-xs">{keyword.keywordCount}</td>
                         <td className="py-2 px-3 text-center text-xs">
@@ -827,10 +857,21 @@ const KeywordProfitAnalysis = ({
         </div>
       </div>
       
-      {/* Filters */}
+      {/* All Keywords Analysis */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <DollarSign className="h-5 w-5 text-blue-600" />
+            </div>
+            <span>Keyword Profitability Analysis</span>
+          </CardTitle>
+          <CardDescription>
+            Keywords analyzed for profitability after accounting for all costs
+          </CardDescription>
+          
+          {/* Filters moved here */}
+          <div className="flex items-center justify-between flex-wrap gap-4 mt-4">
             {/* COGS Filter */}
             <div className="flex items-center space-x-4">
               <label className="text-sm font-medium text-gray-700">
@@ -873,88 +914,11 @@ const KeywordProfitAnalysis = ({
               </div>
             </div>
           </div>
+        </CardHeader>
+        <CardContent>
+          <ProfitTable items={[...profitable, ...unprofitable].sort((a, b) => b.netProfit - a.netProfit)} isProfitable={null} />
         </CardContent>
       </Card>
-
-      {/* Profitable Keywords */}
-      {profitable.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <DollarSign className="h-5 w-5 text-green-600" />
-              </div>
-              <span>Profitable Keywords</span>
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                {profitable.length} Groups
-              </Badge>
-            </CardTitle>
-            <CardDescription>
-              Keywords that remain profitable after accounting for COGS ({cogsPercent}%), FBA fees (19%), and advertising costs
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProfitTable items={profitable} isProfitable={true} />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Unprofitable Keywords */}
-      {unprofitable.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-              </div>
-              <span>Unprofitable Keywords</span>
-              <Badge variant="secondary" className="bg-red-100 text-red-800">
-                {unprofitable.length} Groups
-              </Badge>
-            </CardTitle>
-            <CardDescription>
-              Keywords that become unprofitable when factoring in all costs - consider optimizing or avoiding these
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProfitTable items={unprofitable} isProfitable={false} />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <h3 className="text-sm font-medium text-gray-600">Total Profitable Revenue</h3>
-            <div className="text-2xl font-bold text-green-600 mt-2">
-              ${profitable.reduce((sum, item) => sum + item.revenue, 0) >= 1000000
-                ? (profitable.reduce((sum, item) => sum + item.revenue, 0) / 1000000).toFixed(2) + 'M'
-                : (profitable.reduce((sum, item) => sum + item.revenue, 0) / 1000).toFixed(0) + 'K'
-              }
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6 text-center">
-            <h3 className="text-sm font-medium text-gray-600">Total Profitable Keywords</h3>
-            <div className="text-2xl font-bold text-blue-600 mt-2">
-              {profitable.reduce((sum, item) => sum + item.keywordCount, 0).toLocaleString('en-US')}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6 text-center">
-            <h3 className="text-sm font-medium text-gray-600">Avg Net Profit Margin</h3>
-            <div className="text-2xl font-bold text-purple-600 mt-2">
-              {profitable.length > 0 
-                ? (profitable.reduce((sum, item) => sum + item.netProfitPercent, 0) / profitable.length).toFixed(1) + '%'
-                : '0%'
-              }
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   )
 }
@@ -1118,12 +1082,6 @@ export default function KeywordsAnalysis({ data, searchTermsData }: KeywordsAnal
                           className="w-12 text-sm font-medium text-gray-700 bg-transparent outline-none"
                         />
                       </div>
-                      <button className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        <span>Download</span>
-                      </button>
                       <ExpandButton />
                     </div>
                   </div>

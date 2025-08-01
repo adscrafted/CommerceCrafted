@@ -36,10 +36,13 @@ export default function KeywordNetworkVisualization({
     let totalKeywords = 0
     let totalRootKeywords = 0
 
-    Object.values(keywordHierarchy || {}).forEach((rootData: any) => {
-      totalRevenue += rootData.totalRevenue || 0
-      totalKeywords += rootData.keywordCount || 0
-      totalRootKeywords += 1 // Count each root keyword
+    // Only count roots that meet the minimum keyword threshold (same as visualization)
+    Object.entries(keywordHierarchy || {}).forEach(([rootName, rootData]: [string, any]) => {
+      if ((rootData.keywordCount || 0) >= minKeywordsPerRoot) {
+        totalRevenue += rootData.totalRevenue || 0
+        totalKeywords += rootData.keywordCount || 0
+        totalRootKeywords += 1 // Count each root keyword that meets the threshold
+      }
     })
 
     return {
@@ -219,41 +222,44 @@ export default function KeywordNetworkVisualization({
 
   return (
     <div className="space-y-4">
-      {/* Tab Navigation with Filters */}
-      <div className="flex items-center justify-between">
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-          {[
-            { id: 'root', label: 'Root Keywords', icon: Network },
-            { id: 'subroot', label: 'Subroots', icon: GitBranch },
-            { id: 'level2', label: 'Sub Roots (Level 2)', icon: Share2 }
-          ].map((tab) => (
-            <Button
-              key={tab.id}
-              variant={activeLevel === tab.id ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveLevel(tab.id as any)}
-              className={`flex items-center space-x-2 ${
-                activeLevel === tab.id
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <tab.icon className="h-4 w-4" />
-              <span>{tab.label}</span>
-            </Button>
-          ))}
-        </div>
-        
-        {/* Filter Controls */}
-        {(onMinKeywordsPerRootChange || onMinKeywordsPerSubRootChange) && (
+      {/* Tab Navigation */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+        {[
+          { id: 'root', label: 'Root Keywords', icon: Network },
+          { id: 'subroot', label: 'Subroots', icon: GitBranch },
+          { id: 'level2', label: 'Sub Roots (Level 2)', icon: Share2 }
+        ].map((tab) => (
+          <Button
+            key={tab.id}
+            variant={activeLevel === tab.id ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveLevel(tab.id as any)}
+            className={`flex items-center space-x-2 ${
+              activeLevel === tab.id
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            <span>{tab.label}</span>
+          </Button>
+        ))}
+      </div>
+      
+      {/* Filter Controls */}
+      {(onMinKeywordsPerRootChange || onMinKeywordsPerSubRootChange) && (
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            {/* Placeholder for search if needed in future */}
+          </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md">
               <span>Min Keywords Per Root:</span>
               <input
                 type="number"
-                min="1"
+                min="0"
                 value={minKeywordsPerRoot}
-                onChange={(e) => onMinKeywordsPerRootChange?.(parseInt(e.target.value) || 1)}
+                onChange={(e) => onMinKeywordsPerRootChange?.(parseInt(e.target.value) || 0)}
                 className="w-12 text-sm font-medium text-gray-700 bg-transparent outline-none"
               />
             </div>
@@ -261,15 +267,15 @@ export default function KeywordNetworkVisualization({
               <span>Min Keywords Per Sub Root:</span>
               <input
                 type="number"
-                min="1"
+                min="0"
                 value={minKeywordsPerSubRoot}
-                onChange={(e) => onMinKeywordsPerSubRootChange?.(parseInt(e.target.value) || 1)}
+                onChange={(e) => onMinKeywordsPerSubRootChange?.(parseInt(e.target.value) || 0)}
                 className="w-12 text-sm font-medium text-gray-700 bg-transparent outline-none"
               />
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Network Visualization */}
       <div className="bg-white rounded-lg border overflow-hidden">

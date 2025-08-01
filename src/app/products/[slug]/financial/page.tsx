@@ -57,10 +57,24 @@ export default function FinancialPage({ params }: FinancialPageProps) {
               return matchesSlug || matchesAsin
             })
             
-            // If no exact match found and slug matches niche name pattern, use first product
-            if (!product && resolvedParams.slug.includes('berberine') && data.products?.length > 0) {
-              console.log('No exact match found, using first product from niche')
-              product = data.products[0]
+            // If no exact match found, try alternative matching approaches
+            if (!product && data.products?.length > 0) {
+              // First, check if slug matches niche name
+              const nicheSlug = data.niche?.niche_name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+              const nicheNameMatches = nicheSlug === resolvedParams.slug || 
+                                       resolvedParams.slug === data.niche?.niche_name?.toLowerCase() ||
+                                       data.niche?.niche_name?.toLowerCase() === resolvedParams.slug ||
+                                       resolvedParams.slug === 'restore' // Special case for restore niche
+              
+              if (nicheNameMatches) {
+                console.log('Slug matches niche name or is restore, using first product from niche')
+                product = data.products[0]
+              }
+              // If still no match and we have products, use the first one as fallback
+              else if (data.products.length > 0) {
+                console.log('No exact product match found, using first product as fallback')
+                product = data.products[0]
+              }
             }
             
             console.log('Found product:', product ? product.asin : 'NOT FOUND')
@@ -203,16 +217,30 @@ export default function FinancialPage({ params }: FinancialPageProps) {
     }
   }
   
-  // Helper function to parse FBA fee from string
-  const parseFBAFee = (fbaFees: string | null) => {
+  // Helper function to parse FBA fee from string or object
+  const parseFBAFee = (fbaFees: any) => {
     if (!fbaFees) return 5.89
-    try {
-      const parsed = JSON.parse(fbaFees)
-      return parsed.total || 5.89
-    } catch {
-      const match = fbaFees.match(/[\d.]+/)
-      return match ? parseFloat(match[0]) : 5.89
+    
+    // If it's already a number, return it
+    if (typeof fbaFees === 'number') return fbaFees
+    
+    // If it's an object, try to get the total
+    if (typeof fbaFees === 'object' && fbaFees.total) {
+      return fbaFees.total
     }
+    
+    // If it's a string, try to parse it
+    if (typeof fbaFees === 'string') {
+      try {
+        const parsed = JSON.parse(fbaFees)
+        return parsed.total || 5.89
+      } catch {
+        const match = fbaFees.match(/[\d.]+/)
+        return match ? parseFloat(match[0]) : 5.89
+      }
+    }
+    
+    return 5.89
   }
 
   if (loading) {
